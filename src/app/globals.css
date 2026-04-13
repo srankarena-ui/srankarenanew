@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg-primary: #0b0e14;
+  --color-bg-card: #121620;
+  --color-bg-card-hover: #1a1f2e;
+  --color-accent: #a855f7;
+  --color-accent-hover: #9333ea;
+  --color-accent-glow: rgba(168, 85, 247, 0.3);
+  --color-border: #1f2937;
+  --color-border-hover: #374151;
+  --color-text-primary: #e5e7eb;
+  --color-text-secondary: #9ca3af;
+  --color-text-muted: #6b7280;
+  --color-success: #22c55e;
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
+
+  --font-heading: "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+}
+
+html {
+  height: 100%;
+  color-scheme: dark;
+}
+
+body {
+  min-height: 100%;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-hover);
+}
+
+/* ── Tiptap rich text editor ─────────────────────────────────────────────── */
+.ProseMirror {
+  outline: none;
+}
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: #4b5563;
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+.ProseMirror h1 { font-size: 1.25rem; font-weight: 900; color: #fff; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: -0.02em; }
+.ProseMirror h2 { font-size: 1.05rem; font-weight: 800; color: #e5e7eb; margin-bottom: 0.4rem; }
+.ProseMirror h3 { font-size: 0.9rem; font-weight: 700; color: #d1d5db; margin-bottom: 0.3rem; }
+.ProseMirror p { margin-bottom: 0.5rem; }
+.ProseMirror strong { color: #fff; font-weight: 700; }
+.ProseMirror em { color: #c4b5fd; }
+.ProseMirror u { text-decoration: underline; text-underline-offset: 2px; }
+.ProseMirror s { text-decoration: line-through; color: #6b7280; }
+.ProseMirror ul { list-style: disc; padding-left: 1.25rem; margin-bottom: 0.5rem; }
+.ProseMirror ol { list-style: decimal; padding-left: 1.25rem; margin-bottom: 0.5rem; }
+.ProseMirror li { margin-bottom: 0.2rem; }
+.ProseMirror a { color: #a78bfa; text-decoration: underline; }
+.ProseMirror blockquote { border-left: 3px solid #7c3aed; padding-left: 1rem; color: #9ca3af; margin: 0.5rem 0; }
+.ProseMirror hr { border-color: #1f2937; margin: 0.75rem 0; }
+.ProseMirror code { background: #1e2030; border-radius: 4px; padding: 0.1em 0.35em; font-size: 0.8em; color: #c4b5fd; font-family: ui-monospace, monospace; }
+.ProseMirror pre { background: #0f111a; border: 1px solid #1f2937; border-radius: 8px; padding: 1rem; margin: 0.5rem 0; overflow-x: auto; }
+.ProseMirror pre code { background: none; padding: 0; color: #e5e7eb; font-size: 0.8rem; }
