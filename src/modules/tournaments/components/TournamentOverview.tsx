@@ -35,13 +35,13 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
               key={tab}
               onClick={() => setOverviewSubTab(tab)}
               className={cn(
-                "relative px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] transition-colors",
+                "relative px-4 py-2.5 text-[10px] uppercase tracking-[0.2em] transition-colors",
                 isActive ? "text-white" : "text-gray-500 hover:text-gray-300"
               )}
             >
               {tab === "details" ? t("detailsTab") : tab === "rules" ? t("rules") : tab === "prizes" ? t("prizesTab") : t("contactTab")}
               {isActive && (
-                <span className="absolute bottom-0 left-0 h-[2px] w-full bg-purple-500" />
+                <span className="absolute bottom-0 left-0 h-[2px] w-full bg-[var(--color-accent-hover)]" />
               )}
             </button>
           );
@@ -77,7 +77,7 @@ function DetailsTab({ tournament }: { tournament: Tournament }) {
 
       {/* About */}
       <div>
-        <h2 className="mb-4 text-xl font-black text-white">{t("aboutTournament")}</h2>
+        <h2 className="mb-4 text-xl text-white">{t("aboutTournament")}</h2>
         <div className="prose prose-invert max-w-none">
           {tournament.description ? (
             <div
@@ -134,10 +134,10 @@ function PrizesTab({ tournament }: { tournament: Tournament }) {
 
       {tournament.reward_points > 0 && (
         <div className="mt-6 rounded-xl border border-purple-800/30 bg-purple-900/10 p-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-purple-400">
+          <p className="text-[10px] text-[var(--color-accent)]">
             {t("arenaReward")}
           </p>
-          <p className="mt-1 text-2xl font-black text-purple-300">
+          <p className="mt-1 text-2xl text-purple-300">
             +{tournament.reward_points} EXP
           </p>
         </div>
@@ -168,7 +168,7 @@ function QuickStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-gray-800/60 bg-[#121620] px-4 py-3 text-center">
       <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-gray-500">{label}</p>
-      <p className="mt-1 text-sm font-black text-white">{value}</p>
+      <p className="mt-1 text-sm text-white">{value}</p>
     </div>
   );
 }

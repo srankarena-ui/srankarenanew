@@ -106,10 +106,10 @@ export function FooterManager({ initialConfig }: FooterManagerProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-black uppercase italic tracking-tighter text-white">
+          <h2 className="text-lg uppercase italic tracking-tighter text-white">
             Footer Configuration
           </h2>
-          <p className="mt-0.5 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+          <p className="mt-0.5 text-[10px] font-bold text-gray-500">
             Manage footer links and social media
           </p>
         </div>
@@ -121,13 +121,13 @@ export function FooterManager({ initialConfig }: FooterManagerProps) {
       {/* Link Sections */}
       <Card>
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-sm font-black uppercase tracking-wider text-white">
+          <h3 className="text-sm uppercase tracking-wider text-white">
             Link Sections
           </h3>
           <button
             type="button"
             onClick={addSection}
-            className="rounded-lg border border-dashed border-purple-700 px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest text-purple-400 transition-colors hover:bg-purple-900/20"
+            className="rounded-lg border border-dashed border-purple-700 px-3 py-1.5 text-[9px] font-bold text-[var(--color-accent)] transition-colors hover:bg-purple-900/20"
           >
             + Add Section
           </button>
@@ -144,12 +144,12 @@ export function FooterManager({ initialConfig }: FooterManagerProps) {
                   value={section.title}
                   onChange={(e) => updateSectionTitle(si, e.target.value)}
                   placeholder="Section title"
-                  className="flex-1 rounded-lg border border-gray-700 bg-transparent px-3 py-1.5 text-sm font-bold text-white outline-none focus:border-purple-500"
+                  className="flex-1 rounded-lg border border-gray-700 bg-transparent px-3 py-1.5 text-sm font-bold text-white outline-none focus:border-[var(--color-accent)]"
                 />
                 <button
                   type="button"
                   onClick={() => removeSection(si)}
-                  className="text-[9px] font-bold uppercase tracking-widest text-red-500 hover:text-red-400"
+                  className="text-[9px] font-bold text-red-500 hover:text-red-400"
                 >
                   Remove
                 </button>
@@ -162,13 +162,13 @@ export function FooterManager({ initialConfig }: FooterManagerProps) {
                       value={link.label}
                       onChange={(e) => updateLink(si, li, "label", e.target.value)}
                       placeholder="Label"
-                      className="w-32 rounded-lg border border-gray-800 bg-gray-900 px-3 py-1.5 text-[11px] text-gray-200 outline-none focus:border-purple-500"
+                      className="w-32 rounded-lg border border-gray-800 bg-gray-900 px-3 py-1.5 text-[11px] text-gray-200 outline-none focus:border-[var(--color-accent)]"
                     />
                     <input
                       value={link.href}
                       onChange={(e) => updateLink(si, li, "href", e.target.value)}
                       placeholder="https://..."
-                      className="flex-1 rounded-lg border border-gray-800 bg-gray-900 px-3 py-1.5 text-[11px] text-gray-200 outline-none focus:border-purple-500"
+                      className="flex-1 rounded-lg border border-gray-800 bg-gray-900 px-3 py-1.5 text-[11px] text-gray-200 outline-none focus:border-[var(--color-accent)]"
                     />
                     <button
                       type="button"
@@ -184,7 +184,7 @@ export function FooterManager({ initialConfig }: FooterManagerProps) {
                 <button
                   type="button"
                   onClick={() => addLink(si)}
-                  className="mt-1 text-[9px] font-bold uppercase tracking-widest text-gray-600 hover:text-purple-400"
+                  className="mt-1 text-[9px] font-bold text-gray-600 hover:text-[var(--color-accent)]"
                 >
                   + Add Link
                 </button>
@@ -196,20 +196,20 @@ export function FooterManager({ initialConfig }: FooterManagerProps) {
 
       {/* Social Media */}
       <Card>
-        <h3 className="mb-4 text-sm font-black uppercase tracking-wider text-white">
+        <h3 className="mb-4 text-sm uppercase tracking-wider text-white">
           Social Media Links
         </h3>
         <div className="grid gap-3 sm:grid-cols-2">
           {SOCIAL_PLATFORMS.map((platform) => (
             <div key={platform} className="flex items-center gap-3">
-              <span className="w-20 text-[9px] font-bold uppercase tracking-widest text-gray-400 capitalize">
+              <span className="w-20 text-[9px] font-bold text-gray-400 capitalize">
                 {platform}
               </span>
               <input
                 value={getSocialHref(platform)}
                 onChange={(e) => updateSocialHref(platform, e.target.value)}
                 placeholder={`https://${platform}.com/...`}
-                className="flex-1 rounded-lg border border-gray-800 bg-gray-900 px-3 py-1.5 text-[11px] text-gray-200 outline-none focus:border-purple-500"
+                className="flex-1 rounded-lg border border-gray-800 bg-gray-900 px-3 py-1.5 text-[11px] text-gray-200 outline-none focus:border-[var(--color-accent)]"
               />
             </div>
           ))}
@@ -218,14 +218,14 @@ export function FooterManager({ initialConfig }: FooterManagerProps) {
 
       {/* Copyright */}
       <Card>
-        <h3 className="mb-3 text-sm font-black uppercase tracking-wider text-white">
+        <h3 className="mb-3 text-sm uppercase tracking-wider text-white">
           Copyright Text
         </h3>
         <input
           value={config.copyright}
           onChange={(e) => setConfig({ ...config, copyright: e.target.value })}
           placeholder="© 2026 S-Rank Arena. All rights reserved."
-          className="w-full rounded-lg border border-gray-800 bg-gray-900 px-4 py-2.5 text-sm text-gray-200 outline-none focus:border-purple-500"
+          className="w-full rounded-lg border border-gray-800 bg-gray-900 px-4 py-2.5 text-sm text-gray-200 outline-none focus:border-[var(--color-accent)]"
         />
       </Card>
 

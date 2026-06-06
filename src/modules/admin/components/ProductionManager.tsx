@@ -61,10 +61,10 @@ export function ProductionManager({ initialConfig }: ProductionManagerProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-black uppercase italic tracking-tighter text-white">
+          <h2 className="text-lg uppercase italic tracking-tighter text-white">
             {t("productionTitle")}
           </h2>
-          <p className="mt-0.5 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+          <p className="mt-0.5 text-[10px] font-bold text-gray-500">
             {t("productionSubtitle")}
           </p>
         </div>
@@ -78,9 +78,9 @@ export function ProductionManager({ initialConfig }: ProductionManagerProps) {
             key={l}
             type="button"
             onClick={() => setLang(l)}
-            className={`rounded-lg px-4 py-1.5 text-[9px] font-black uppercase tracking-widest transition-colors ${
+            className={`rounded-lg px-4 py-1.5 text-[9px] transition-colors ${
               lang === l
-                ? "bg-purple-600 text-white"
+                ? "bg-[var(--color-accent)] text-white"
                 : "border border-gray-700 text-gray-500 hover:text-gray-300"
             }`}
           >
@@ -91,23 +91,23 @@ export function ProductionManager({ initialConfig }: ProductionManagerProps) {
 
       {/* Page header text */}
       <Card>
-        <h3 className="mb-4 text-sm font-black uppercase tracking-wider text-white">{t("headerSection", { language: LANG_LABELS[lang] })}</h3>
+        <h3 className="mb-4 text-sm uppercase tracking-wider text-white">{t("headerSection", { language: LANG_LABELS[lang] })}</h3>
         <div className="space-y-3">
           <div>
-            <label className="mb-1 block text-[9px] font-bold uppercase tracking-widest text-gray-500">{t("titleField")}</label>
+            <label className="mb-1 block text-[9px] font-bold text-gray-500">{t("titleField")}</label>
             <input
               value={(config.heading as LocalizedString)[lang]}
               onChange={(e) => updateLocalized("heading", e.target.value)}
-              className="w-full rounded-xl border border-gray-800 bg-gray-900 px-4 py-2.5 text-sm text-gray-200 outline-none focus:border-purple-500"
+              className="w-full rounded-xl border border-gray-800 bg-gray-900 px-4 py-2.5 text-sm text-gray-200 outline-none focus:border-[var(--color-accent)]"
             />
           </div>
           <div>
-            <label className="mb-1 block text-[9px] font-bold uppercase tracking-widest text-gray-500">{t("subtitleField")}</label>
+            <label className="mb-1 block text-[9px] font-bold text-gray-500">{t("subtitleField")}</label>
             <textarea
               value={(config.subheading as LocalizedString)[lang]}
               onChange={(e) => updateLocalized("subheading", e.target.value)}
               rows={3}
-              className="w-full rounded-xl border border-gray-800 bg-gray-900 px-4 py-2.5 text-sm text-gray-200 outline-none focus:border-purple-500"
+              className="w-full rounded-xl border border-gray-800 bg-gray-900 px-4 py-2.5 text-sm text-gray-200 outline-none focus:border-[var(--color-accent)]"
             />
           </div>
         </div>
@@ -116,11 +116,11 @@ export function ProductionManager({ initialConfig }: ProductionManagerProps) {
       {/* Services */}
       <Card>
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-sm font-black uppercase tracking-wider text-white">{t("servicesSection", { language: LANG_LABELS[lang] })}</h3>
+          <h3 className="text-sm uppercase tracking-wider text-white">{t("servicesSection", { language: LANG_LABELS[lang] })}</h3>
           <button
             type="button"
             onClick={addService}
-            className="rounded-lg border border-dashed border-purple-700 px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest text-purple-400 hover:bg-purple-900/20"
+            className="rounded-lg border border-dashed border-purple-700 px-3 py-1.5 text-[9px] font-bold text-[var(--color-accent)] hover:bg-purple-900/20"
           >
             + {t("addService")}
           </button>
@@ -129,36 +129,36 @@ export function ProductionManager({ initialConfig }: ProductionManagerProps) {
           {config.services.map((s, i) => (
             <div key={s.id} className="rounded-xl border border-gray-800 bg-[#0b0e14] p-4">
               <div className="mb-3 flex justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">{t("serviceNumber", { index: i + 1 })}</span>
+                <span className="text-[10px] font-bold text-gray-500">{t("serviceNumber", { index: i + 1 })}</span>
                 <button type="button" onClick={() => removeService(i)} className="text-[9px] font-bold uppercase text-red-500 hover:text-red-400">{t("delete")}</button>
               </div>
               <div className="grid grid-cols-[64px_1fr] gap-3">
                 <div>
-                  <label className="mb-1 block text-[9px] font-bold uppercase tracking-widest text-gray-500">{t("icon")}</label>
+                  <label className="mb-1 block text-[9px] font-bold text-gray-500">{t("icon")}</label>
                   <input
                     value={s.icon}
                     onChange={(e) => updateServiceIcon(i, e.target.value)}
                     placeholder="🎬"
-                    className="w-full rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-center text-xl outline-none focus:border-purple-500"
+                    className="w-full rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-center text-xl outline-none focus:border-[var(--color-accent)]"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-[9px] font-bold uppercase tracking-widest text-gray-500">{t("titleField")}</label>
+                  <label className="mb-1 block text-[9px] font-bold text-gray-500">{t("titleField")}</label>
                   <input
                     value={(s.title as LocalizedString)[lang]}
                     onChange={(e) => updateServiceLocalized(i, "title", e.target.value)}
                     placeholder={lang === "es" ? "Transmisión en Vivo" : "Live Broadcasting"}
-                    className="w-full rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-200 outline-none focus:border-purple-500"
+                    className="w-full rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-200 outline-none focus:border-[var(--color-accent)]"
                   />
                 </div>
               </div>
               <div className="mt-3">
-                <label className="mb-1 block text-[9px] font-bold uppercase tracking-widest text-gray-500">{t("descriptionField")}</label>
+                <label className="mb-1 block text-[9px] font-bold text-gray-500">{t("descriptionField")}</label>
                 <textarea
                   value={(s.description as LocalizedString)[lang]}
                   onChange={(e) => updateServiceLocalized(i, "description", e.target.value)}
                   rows={2}
-                  className="w-full rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-200 outline-none focus:border-purple-500"
+                  className="w-full rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-200 outline-none focus:border-[var(--color-accent)]"
                 />
               </div>
             </div>

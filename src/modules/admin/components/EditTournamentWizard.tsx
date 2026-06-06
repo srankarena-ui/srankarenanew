@@ -111,20 +111,20 @@ export function EditTournamentWizard({ tournament, games }: Props) {
               key={step}
               type="button"
               onClick={() => goTo(i)}
-              className={`relative flex flex-1 items-center justify-center gap-2.5 py-3.5 text-[10px] font-black uppercase tracking-[0.25em] transition-all ${
+              className={`relative flex flex-1 items-center justify-center gap-2.5 py-3.5 text-[10px] uppercase tracking-[0.25em] transition-all ${
                 isActive
                   ? "bg-gradient-to-b from-purple-500/20 to-transparent text-white"
                   : isCompleted
-                    ? "text-purple-400 hover:bg-purple-500/5"
+                    ? "text-[var(--color-accent)] hover:bg-[var(--color-accent-hover)]/5"
                     : "text-gray-600 hover:text-gray-500"
               }`}
             >
               <span
-                className={`flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-black ${
+                className={`flex h-5 w-5 items-center justify-center rounded-full text-[9px] ${
                   isActive
-                    ? "bg-purple-500 text-white"
+                    ? "bg-[var(--color-accent-hover)] text-white"
                     : isCompleted
-                      ? "bg-purple-500/30 text-purple-400"
+                      ? "bg-[var(--color-accent-hover)]/30 text-[var(--color-accent)]"
                       : "bg-gray-800 text-gray-600"
                 }`}
               >
@@ -132,7 +132,7 @@ export function EditTournamentWizard({ tournament, games }: Props) {
               </span>
               {t(step)}
               {isActive && (
-                <span className="absolute bottom-0 left-0 h-[2px] w-full bg-purple-500" />
+                <span className="absolute bottom-0 left-0 h-[2px] w-full bg-[var(--color-accent-hover)]" />
               )}
             </button>
           );
@@ -145,7 +145,7 @@ export function EditTournamentWizard({ tournament, games }: Props) {
   function StepBasics() {
     return (
       <div className="space-y-6">
-        <h2 className="text-sm font-black uppercase italic tracking-tighter text-white">
+        <h2 className="text-sm uppercase italic tracking-tighter text-white">
           Step 1: Tournament Basics
         </h2>
 
@@ -172,7 +172,7 @@ export function EditTournamentWizard({ tournament, games }: Props) {
             <select
               value={gameName}
               onChange={(e) => setGameName(e.target.value)}
-              className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm font-bold uppercase text-gray-200 outline-hidden transition-colors focus:border-purple-500"
+              className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm font-bold uppercase text-gray-200 outline-hidden transition-colors focus:border-[var(--color-accent)]"
             >
               {games.map((g) => (
                 <option key={g.id} value={g.name}>
@@ -204,7 +204,7 @@ export function EditTournamentWizard({ tournament, games }: Props) {
   function StepInfo() {
     return (
       <div className="space-y-6">
-        <h2 className="text-sm font-black uppercase italic tracking-tighter text-white">
+        <h2 className="text-sm uppercase italic tracking-tighter text-white">
           {t("wizardStep2")}
         </h2>
 
@@ -216,7 +216,7 @@ export function EditTournamentWizard({ tournament, games }: Props) {
             <select
               value={contactMethod}
               onChange={(e) => setContactMethod(e.target.value)}
-              className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm font-bold uppercase text-gray-200 outline-hidden transition-colors focus:border-purple-500"
+              className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm font-bold uppercase text-gray-200 outline-hidden transition-colors focus:border-[var(--color-accent)]"
             >
               {CONTACT_METHODS.map((m) => (
                 <option key={m} value={m}>
@@ -263,7 +263,7 @@ export function EditTournamentWizard({ tournament, games }: Props) {
   function StepSettings() {
     return (
       <div className="space-y-6">
-        <h2 className="text-sm font-black uppercase italic tracking-tighter text-white">
+        <h2 className="text-sm uppercase italic tracking-tighter text-white">
           Step 3: Match Settings
         </h2>
 
@@ -275,7 +275,7 @@ export function EditTournamentWizard({ tournament, games }: Props) {
             <select
               value={seriesFormat}
               onChange={(e) => setSeriesFormat(e.target.value)}
-              className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm font-bold uppercase text-gray-200 outline-hidden transition-colors focus:border-purple-500"
+              className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm font-bold uppercase text-gray-200 outline-hidden transition-colors focus:border-[var(--color-accent)]"
             >
               {SERIES_FORMATS.map((sf) => (
                 <option key={sf} value={sf}>
@@ -312,7 +312,7 @@ export function EditTournamentWizard({ tournament, games }: Props) {
             <select
               value={playerLimitType}
               onChange={(e) => setPlayerLimitType(e.target.value)}
-              className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm font-bold uppercase text-gray-200 outline-hidden transition-colors focus:border-purple-500"
+              className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm font-bold uppercase text-gray-200 outline-hidden transition-colors focus:border-[var(--color-accent)]"
             >
               {PLAYER_LIMITS.map((pl) => (
                 <option key={pl} value={pl}>
@@ -349,7 +349,7 @@ export function EditTournamentWizard({ tournament, games }: Props) {
     <div>
       {/* Page title */}
       <div className="mb-6">
-        <h1 className="text-2xl font-black uppercase italic tracking-tighter text-white">
+        <h1 className="text-2xl uppercase italic tracking-tighter text-white">
           Edit Tournament
         </h1>
         <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">

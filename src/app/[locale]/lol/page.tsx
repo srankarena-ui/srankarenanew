@@ -91,7 +91,7 @@ export default function LoLPlayerPage() {
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-accent)] border-t-transparent" />
       </div>
     );
   }
@@ -131,10 +131,10 @@ export default function LoLPlayerPage() {
     <div className="mx-auto max-w-6xl px-4 py-8 space-y-6">
       {/* Header */}
       <Card className="relative overflow-hidden">
-        <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-purple-600/10 blur-[60px]" />
+        <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[var(--color-accent)]/10 blur-[60px]" />
         <div className="relative flex items-center gap-5">
           {/* Profile icon */}
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-gray-700 to-gray-900 text-sm font-black text-gray-400">
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-gray-700 to-gray-900 text-sm text-gray-400">
             <img
               src={`https://ddragon.leagueoflegends.com/cdn/14.10.1/img/profileicon/${data.profileIconId}.png`}
               alt="icon"
@@ -145,12 +145,12 @@ export default function LoLPlayerPage() {
             />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-white">
+            <h1 className="text-2xl text-white">
               {data.gameName}
               <span className="text-gray-500 font-bold">#{data.tagLine}</span>
             </h1>
             <div className="mt-1 flex items-center gap-2">
-              <Badge variant="purple">{region?.toUpperCase()}</Badge>
+              <Badge variant="accent">{region?.toUpperCase()}</Badge>
               <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-gray-500">
                 Level {data.summonerLevel}
               </span>
@@ -167,7 +167,7 @@ export default function LoLPlayerPage() {
 
           {/* Recent stats summary */}
           <Card>
-            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+            <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
               Recent {totalGames} Games
             </h3>
             <div className="mt-3 flex items-center gap-4">
@@ -186,13 +186,13 @@ export default function LoLPlayerPage() {
                     strokeLinecap="round"
                   />
                 </svg>
-                <span className="absolute text-[10px] font-black text-white">{winRate}%</span>
+                <span className="absolute text-[10px] text-white">{winRate}%</span>
               </div>
               <div className="text-[10px]">
                 <p className="font-bold text-gray-400">
                   {wins}W {losses}L
                 </p>
-                <p className="mt-1 font-black text-white text-sm">
+                <p className="mt-1 text-white text-sm">
                   {avgKDA.k} / <span className="text-red-400">{avgKDA.d}</span> / {avgKDA.a}
                 </p>
                 <p className="mt-0.5 font-bold text-gray-500">
@@ -205,7 +205,7 @@ export default function LoLPlayerPage() {
 
         {/* Right — Match history */}
         <div>
-          <h2 className="mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+          <h2 className="mb-4 text-[10px] uppercase tracking-[0.2em] text-gray-400">
             Recent Matches
           </h2>
           <div className="space-y-2">
@@ -232,7 +232,7 @@ function RankedCard({ title, info }: { title: string; info: RankedInfo | null })
   if (!info) {
     return (
       <Card>
-        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+        <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
           {title}
         </h3>
         <p className="mt-2 text-xs text-gray-600">Unranked</p>
@@ -246,7 +246,7 @@ function RankedCard({ title, info }: { title: string; info: RankedInfo | null })
 
   return (
     <Card>
-      <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+      <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
         {title}
       </h3>
       <div className="mt-3 flex items-center gap-3">
@@ -260,7 +260,7 @@ function RankedCard({ title, info }: { title: string; info: RankedInfo | null })
           }}
         />
         <div>
-          <p className="text-sm font-black text-white">
+          <p className="text-sm text-white">
             {info.tier} {info.rank}
           </p>
           <p className="text-[9px] font-bold text-gray-500">
@@ -306,7 +306,7 @@ function MatchRow({ match }: { match: MatchInfo }) {
       {/* Info */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className={`text-xs font-black ${match.win ? "text-blue-400" : "text-red-400"}`}>
+          <span className={`text-xs ${match.win ? "text-blue-400" : "text-red-400"}`}>
             {match.win ? "Victory" : "Defeat"}
           </span>
           <span className="text-[9px] font-bold text-gray-600">{queueName}</span>
@@ -317,7 +317,7 @@ function MatchRow({ match }: { match: MatchInfo }) {
 
       {/* KDA */}
       <div className="text-right">
-        <p className="text-sm font-black text-white">
+        <p className="text-sm text-white">
           {match.kills} / <span className="text-red-400">{match.deaths}</span> / {match.assists}
         </p>
         <p className="text-[9px] font-bold text-gray-500">{kda} KDA · {match.cs} CS</p>

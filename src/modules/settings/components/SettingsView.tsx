@@ -65,7 +65,7 @@ function ProfileIconPreview({ iconId, label }: { iconId: number; label: string }
         />
       </div>
       <p className="mt-3 text-[9px] font-bold uppercase tracking-[0.2em] text-gray-500">{label}</p>
-      <p className="mt-1 text-sm font-black text-white">#{iconId}</p>
+      <p className="mt-1 text-sm text-white">#{iconId}</p>
     </div>
   );
 }
@@ -189,7 +189,7 @@ export function SettingsView({ profile, riotVerificationChallenge, verificationC
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-black uppercase italic tracking-tighter text-white">
+        <h1 className="text-3xl uppercase italic tracking-tighter text-white">
           {t("title")}
         </h1>
         <p className="mt-1 text-sm text-gray-500">{t("subtitle")}</p>
@@ -197,7 +197,7 @@ export function SettingsView({ profile, riotVerificationChallenge, verificationC
 
       {/* Profile settings */}
       <Card>
-        <h3 className="mb-4 text-sm font-black uppercase tracking-wider text-white">
+        <h3 className="mb-4 text-sm uppercase tracking-wider text-white">
           {t("profileSettings")}
         </h3>
         <form action={handleUpdateProfile} className="flex gap-3">
@@ -218,7 +218,7 @@ export function SettingsView({ profile, riotVerificationChallenge, verificationC
       {/* Riot Account */}
       <Card>
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-sm font-black uppercase tracking-wider text-white">
+          <h3 className="text-sm uppercase tracking-wider text-white">
             {t("riotAccount")}
           </h3>
           {profile.riot_gamename ? (
@@ -245,7 +245,7 @@ export function SettingsView({ profile, riotVerificationChallenge, verificationC
         ) : requireRiotVerification && riotVerificationChallenge ? (
           <div className="space-y-4">
             <div className="rounded-2xl border border-purple-800/30 bg-purple-900/10 p-4">
-              <p className="text-[10px] font-black uppercase tracking-widest text-purple-300">
+              <p className="text-[10px] text-purple-300">
                 {t("verificationPending")}
               </p>
               <p className="mt-2 text-sm font-bold text-white">
@@ -320,7 +320,7 @@ export function SettingsView({ profile, riotVerificationChallenge, verificationC
               <select
                 value={region}
                 onChange={(e) => setRegion(e.target.value)}
-                className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm text-gray-200 outline-hidden focus:border-purple-500"
+                className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm text-gray-200 outline-hidden focus:border-[var(--color-accent)]"
               >
                 {LOL_REGIONS.map((regionCode) => (
                   <option key={regionCode} value={regionCode}>
@@ -339,7 +339,7 @@ export function SettingsView({ profile, riotVerificationChallenge, verificationC
       {/* Clash Royale Account */}
       <Card>
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-sm font-black uppercase tracking-wider text-white">
+          <h3 className="text-sm uppercase tracking-wider text-white">
             {t("clashRoyaleAccount")}
           </h3>
           {profile.cr_tag ? (
@@ -353,7 +353,7 @@ export function SettingsView({ profile, riotVerificationChallenge, verificationC
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-bold text-white">{profile.cr_name || profile.cr_tag}</p>
-              <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500">
+              <p className="text-[9px] font-bold text-gray-500">
                 {profile.cr_tag}
               </p>
             </div>

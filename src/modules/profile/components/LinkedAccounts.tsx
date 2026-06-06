@@ -18,7 +18,7 @@ export function GameConnections({ profile, locale }: GameConnectionsProps) {
 
   return (
     <Card>
-      <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+      <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
         {t("gameConnections")}
       </h3>
 
@@ -42,7 +42,7 @@ export function GameConnections({ profile, locale }: GameConnectionsProps) {
                   {settingsT(riotRegionKey as Parameters<typeof settingsT>[0])}
                 </span>
               )}
-              <span className="text-[8px] font-bold uppercase tracking-widest text-purple-400">
+              <span className="text-[8px] font-bold text-[var(--color-accent)]">
                 {t("viewStats")} →
               </span>
             </div>
@@ -54,7 +54,7 @@ export function GameConnections({ profile, locale }: GameConnectionsProps) {
             </p>
             <a
               href={`/${locale}/settings`}
-              className="mt-2 inline-block text-xs font-bold text-purple-400 hover:text-purple-300"
+              className="mt-2 inline-block text-xs font-bold text-[var(--color-accent)] hover:text-purple-300"
             >
               {t("linkRiotId")}
             </a>
@@ -83,7 +83,7 @@ export function GameConnections({ profile, locale }: GameConnectionsProps) {
             </p>
             <a
               href={`/${locale}/settings`}
-              className="mt-2 inline-block text-xs font-bold text-purple-400 hover:text-purple-300"
+              className="mt-2 inline-block text-xs font-bold text-[var(--color-accent)] hover:text-purple-300"
             >
               {t("linkCrTag")}
             </a>

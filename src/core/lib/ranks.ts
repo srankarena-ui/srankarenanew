@@ -10,10 +10,10 @@ export const RANKS: RankDefinition[] = [
   { rank: "F", minXp: 0, color: "#6b7280", bgClass: "bg-gray-600", glowClass: "shadow-gray-600/30" },
   { rank: "E", minXp: 100, color: "#22c55e", bgClass: "bg-green-600", glowClass: "shadow-green-600/30" },
   { rank: "D", minXp: 300, color: "#3b82f6", bgClass: "bg-blue-600", glowClass: "shadow-blue-600/30" },
-  { rank: "C", minXp: 600, color: "#a855f7", bgClass: "bg-purple-600", glowClass: "shadow-purple-600/30" },
+  { rank: "C", minXp: 600, color: "#3E6BFF", bgClass: "bg-[var(--color-accent)]", glowClass: "shadow-[var(--color-accent)]/30" },
   { rank: "B", minXp: 1000, color: "#f59e0b", bgClass: "bg-amber-500", glowClass: "shadow-amber-500/30" },
   { rank: "A", minXp: 2000, color: "#ef4444", bgClass: "bg-red-500", glowClass: "shadow-red-500/30" },
-  { rank: "S", minXp: 5000, color: "#e879f9", bgClass: "bg-fuchsia-500", glowClass: "shadow-fuchsia-500/30" },
+  { rank: "S", minXp: 5000, color: "#36D2FF", bgClass: "bg-[var(--color-accent-2)]", glowClass: "shadow-[var(--color-accent-2)]/30" },
 ];
 
 export function getRankForXp(xp: number): RankDefinition {

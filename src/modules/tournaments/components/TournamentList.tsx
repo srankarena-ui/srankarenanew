@@ -42,7 +42,7 @@ function FilterSelect({
         <select
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="w-full appearance-none rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 pr-10 text-[11px] font-black uppercase tracking-[0.15em] text-gray-200 outline-hidden transition-colors hover:border-gray-700 focus:border-purple-500"
+          className="w-full appearance-none rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 pr-10 text-[11px] uppercase tracking-[0.15em] text-gray-200 outline-hidden transition-colors hover:border-gray-700 focus:border-[var(--color-accent)]"
         >
           {options.map((option) => (
             <option key={option.value} value={option.value}>
@@ -113,7 +113,7 @@ export function TournamentList({ tournaments }: TournamentListProps) {
     <div>
       <div className="mb-8 flex items-end justify-between">
         <div>
-          <h1 className="text-4xl font-black uppercase italic tracking-tighter text-white">
+          <h1 className="text-4xl uppercase italic tracking-tighter text-white">
             {t("title")}
           </h1>
           <p className="mt-1 text-sm text-gray-500">{t("subtitle")}</p>
@@ -121,7 +121,7 @@ export function TournamentList({ tournaments }: TournamentListProps) {
         {hasActiveFilters && (
           <button
             onClick={() => { setStatusFilter("all"); setGameFilter("all"); setFormatFilter("all"); }}
-            className="text-[10px] font-bold uppercase tracking-widest text-gray-600 hover:text-red-400 transition-colors"
+            className="text-[10px] font-bold text-gray-600 hover:text-red-400 transition-colors"
           >
             ✕ {t("clearFilters")}
           </button>

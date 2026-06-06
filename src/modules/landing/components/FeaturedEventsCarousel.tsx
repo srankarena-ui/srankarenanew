@@ -41,7 +41,7 @@ function TournamentCard({
       onClick={!isCenter ? onClick : undefined}
       className={`relative flex-shrink-0 overflow-hidden rounded-2xl border transition-all duration-500 select-none
         ${isCenter
-          ? "w-[52%] border-purple-500/30 shadow-2xl shadow-purple-900/20 z-10 cursor-default"
+          ? "w-[52%] border-[var(--color-accent)]/30 shadow-2xl shadow-purple-900/20 z-10 cursor-default"
           : "w-[24%] border-gray-800/40 opacity-40 scale-90 z-0 cursor-pointer hover:opacity-55 hover:scale-95"
         }
       `}
@@ -56,7 +56,7 @@ function TournamentCard({
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-purple-900/40 to-[#0d1017]">
-            <span className="text-2xl font-black uppercase italic tracking-tighter text-purple-400/30">
+            <span className="text-2xl uppercase italic tracking-tighter text-[var(--color-accent)]/30">
               {tournament.game}
             </span>
           </div>
@@ -65,7 +65,7 @@ function TournamentCard({
 
         {/* Format badge — center only */}
         {isCenter && tournament.tournament_format && (
-          <span className={`absolute right-3 top-3 rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-widest ${FORMAT_COLORS[tournament.tournament_format] ?? "bg-gray-500/20 text-gray-400"}`}>
+          <span className={`absolute right-3 top-3 rounded-full px-2.5 py-0.5 text-[9px] ${FORMAT_COLORS[tournament.tournament_format] ?? "bg-gray-500/20 text-gray-400"}`}>
             {FORMAT_LABELS[tournament.tournament_format] ?? tournament.tournament_format}
           </span>
         )}
@@ -76,22 +76,22 @@ function TournamentCard({
         <div className="bg-[#0d1017] px-5 pb-5 pt-3">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="truncate text-base font-black uppercase italic tracking-tighter text-white">
+              <h3 className="truncate text-base uppercase italic tracking-tighter text-white">
                 {tournament.title}
               </h3>
-              <p className="mt-0.5 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+              <p className="mt-0.5 text-[10px] font-bold text-gray-500">
                 {tournament.game}
                 {tournament.start_date && (
                   <> · {new Date(tournament.start_date).toLocaleDateString(locale === "es" ? "es-CL" : "en-US", { month: "short", day: "numeric", year: "numeric" })}</>
                 )}
               </p>
               {tournament.reward_points > 0 && (
-                <p className="mt-1 text-xs font-bold text-purple-400">+{tournament.reward_points} EXP</p>
+                <p className="mt-1 text-xs font-bold text-[var(--color-accent)]">+{tournament.reward_points} EXP</p>
               )}
             </div>
             <Link
               href={`/${locale}/tournaments/${tournament.id}`}
-              className="shrink-0 rounded-xl bg-purple-600 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-purple-500"
+              className="shrink-0 rounded-xl bg-[var(--color-accent)] px-4 py-2 text-[10px] text-white transition-colors hover:bg-[var(--color-accent-hover)]"
             >
               {t("featuredViewCta")} →
             </Link>
@@ -125,7 +125,7 @@ export function FeaturedEventsCarousel({ tournaments, autoPlayMs = 5000 }: Featu
 
   return (
     <section className="py-24">
-      <h2 className="mb-10 text-center text-3xl font-black uppercase italic tracking-tighter text-white">
+      <h2 className="mb-10 text-center text-3xl uppercase italic tracking-tighter text-white">
         {t("featuredEventsTitle")}
       </h2>
 
@@ -169,7 +169,7 @@ export function FeaturedEventsCarousel({ tournaments, autoPlayMs = 5000 }: Featu
             <button
               key={i}
               onClick={() => setCurrent(i)}
-              className={`h-1.5 rounded-full transition-all duration-300 ${i === current ? "w-6 bg-purple-500" : "w-1.5 bg-gray-700 hover:bg-gray-500"}`}
+              className={`h-1.5 rounded-full transition-all duration-300 ${i === current ? "w-6 bg-[var(--color-accent-hover)]" : "w-1.5 bg-gray-700 hover:bg-gray-500"}`}
               aria-label={t("featuredGoToSlide", { index: i + 1 })}
             />
           ))}

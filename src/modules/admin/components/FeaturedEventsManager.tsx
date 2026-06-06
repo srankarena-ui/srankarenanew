@@ -60,7 +60,7 @@ export function FeaturedEventsManager({ initialConfig, tournaments }: FeaturedEv
     <div className="space-y-8">
       {/* Featured order */}
       <div>
-        <h3 className="mb-3 text-sm font-bold uppercase tracking-widest text-purple-400">
+        <h3 className="mb-3 text-sm font-bold text-[var(--color-accent)]">
           {t("featuredEventsSelected", { count: featuredTournaments.length })}
         </h3>
         {featuredTournaments.length === 0 ? (
@@ -87,7 +87,7 @@ export function FeaturedEventsManager({ initialConfig, tournaments }: FeaturedEv
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="truncate text-sm font-bold text-white">{tournament.title}</p>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                  <p className="text-[10px] font-bold text-gray-500">
                     {tournament.game} · {tournament.status}
                   </p>
                 </div>
@@ -121,7 +121,7 @@ export function FeaturedEventsManager({ initialConfig, tournaments }: FeaturedEv
 
       {/* Available tournaments */}
       <div>
-        <h3 className="mb-3 text-sm font-bold uppercase tracking-widest text-gray-500">
+        <h3 className="mb-3 text-sm font-bold text-gray-500">
           {t("availableTournaments", { count: available.length })}
         </h3>
         {available.length === 0 ? (
@@ -147,11 +147,11 @@ export function FeaturedEventsManager({ initialConfig, tournaments }: FeaturedEv
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="truncate text-sm font-bold text-white">{tournament.title}</p>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                  <p className="text-[10px] font-bold text-gray-500">
                     {tournament.game} · {tournament.status}
                   </p>
                 </div>
-                <span className="text-xs text-purple-400 font-bold">+ {t("add")}</span>
+                <span className="text-xs text-[var(--color-accent)] font-bold">+ {t("add")}</span>
               </div>
             ))}
           </div>

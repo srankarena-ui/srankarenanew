@@ -23,7 +23,7 @@ export function AchievementsList({ achievementsData }: AchievementsListProps) {
 
   return (
     <div>
-      <h2 className="mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+      <h2 className="mb-4 text-[10px] uppercase tracking-[0.2em] text-gray-400">
         Arena Combat Badges
       </h2>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -78,7 +78,7 @@ function AchievementBadge({
       {tier && (
         <div
           className={cn(
-            "absolute right-3 top-3 rounded-full border px-2 py-0.5 text-[8px] font-black uppercase tracking-widest",
+            "absolute right-3 top-3 rounded-full border px-2 py-0.5 text-[8px]",
             TIER_BG_CLASSES[tier]
           )}
         >
@@ -86,7 +86,7 @@ function AchievementBadge({
         </div>
       )}
 
-      <h4 className="text-sm font-black uppercase tracking-wider text-white">
+      <h4 className="text-sm uppercase tracking-wider text-white">
         {name}
       </h4>
       <p className="mt-1 text-[10px] text-gray-500">{description}</p>
@@ -101,7 +101,7 @@ function AchievementBadge({
             className={cn(
               "h-full rounded-full transition-all duration-500",
               tier === "s_rank"
-                ? "bg-purple-500"
+                ? "bg-[var(--color-accent-hover)]"
                 : tier === "platinum"
                   ? "bg-cyan-500"
                   : tier === "gold"
@@ -114,7 +114,7 @@ function AchievementBadge({
           />
         </div>
         {nextTier && (
-          <p className="mt-1 text-[8px] font-bold uppercase tracking-widest text-gray-600">
+          <p className="mt-1 text-[8px] font-bold text-gray-600">
             Next: {nextTier === "s_rank" ? "S-Rank" : nextTier}
           </p>
         )}

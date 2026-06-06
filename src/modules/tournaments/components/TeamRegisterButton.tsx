@@ -146,7 +146,7 @@ export function TeamRegisterButton({
               </div>
             ) : (
               <div className="space-y-2">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                <p className="text-[10px] font-bold text-gray-500">
                   {queueType === "duo" ? t("selectYourDuo") : t("selectYourTeam")}
                 </p>
                 {options.map((opt) => {
@@ -160,7 +160,7 @@ export function TeamRegisterButton({
                       onClick={() => setSelected(opt.id)}
                       className={`w-full rounded-xl border px-4 py-3 text-left transition-colors ${
                         isSelected
-                          ? "border-purple-500 bg-purple-900/20"
+                          ? "border-[var(--color-accent)] bg-purple-900/20"
                           : "border-gray-800 bg-[#0b0e14] hover:border-gray-700"
                       }`}
                     >
@@ -176,7 +176,7 @@ export function TeamRegisterButton({
                           <div className="flex items-center gap-2">
                             <p className="text-xs font-bold text-white">{teamOpt.name}</p>
                             {teamOpt.tag && (
-                              <span className="rounded bg-purple-900/40 px-1.5 py-0.5 text-[9px] font-bold text-purple-400">
+                              <span className="rounded bg-purple-900/40 px-1.5 py-0.5 text-[9px] font-bold text-[var(--color-accent)]">
                                 {teamOpt.tag}
                               </span>
                             )}

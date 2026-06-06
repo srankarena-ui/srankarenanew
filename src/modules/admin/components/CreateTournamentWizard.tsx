@@ -98,6 +98,7 @@ export function CreateTournamentWizard({ games }: Props) {
   const [tournamentFormat, setTournamentFormat] = useState<"standard" | "summoner_trials">("standard");
   const [trialMatchType, setTrialMatchType] = useState<"solo" | "duo" | "flex" | "draft">("solo");
   const [matchesToTrack, setMatchesToTrack] = useState("10");
+  const [trialEndDate, setTrialEndDate] = useState("");
   const [rewardDistribution, setRewardDistribution] = useState("100,75,50,25,10");
   const [weights, setWeights] = useState({
     kda: 10, kill_participation: 1, vision_score: 1, cs_per_min: 2,
@@ -141,6 +142,7 @@ export function CreateTournamentWizard({ games }: Props) {
       formData.set("tournament_format", "summoner_trials");
       formData.set("trials_config", JSON.stringify({
         matches_to_track: parseInt(matchesToTrack) || 10,
+        ...(trialEndDate ? { end_date: trialEndDate } : {}),
         match_type: trialMatchType,
         scoring_weights: weights,
         point_distribution: rewardDistribution.split(",").map(n => parseInt(n.trim())).filter(n => !isNaN(n)),
@@ -169,20 +171,20 @@ export function CreateTournamentWizard({ games }: Props) {
               key={step}
               type="button"
               onClick={() => goTo(i)}
-              className={`relative flex flex-1 items-center justify-center gap-2.5 py-3.5 text-[10px] font-black uppercase tracking-[0.25em] transition-all ${
+              className={`relative flex flex-1 items-center justify-center gap-2.5 py-3.5 text-[10px] uppercase tracking-[0.25em] transition-all ${
                 isActive
                   ? "bg-gradient-to-b from-purple-500/20 to-transparent text-white"
                   : isCompleted
-                    ? "text-purple-400 hover:bg-purple-500/5"
+                    ? "text-[var(--color-accent)] hover:bg-[var(--color-accent-hover)]/5"
                     : "text-gray-600 hover:text-gray-500"
               }`}
             >
               <span
-                className={`flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-black ${
+                className={`flex h-5 w-5 items-center justify-center rounded-full text-[9px] ${
                   isActive
-                    ? "bg-purple-500 text-white"
+                    ? "bg-[var(--color-accent-hover)] text-white"
                     : isCompleted
-                      ? "bg-purple-500/30 text-purple-400"
+                      ? "bg-[var(--color-accent-hover)]/30 text-[var(--color-accent)]"
                       : "bg-gray-800 text-gray-600"
                 }`}
               >
@@ -191,7 +193,7 @@ export function CreateTournamentWizard({ games }: Props) {
               {t(step)}
               {/* Active indicator line */}
               {isActive && (
-                <span className="absolute bottom-0 left-0 h-[2px] w-full bg-purple-500" />
+                <span className="absolute bottom-0 left-0 h-[2px] w-full bg-[var(--color-accent-hover)]" />
               )}
             </button>
           );
@@ -204,7 +206,7 @@ export function CreateTournamentWizard({ games }: Props) {
   function StepBasics() {
     return (
       <div className="space-y-6">
-        <h2 className="text-sm font-black uppercase italic tracking-tighter text-white">
+        <h2 className="text-sm uppercase italic tracking-tighter text-white">
           Step 1: Tournament Basics
         </h2>
 
@@ -232,7 +234,7 @@ export function CreateTournamentWizard({ games }: Props) {
             <select
               value={gameName}
               onChange={(e) => { setGameName(e.target.value); setTournamentFormat("standard"); }}
-              className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm font-bold uppercase text-gray-200 outline-hidden transition-colors focus:border-purple-500"
+              className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm font-bold uppercase text-gray-200 outline-hidden transition-colors focus:border-[var(--color-accent)]"
             >
               {games.map((g) => (
                 <option key={g.id} value={g.name}>
@@ -271,9 +273,9 @@ export function CreateTournamentWizard({ games }: Props) {
                   key={fmt}
                   type="button"
                   onClick={() => setTournamentFormat(fmt)}
-                  className={`flex-1 rounded-xl border px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-colors ${
+                  className={`flex-1 rounded-xl border px-4 py-3 text-[10px] transition-colors ${
                     tournamentFormat === fmt
-                      ? "border-purple-500 bg-purple-500/10 text-purple-300"
+                      ? "border-[var(--color-accent)] bg-[var(--color-accent-hover)]/10 text-purple-300"
                       : "border-gray-800 bg-[#0b0e14] text-gray-500 hover:border-gray-600"
                   }`}
                 >
@@ -282,7 +284,7 @@ export function CreateTournamentWizard({ games }: Props) {
               ))}
             </div>
             {isSummonerTrials && (
-              <p className="mt-2 text-[9px] text-purple-400/80">
+              <p className="mt-2 text-[9px] text-[var(--color-accent)]/80">
                 Players earn points based on ranked matches played after registering. Top scorers win.
               </p>
             )}
@@ -296,7 +298,7 @@ export function CreateTournamentWizard({ games }: Props) {
   function StepInfo() {
     return (
       <div className="space-y-6">
-        <h2 className="text-sm font-black uppercase italic tracking-tighter text-white">
+        <h2 className="text-sm uppercase italic tracking-tighter text-white">
           {t("wizardStep2")}
         </h2>
 
@@ -308,7 +310,7 @@ export function CreateTournamentWizard({ games }: Props) {
             <select
               value={contactMethod}
               onChange={(e) => setContactMethod(e.target.value)}
-              className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm font-bold uppercase text-gray-200 outline-hidden transition-colors focus:border-purple-500"
+              className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm font-bold uppercase text-gray-200 outline-hidden transition-colors focus:border-[var(--color-accent)]"
             >
               {CONTACT_METHODS.map((m) => (
                 <option key={m} value={m}>
@@ -357,7 +359,7 @@ export function CreateTournamentWizard({ games }: Props) {
     if (isSummonerTrials) {
       return (
         <div className="space-y-6">
-          <h2 className="text-sm font-black uppercase italic tracking-tighter text-white">
+          <h2 className="text-sm uppercase italic tracking-tighter text-white">
             Step 3: Summoner Trials Settings
           </h2>
 
@@ -369,7 +371,7 @@ export function CreateTournamentWizard({ games }: Props) {
               <select
                 value={region}
                 onChange={(e) => setRegion(e.target.value)}
-                className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm font-bold text-gray-200 outline-hidden transition-colors focus:border-purple-500"
+                className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm font-bold text-gray-200 outline-hidden transition-colors focus:border-[var(--color-accent)]"
               >
                 <option value="">Select region…</option>
                 {RIOT_REGIONS.map((r) => (
@@ -390,11 +392,11 @@ export function CreateTournamentWizard({ games }: Props) {
                     onClick={() => setTrialMatchType(mt.value)}
                     className={`rounded-xl border px-3 py-2.5 text-left transition-colors ${
                       trialMatchType === mt.value
-                        ? "border-purple-500 bg-purple-500/10 text-purple-300"
+                        ? "border-[var(--color-accent)] bg-[var(--color-accent-hover)]/10 text-purple-300"
                         : "border-gray-800 bg-[#0b0e14] text-gray-500 hover:border-gray-700"
                     }`}
                   >
-                    <span className="block text-[10px] font-black">{mt.label}</span>
+                    <span className="block text-[10px]">{mt.label}</span>
                   </button>
                 ))}
               </div>
@@ -414,7 +416,7 @@ export function CreateTournamentWizard({ games }: Props) {
               <select
                 value={playerLimitType}
                 onChange={(e) => setPlayerLimitType(e.target.value)}
-                className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm font-bold uppercase text-gray-200 outline-hidden transition-colors focus:border-purple-500"
+                className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm font-bold uppercase text-gray-200 outline-hidden transition-colors focus:border-[var(--color-accent)]"
               >
                 {PLAYER_LIMITS.map((pl) => (
                   <option key={pl} value={pl}>{pl}</option>
@@ -444,18 +446,32 @@ export function CreateTournamentWizard({ games }: Props) {
 
           {/* Summoner Trials config */}
           <div className="space-y-4 rounded-xl border border-purple-800/40 bg-purple-900/10 p-5">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-purple-400">
+            <h3 className="text-[10px] text-[var(--color-accent)]">
               ⚔️ Summoner Trials Configuration
             </h3>
 
-            <Input
-              label="Matches to Track (per player)"
-              type="number"
-              value={matchesToTrack}
-              onChange={(e) => setMatchesToTrack(e.target.value)}
-              min={1}
-              max={30}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Matches to Track (per player)"
+                type="number"
+                value={matchesToTrack}
+                onChange={(e) => setMatchesToTrack(e.target.value)}
+                min={1}
+                max={30}
+              />
+              <Input
+                label="Event End Date"
+                type="date"
+                value={trialEndDate}
+                onChange={(e) => setTrialEndDate(e.target.value)}
+                placeholder="Optional"
+              />
+            </div>
+            {trialEndDate && (
+              <p className="-mt-2 text-[9px] text-[var(--color-accent)]/80">
+                When the event ends, players with fewer than {matchesToTrack || 10} games will have missing games counted as 0 — scores are averaged over the full {matchesToTrack || 10} games.
+              </p>
+            )}
 
             <div>
               <label className="mb-2 block text-[9px] font-bold uppercase tracking-[0.2em] text-gray-500">
@@ -474,7 +490,7 @@ export function CreateTournamentWizard({ games }: Props) {
                   ] as [keyof typeof weights, string][]
                 ).map(([key, label]) => (
                   <div key={key}>
-                    <label className="mb-1 block text-[8px] font-bold uppercase tracking-widest text-gray-600">
+                    <label className="mb-1 block text-[8px] font-bold text-gray-600">
                       {label}
                     </label>
                     <input
@@ -485,7 +501,7 @@ export function CreateTournamentWizard({ games }: Props) {
                       onChange={(e) =>
                         setWeights((prev) => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))
                       }
-                      className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-3 py-2 text-sm font-bold text-gray-200 outline-hidden transition-colors focus:border-purple-500"
+                      className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-3 py-2 text-sm font-bold text-gray-200 outline-hidden transition-colors focus:border-[var(--color-accent)]"
                     />
                   </div>
                 ))}
@@ -506,7 +522,7 @@ export function CreateTournamentWizard({ games }: Props) {
     // ── Standard bracket settings ──
     return (
       <div className="space-y-6">
-        <h2 className="text-sm font-black uppercase italic tracking-tighter text-white">
+        <h2 className="text-sm uppercase italic tracking-tighter text-white">
           Step 3: Match Settings
         </h2>
 
@@ -519,7 +535,7 @@ export function CreateTournamentWizard({ games }: Props) {
             <select
               value={seriesFormat}
               onChange={(e) => setSeriesFormat(e.target.value)}
-              className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm font-bold uppercase text-gray-200 outline-hidden transition-colors focus:border-purple-500"
+              className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm font-bold uppercase text-gray-200 outline-hidden transition-colors focus:border-[var(--color-accent)]"
             >
               {SERIES_FORMATS.map((sf) => (
                 <option key={sf} value={sf}>
@@ -559,7 +575,7 @@ export function CreateTournamentWizard({ games }: Props) {
             <select
               value={playerLimitType}
               onChange={(e) => setPlayerLimitType(e.target.value)}
-              className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm font-bold uppercase text-gray-200 outline-hidden transition-colors focus:border-purple-500"
+              className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm font-bold uppercase text-gray-200 outline-hidden transition-colors focus:border-[var(--color-accent)]"
             >
               {PLAYER_LIMITS.map((pl) => (
                 <option key={pl} value={pl}>
@@ -602,9 +618,9 @@ export function CreateTournamentWizard({ games }: Props) {
                   key={sz}
                   type="button"
                   onClick={() => setTeamSize(sz)}
-                  className={`flex-1 rounded-xl border px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-colors ${
+                  className={`flex-1 rounded-xl border px-4 py-3 text-[10px] transition-colors ${
                     teamSize === sz
-                      ? "border-purple-500 bg-purple-500/10 text-purple-300"
+                      ? "border-[var(--color-accent)] bg-[var(--color-accent-hover)]/10 text-purple-300"
                       : "border-gray-800 bg-[#0b0e14] text-gray-500 hover:border-gray-600"
                   }`}
                 >
@@ -613,7 +629,7 @@ export function CreateTournamentWizard({ games }: Props) {
               ))}
             </div>
             {teamSize > 1 && (
-              <p className="mt-2 text-[9px] text-purple-400/80">
+              <p className="mt-2 text-[9px] text-[var(--color-accent)]/80">
                 {teamSize === 2
                   ? "Players must register with a linked duo partner."
                   : "Players must register with a linked team (up to 5)."}

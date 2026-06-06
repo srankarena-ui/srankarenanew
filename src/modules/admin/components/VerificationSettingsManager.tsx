@@ -32,7 +32,7 @@ function ToggleRow({
     <div className="flex items-center justify-between gap-4 rounded-2xl border border-gray-800 bg-[#0b0e14] p-4">
       <div>
         <div className="flex items-center gap-2">
-          <p className="text-sm font-black text-white">{title}</p>
+          <p className="text-sm text-white">{title}</p>
           <Badge variant={enabled ? "warning" : "success"}>{enabled ? enabledLabel : disabledLabel}</Badge>
         </div>
         <p className="mt-1 text-sm text-gray-500">{description}</p>
@@ -72,7 +72,7 @@ export function VerificationSettingsManager({ initialConfig }: VerificationSetti
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-black uppercase italic tracking-tighter text-white">
+        <h2 className="text-lg uppercase italic tracking-tighter text-white">
           {t("verificationSettingsTitle")}
         </h2>
         <p className="mt-1 text-sm text-gray-500">{t("verificationSettingsSubtitle")}</p>

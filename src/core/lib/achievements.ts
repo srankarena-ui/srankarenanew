@@ -87,7 +87,7 @@ export const TIER_COLORS: Record<AchievementTier, string> = {
   silver: "#c0c0c0",
   gold: "#ffd700",
   platinum: "#00d4ff",
-  s_rank: "#a855f7",
+  s_rank: "#3E6BFF",
 };
 
 export const TIER_BG_CLASSES: Record<AchievementTier, string> = {
@@ -95,5 +95,5 @@ export const TIER_BG_CLASSES: Record<AchievementTier, string> = {
   silver: "bg-gray-500/20 border-gray-400/50 text-gray-300",
   gold: "bg-yellow-900/30 border-yellow-600/50 text-yellow-400",
   platinum: "bg-cyan-900/30 border-cyan-500/50 text-cyan-400",
-  s_rank: "bg-purple-900/30 border-purple-500/50 text-purple-400",
+  s_rank: "bg-[var(--color-accent-soft)] border-[var(--color-accent)]/50 text-[var(--color-accent)]",
 };

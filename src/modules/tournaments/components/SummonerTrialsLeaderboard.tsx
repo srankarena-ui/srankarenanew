@@ -81,7 +81,7 @@ export function SummonerTrialsLeaderboard({
           {/* Point distribution badge */}
           {config.point_distribution.length > 0 && (
             <div className="flex items-center gap-1 rounded-lg border border-purple-800/40 bg-purple-900/20 px-3 py-1.5">
-              <span className="text-[9px] font-bold uppercase tracking-widest text-purple-400 mr-1">{t("rewards")}</span>
+              <span className="text-[9px] font-bold text-[var(--color-accent)] mr-1">{t("rewards")}</span>
               {config.point_distribution.slice(0, 5).map((pts, i) => (
                 <span key={i} className="text-[10px] font-bold text-white px-1">
                   {MEDAL[i + 1] ?? `#${i + 1}`} {pts}
@@ -95,7 +95,7 @@ export function SummonerTrialsLeaderboard({
             <button
               onClick={handleSync}
               disabled={syncing}
-              className="rounded-xl bg-purple-600 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-purple-500 disabled:opacity-50"
+              className="rounded-xl bg-[var(--color-accent)] px-4 py-2 text-[10px] text-white transition-colors hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
             >
               {syncing ? t("syncingStats") : `⟳ ${t("syncStats")}`}
             </button>
@@ -156,7 +156,7 @@ export function SummonerTrialsLeaderboard({
                     {/* Player */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="h-7 w-7 rounded-full bg-gradient-to-br from-purple-700 to-gray-800 shrink-0 flex items-center justify-center text-[9px] font-black text-purple-200">
+                        <div className="h-7 w-7 rounded-full bg-gradient-to-br from-purple-700 to-gray-800 shrink-0 flex items-center justify-center text-[9px] text-purple-200">
                           {(enrollment.profile.username ?? "?")[0].toUpperCase()}
                         </div>
                         <div>
@@ -171,7 +171,7 @@ export function SummonerTrialsLeaderboard({
 
                     {/* Score */}
                     <td className="px-4 py-3 text-right">
-                      <span className="text-sm font-black text-white">{enrollment.score.toFixed(0)}</span>
+                      <span className="text-sm text-white">{enrollment.score.toFixed(0)}</span>
                       <span className="ml-0.5 text-[9px] text-gray-600"> {t("pointsShort")}</span>
                     </td>
 
@@ -184,7 +184,7 @@ export function SummonerTrialsLeaderboard({
                         <div className="w-16 h-1.5 rounded-full bg-gray-800">
                           <div
                             className={`h-full rounded-full transition-all ${
-                              pct >= 100 ? "bg-green-500" : "bg-purple-500"
+                              pct >= 100 ? "bg-green-500" : "bg-[var(--color-accent-hover)]"
                             }`}
                             style={{ width: `${pct}%` }}
                           />
@@ -250,7 +250,7 @@ function ScoringWeightsInfo({ config }: { config: TrialsConfig }) {
     <div className="rounded-xl border border-gray-800/60 bg-[#121620]">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-4 py-3 text-[9px] font-bold uppercase tracking-widest text-gray-500 hover:text-gray-400 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 text-[9px] font-bold text-gray-500 hover:text-gray-400 transition-colors"
       >
         <span>{t("scoringFormula")}</span>
         <span className={`transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
@@ -263,7 +263,7 @@ function ScoringWeightsInfo({ config }: { config: TrialsConfig }) {
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
             {entries.map((e) => (
               <div key={e.label} className="rounded-lg bg-[#0b0e14] p-2.5">
-                <p className="text-[9px] font-bold uppercase tracking-wider text-purple-400">{e.label}</p>
+                <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-accent)]">{e.label}</p>
                 <p className="text-[10px] text-gray-300 font-mono mt-0.5">{e.formula}</p>
                 <p className="text-[9px] text-gray-600 mt-0.5">{e.example}</p>
               </div>

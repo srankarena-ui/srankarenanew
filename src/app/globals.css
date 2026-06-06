@@ -1,28 +1,220 @@
 @import "tailwindcss";
 
-@theme {
-  --color-bg-primary: #0b0e14;
-  --color-bg-card: #121620;
-  --color-bg-card-hover: #1a1f2e;
-  --color-accent: #a855f7;
-  --color-accent-hover: #9333ea;
-  --color-accent-glow: rgba(168, 85, 247, 0.3);
-  --color-border: #1f2937;
-  --color-border-hover: #374151;
-  --color-text-primary: #e5e7eb;
-  --color-text-secondary: #9ca3af;
-  --color-text-muted: #6b7280;
-  --color-success: #22c55e;
-  --color-danger: #ef4444;
-  --color-warning: #f59e0b;
+/* ============================================================
+   S-RANK ARENA · Colors — "Challenger" (electric blue)
+   Dark is the primary theme (:root). Light overrides under
+   [data-theme="light"]. Base palette is theme-independent.
+   ============================================================ */
 
-  --font-heading: "Inter", system-ui, sans-serif;
-  --font-body: "Inter", system-ui, sans-serif;
+:root {
+  /* ---- Brand: electric blue scale ---- */
+  --blue-50:  #EDF2FF;
+  --blue-100: #DBE4FF;
+  --blue-200: #B7C8FF;
+  --blue-300: #8EA8FF;
+  --blue-400: #6486FF;
+  --blue-500: #3E6BFF;
+  --blue-600: #2F58E6;
+  --blue-700: #2545BC;
+  --blue-800: #1F3992;
+  --blue-900: #182C6E;
+
+  /* ---- Secondary: cyan ---- */
+  --cyan-300: #7BE3FF;
+  --cyan-400: #54D9FF;
+  --cyan-500: #36D2FF;
+  --cyan-600: #12B4E8;
+  --cyan-700: #0E90BD;
+
+  /* ---- Neutral (cool, blue-tinted) ---- */
+  --ink-25:  #F7F9FD;
+  --ink-50:  #EEF2F9;
+  --ink-100: #E3E8F1;
+  --ink-200: #CCD5E4;
+  --ink-300: #A8B2C6;
+  --ink-400: #828DA4;
+  --ink-500: #5C6577;
+  --ink-600: #353E54;
+  --ink-700: #232B3E;
+  --ink-800: #161C2B;
+  --ink-900: #0E1322;
+  --ink-950: #0A0E1A;
+
+  /* ---- Semantic palette (raw) ---- */
+  --green-400: #4ADE80;
+  --green-500: #22C55E;
+  --green-600: #16A34A;
+  --red-400:   #FF6470;
+  --red-500:   #F0434F;
+  --red-600:   #DC2A37;
+  --amber-400: #FBBF24;
+  --amber-500: #F5A524;
+  --amber-600: #D9870B;
+
+  /* ---- Rank ladder (F → S) ---- */
+  --rank-f: #828DA4;
+  --rank-e: #34D399;
+  --rank-d: #38BDF8;
+  --rank-c: #818CF8;
+  --rank-b: #FBBF24;
+  --rank-a: #FB7185;
+  --rank-s: #36D2FF;
+
+  /* ---- Achievement tiers ---- */
+  --tier-bronze:   #CD7F32;
+  --tier-silver:   #B8C0CC;
+  --tier-gold:     #F5B921;
+  --tier-platinum: #36D2FF;
+  --tier-srank:    #3E6BFF;
+
+  /* ===== DARK THEME (default) ===== */
+  color-scheme: dark;
+
+  --color-bg-primary:    #0A0E1A;
+  --color-bg-card:       #121826;
+  --color-bg-card-hover: #1A2235;
+  --color-border:        #232B3E;
+  --color-border-hover:  #333E57;
+  --color-text-primary:      #EAEEF7;
+  --color-text-secondary:    #939BB0;
+  --color-text-muted:        #5C6577;
+  --color-text-onaccent:     #FFFFFF;
+
+  --color-accent:      #3E6BFF;
+  --color-accent-hover: #6486FF;
+  --color-accent-press: #2F58E6;
+  --color-accent-soft:  color-mix(in srgb, var(--color-accent) 14%, transparent);
+  --color-accent-softer: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  --color-accent-ring:  color-mix(in srgb, var(--color-accent) 45%, transparent);
+  --color-accent-2:     #36D2FF;
+  --color-accent-2-soft: color-mix(in srgb, var(--color-accent-2) 14%, transparent);
+  --color-accent-glow:  0 0 0 1px color-mix(in srgb, var(--color-accent) 35%, transparent), 0 6px 26px color-mix(in srgb, var(--color-accent) 30%, transparent);
+  --color-accent-glow-cyan: 0 0 0 1px color-mix(in srgb, var(--color-accent-2) 35%, transparent), 0 6px 26px color-mix(in srgb, var(--color-accent-2) 28%, transparent);
+
+  --color-success: #22C55E;
+  --color-success-soft: rgba(34, 197, 94, 0.15);
+  --color-danger:  #F0434F;
+  --color-danger-soft: rgba(240, 67, 79, 0.15);
+  --color-warning: #F5A524;
+  --color-warning-soft: rgba(245, 165, 36, 0.15);
+  --color-info:    #6486FF;
+  --color-info-soft: rgba(100, 134, 255, 0.15);
+
+  /* Elevation */
+  --shadow-sm:  0 1px 2px rgba(0,0,0,0.40);
+  --shadow-md:  0 4px 14px rgba(0,0,0,0.45);
+  --shadow-lg:  0 12px 34px rgba(0,0,0,0.55);
+}
+
+/* ===== LIGHT THEME ===== */
+[data-theme="light"] {
+  color-scheme: light;
+
+  --color-bg-primary:    #F3F6FC;
+  --color-bg-card:       #FFFFFF;
+  --color-bg-card-hover: #F3F6FC;
+  --color-border:        #E3E8F1;
+  --color-border-hover:  #CCD5E4;
+  --color-text-primary:      #0D1320;
+  --color-text-secondary:    #56607A;
+  --color-text-muted:        #8A93A7;
+  --color-text-onaccent:     #FFFFFF;
+
+  --color-accent:      #2F5BFF;
+  --color-accent-hover: #2546DC;
+  --color-accent-press: #1E3DB8;
+  --color-accent-soft:  color-mix(in srgb, var(--color-accent) 10%, transparent);
+  --color-accent-softer: color-mix(in srgb, var(--color-accent) 5%, transparent);
+  --color-accent-ring:  color-mix(in srgb, var(--color-accent) 30%, transparent);
+  --color-accent-2:     #0FA9CE;
+  --color-accent-2-soft: color-mix(in srgb, var(--color-accent-2) 12%, transparent);
+  --color-accent-glow:  0 0 0 1px color-mix(in srgb, var(--color-accent) 25%, transparent), 0 8px 26px color-mix(in srgb, var(--color-accent) 20%, transparent);
+  --color-accent-glow-cyan: 0 0 0 1px color-mix(in srgb, var(--color-accent-2) 25%, transparent), 0 8px 26px color-mix(in srgb, var(--color-accent-2) 18%, transparent);
+
+  --color-success: #16A34A;
+  --color-success-soft: rgba(22, 163, 74, 0.10);
+  --color-danger:  #DC2A37;
+  --color-danger-soft: rgba(220, 42, 55, 0.10);
+  --color-warning: #D9870B;
+  --color-warning-soft: rgba(217, 135, 11, 0.12);
+  --color-info:    #2F5BFF;
+  --color-info-soft: rgba(47, 91, 255, 0.10);
+
+  --shadow-sm:  0 1px 2px rgba(16,32,64,0.06);
+  --shadow-md:  0 6px 18px rgba(16,32,64,0.08);
+  --shadow-lg:  0 16px 40px rgba(16,32,64,0.12);
+}
+
+/* ---- ACCENT THEMES (swappable) ---- */
+[data-accent="challenger"] {
+  --color-accent: #3E6BFF;
+  --color-accent-hover: #6486FF;
+  --color-accent-press: #2F58E6;
+  --color-accent-2: #36D2FF;
+}
+
+[data-theme="light"][data-accent="challenger"] {
+  --color-accent: #2F5BFF;
+  --color-accent-hover: #2546DC;
+  --color-accent-press: #1E3DB8;
+  --color-accent-2: #0FA9CE;
+}
+
+[data-accent="volt"] {
+  --color-accent: #C6F24E;
+  --color-accent-hover: #D4F86E;
+  --color-accent-press: #AEDF2E;
+  --color-accent-2: #38E8FF;
+  --color-text-onaccent: #0E120A;
+}
+
+[data-theme="light"][data-accent="volt"] {
+  --color-accent: #4F7A00;
+  --color-accent-hover: #5E8F00;
+  --color-accent-press: #3F6300;
+  --color-accent-2: #0FB6D8;
+  --color-text-onaccent: #FFFFFF;
+}
+
+[data-accent="ember"] {
+  --color-accent: #FF6A3D;
+  --color-accent-hover: #FF8159;
+  --color-accent-press: #E85427;
+  --color-accent-2: #A78BFA;
+  --color-text-onaccent: #2A1206;
+}
+
+[data-theme="light"][data-accent="ember"] {
+  --color-accent: #E8512A;
+  --color-accent-hover: #FF6A3D;
+  --color-accent-press: #C53F1C;
+  --color-accent-2: #7C5CF0;
+  --color-text-onaccent: #FFFFFF;
+}
+
+[data-accent="aurora"] {
+  --color-accent: #8B6CFF;
+  --color-accent-hover: #A18BFF;
+  --color-accent-press: #6D4DE0;
+  --color-accent-2: #34E5C0;
+}
+
+[data-theme="light"][data-accent="aurora"] {
+  --color-accent: #6D4DE0;
+  --color-accent-hover: #7C5CF0;
+  --color-accent-press: #583BC0;
+  --color-accent-2: #0FB6A0;
+  --color-text-onaccent: #FFFFFF;
+}
+
+@theme {
+  --font-heading: var(--font-plus-jakarta-sans);
+  --font-body: var(--font-plus-jakarta-sans);
+  --font-mono: var(--font-jetbrains-mono);
 }
 
 html {
   height: 100%;
-  color-scheme: dark;
   font-size: 125%;
 }
 

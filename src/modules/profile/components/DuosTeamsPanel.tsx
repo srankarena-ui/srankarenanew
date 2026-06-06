@@ -128,11 +128,11 @@ export function DuosTeamsPanel({
     <Card>
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+        <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
           Duos &amp; Teams
         </h3>
         {isOwner && totalPending > 0 && (
-          <span className="rounded-full bg-purple-500 px-2 py-0.5 text-[9px] font-black text-white">
+          <span className="rounded-full bg-[var(--color-accent-hover)] px-2 py-0.5 text-[9px] text-white">
             {totalPending} pending
           </span>
         )}
@@ -144,20 +144,20 @@ export function DuosTeamsPanel({
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`flex-1 rounded-lg py-1.5 text-[10px] font-black uppercase tracking-widest transition-colors ${
+            className={`flex-1 rounded-lg py-1.5 text-[10px] transition-colors ${
               tab === t
-                ? "bg-purple-500/20 text-purple-300"
+                ? "bg-[var(--color-accent-hover)]/20 text-purple-300"
                 : "text-gray-600 hover:text-gray-400"
             }`}
           >
             {t}
             {t === "duos" && isOwner && pendingDuoInvites.length > 0 && (
-              <span className="ml-1 rounded-full bg-purple-500 px-1 text-[8px] text-white">
+              <span className="ml-1 rounded-full bg-[var(--color-accent-hover)] px-1 text-[8px] text-white">
                 {pendingDuoInvites.length}
               </span>
             )}
             {t === "teams" && isOwner && pendingTeamInvites.length > 0 && (
-              <span className="ml-1 rounded-full bg-purple-500 px-1 text-[8px] text-white">
+              <span className="ml-1 rounded-full bg-[var(--color-accent-hover)] px-1 text-[8px] text-white">
                 {pendingTeamInvites.length}
               </span>
             )}
@@ -171,7 +171,7 @@ export function DuosTeamsPanel({
           {/* Pending invites (own profile only) */}
           {isOwner && pendingDuoInvites.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[9px] font-bold uppercase tracking-widest text-yellow-500">
+              <p className="text-[9px] font-bold text-yellow-500">
                 Pending Invites
               </p>
               {pendingDuoInvites.map((inv) => (
@@ -184,7 +184,7 @@ export function DuosTeamsPanel({
                   </span>
                   <button
                     onClick={() => handleRespondDuo(inv.id, "accept")}
-                    className="rounded-lg bg-green-600 px-2 py-1 text-[10px] font-black text-white hover:bg-green-500"
+                    className="rounded-lg bg-green-600 px-2 py-1 text-[10px] text-white hover:bg-green-500"
                   >
                     Accept
                   </button>
@@ -211,7 +211,7 @@ export function DuosTeamsPanel({
                   key={duo.id}
                   className="flex items-center gap-3 rounded-xl border border-gray-800 bg-[#0b0e14] px-3 py-2.5"
                 >
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-900/40 text-xs font-black text-purple-400">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-900/40 text-xs text-[var(--color-accent)]">
                     {partner?.username?.charAt(0).toUpperCase() ?? "?"}
                   </div>
                   <span className="flex-1 text-xs font-bold text-white">
@@ -241,7 +241,7 @@ export function DuosTeamsPanel({
                     onChange={(e) => setDuoUsername(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleDuoInvite()}
                     placeholder="Username…"
-                    className="flex-1 rounded-xl border border-gray-800 bg-[#0b0e14] px-3 py-2 text-xs text-gray-200 outline-hidden focus:border-purple-500"
+                    className="flex-1 rounded-xl border border-gray-800 bg-[#0b0e14] px-3 py-2 text-xs text-gray-200 outline-hidden focus:border-[var(--color-accent)]"
                     autoFocus
                   />
                   <Button onClick={handleDuoInvite} isLoading={sendingDuo} className="text-xs px-3 py-2">
@@ -254,7 +254,7 @@ export function DuosTeamsPanel({
               ) : (
                 <button
                   onClick={() => setShowDuoInvite(true)}
-                  className="w-full rounded-xl border border-dashed border-gray-800 py-2 text-[10px] font-bold text-gray-600 hover:border-purple-800 hover:text-purple-400 transition-colors"
+                  className="w-full rounded-xl border border-dashed border-gray-800 py-2 text-[10px] font-bold text-gray-600 hover:border-purple-800 hover:text-[var(--color-accent)] transition-colors"
                 >
                   + Invite Duo Partner
                 </button>
@@ -270,7 +270,7 @@ export function DuosTeamsPanel({
           {/* Pending team invites */}
           {isOwner && pendingTeamInvites.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[9px] font-bold uppercase tracking-widest text-yellow-500">
+              <p className="text-[9px] font-bold text-yellow-500">
                 Pending Invites
               </p>
               {pendingTeamInvites.map((inv) => (
@@ -286,7 +286,7 @@ export function DuosTeamsPanel({
                   </div>
                   <button
                     onClick={() => handleRespondTeam(inv.id, "accept")}
-                    className="rounded-lg bg-green-600 px-2 py-1 text-[10px] font-black text-white hover:bg-green-500"
+                    className="rounded-lg bg-green-600 px-2 py-1 text-[10px] text-white hover:bg-green-500"
                   >
                     Accept
                   </button>
@@ -311,9 +311,9 @@ export function DuosTeamsPanel({
               return (
                 <div key={team.id} className="rounded-xl border border-gray-800 bg-[#0b0e14] p-3 space-y-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-black text-white">{team.name}</span>
+                    <span className="text-xs text-white">{team.name}</span>
                     {team.tag && (
-                      <span className="rounded bg-purple-900/40 px-1.5 py-0.5 text-[9px] font-bold text-purple-400">
+                      <span className="rounded bg-purple-900/40 px-1.5 py-0.5 text-[9px] font-bold text-[var(--color-accent)]">
                         {team.tag}
                       </span>
                     )}
@@ -351,7 +351,7 @@ export function DuosTeamsPanel({
                             onChange={(e) => setInviteUsername(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && handleTeamInvite(team.id)}
                             placeholder="Username…"
-                            className="flex-1 rounded-xl border border-gray-700 bg-[#17191f] px-3 py-1.5 text-xs text-gray-200 outline-hidden focus:border-purple-500"
+                            className="flex-1 rounded-xl border border-gray-700 bg-[#17191f] px-3 py-1.5 text-xs text-gray-200 outline-hidden focus:border-[var(--color-accent)]"
                             autoFocus
                           />
                           <Button onClick={() => handleTeamInvite(team.id)} isLoading={sendingTeamInvite} className="text-xs px-3 py-1.5">
@@ -364,7 +364,7 @@ export function DuosTeamsPanel({
                       ) : (
                         <button
                           onClick={() => setInviteTeamId(team.id)}
-                          className="w-full rounded-lg border border-dashed border-gray-800 py-1 text-[10px] font-bold text-gray-600 hover:border-purple-800 hover:text-purple-400 transition-colors"
+                          className="w-full rounded-lg border border-dashed border-gray-800 py-1 text-[10px] font-bold text-gray-600 hover:border-purple-800 hover:text-[var(--color-accent)] transition-colors"
                         >
                           + Invite Player
                         </button>
@@ -404,7 +404,7 @@ export function DuosTeamsPanel({
                     value={teamName}
                     onChange={(e) => setTeamName(e.target.value)}
                     placeholder="Team name…"
-                    className="w-full rounded-xl border border-gray-800 bg-[#17191f] px-3 py-2 text-xs text-gray-200 outline-hidden focus:border-purple-500"
+                    className="w-full rounded-xl border border-gray-800 bg-[#17191f] px-3 py-2 text-xs text-gray-200 outline-hidden focus:border-[var(--color-accent)]"
                     autoFocus
                   />
                   <input
@@ -412,7 +412,7 @@ export function DuosTeamsPanel({
                     value={teamTag}
                     onChange={(e) => setTeamTag(e.target.value.slice(0, 5))}
                     placeholder="Tag (max 5 chars)…"
-                    className="w-full rounded-xl border border-gray-800 bg-[#17191f] px-3 py-2 text-xs text-gray-200 outline-hidden focus:border-purple-500"
+                    className="w-full rounded-xl border border-gray-800 bg-[#17191f] px-3 py-2 text-xs text-gray-200 outline-hidden focus:border-[var(--color-accent)]"
                   />
                   <div className="flex gap-2">
                     <Button onClick={handleCreateTeam} isLoading={creatingTeam} className="flex-1 text-xs py-2">
@@ -426,7 +426,7 @@ export function DuosTeamsPanel({
               ) : (
                 <button
                   onClick={() => setShowCreateTeam(true)}
-                  className="w-full rounded-xl border border-dashed border-gray-800 py-2 text-[10px] font-bold text-gray-600 hover:border-purple-800 hover:text-purple-400 transition-colors"
+                  className="w-full rounded-xl border border-dashed border-gray-800 py-2 text-[10px] font-bold text-gray-600 hover:border-purple-800 hover:text-[var(--color-accent)] transition-colors"
                 >
                   + Create Team
                 </button>

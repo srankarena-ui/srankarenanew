@@ -28,11 +28,11 @@ export default async function AchievementsPage({
       <div className="mb-6 flex items-center gap-4">
         <Link
           href={`/${locale}/profile/${encodeURIComponent(profile.username ?? "")}`}
-          className="text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-purple-400 transition-colors"
+          className="text-[10px] text-gray-500 hover:text-[var(--color-accent)] transition-colors"
         >
           ← {profile.username}
         </Link>
-        <h1 className="text-2xl font-black uppercase italic tracking-tighter text-white">
+        <h1 className="text-2xl uppercase italic tracking-tighter text-white">
           Achievements
         </h1>
       </div>

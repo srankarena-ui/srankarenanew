@@ -61,14 +61,14 @@ export function ImageCarousel({ images, autoPlayMs = 4000 }: ImageCarouselProps)
         <>
           <button
             onClick={prev}
-            className="absolute left-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-all hover:bg-purple-600/70"
+            className="absolute left-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-all hover:bg-[var(--color-accent)]/70"
             aria-label={t("previousImage")}
           >
             ‹
           </button>
           <button
             onClick={next}
-            className="absolute right-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-all hover:bg-purple-600/70"
+            className="absolute right-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-all hover:bg-[var(--color-accent)]/70"
             aria-label={t("nextImage")}
           >
             ›
@@ -84,7 +84,7 @@ export function ImageCarousel({ images, autoPlayMs = 4000 }: ImageCarouselProps)
               key={i}
               onClick={() => setCurrent(i)}
               className={`h-1.5 rounded-full transition-all ${
-                i === current ? "w-6 bg-purple-500" : "w-1.5 bg-gray-600 hover:bg-gray-400"
+                i === current ? "w-6 bg-[var(--color-accent-hover)]" : "w-1.5 bg-gray-600 hover:bg-gray-400"
               }`}
               aria-label={t("goToImageSlide", { index: i + 1 })}
             />

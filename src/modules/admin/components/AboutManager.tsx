@@ -69,10 +69,10 @@ export function AboutManager({ initialConfig }: AboutManagerProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-black uppercase italic tracking-tighter text-white">
+          <h2 className="text-lg uppercase italic tracking-tighter text-white">
             {t("aboutTitle")}
           </h2>
-          <p className="mt-0.5 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+          <p className="mt-0.5 text-[10px] font-bold text-gray-500">
             {t("aboutSubtitle")}
           </p>
         </div>
@@ -86,9 +86,9 @@ export function AboutManager({ initialConfig }: AboutManagerProps) {
             key={l}
             type="button"
             onClick={() => setLang(l)}
-            className={`rounded-lg px-4 py-1.5 text-[9px] font-black uppercase tracking-widest transition-colors ${
+            className={`rounded-lg px-4 py-1.5 text-[9px] transition-colors ${
               lang === l
-                ? "bg-purple-600 text-white"
+                ? "bg-[var(--color-accent)] text-white"
                 : "border border-gray-700 text-gray-500 hover:text-gray-300"
             }`}
           >
@@ -100,11 +100,11 @@ export function AboutManager({ initialConfig }: AboutManagerProps) {
       {/* Paragraphs */}
       <Card>
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-sm font-black uppercase tracking-wider text-white">{t("descriptionSection", { language: LANG_LABELS[lang] })}</h3>
+          <h3 className="text-sm uppercase tracking-wider text-white">{t("descriptionSection", { language: LANG_LABELS[lang] })}</h3>
           <button
             type="button"
             onClick={addParagraph}
-            className="text-[9px] font-bold uppercase tracking-widest text-purple-400 hover:text-purple-300"
+            className="text-[9px] font-bold text-[var(--color-accent)] hover:text-purple-300"
           >
             + {t("addParagraph")}
           </button>
@@ -116,7 +116,7 @@ export function AboutManager({ initialConfig }: AboutManagerProps) {
                 value={(p as LocalizedString)[lang]}
                 onChange={(e) => updateParagraph(i, e.target.value)}
                 rows={3}
-                className="flex-1 rounded-xl border border-gray-800 bg-gray-900 px-4 py-3 text-sm text-gray-200 outline-none focus:border-purple-500"
+                className="flex-1 rounded-xl border border-gray-800 bg-gray-900 px-4 py-3 text-sm text-gray-200 outline-none focus:border-[var(--color-accent)]"
               />
               <button type="button" onClick={() => removeParagraph(i)} className="text-gray-600 hover:text-red-400">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -131,11 +131,11 @@ export function AboutManager({ initialConfig }: AboutManagerProps) {
       {/* Team Members */}
       <Card>
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-sm font-black uppercase tracking-wider text-white">{t("teamMembers")}</h3>
+          <h3 className="text-sm uppercase tracking-wider text-white">{t("teamMembers")}</h3>
           <button
             type="button"
             onClick={addMember}
-            className="rounded-lg border border-dashed border-purple-700 px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest text-purple-400 hover:bg-purple-900/20"
+            className="rounded-lg border border-dashed border-purple-700 px-3 py-1.5 text-[9px] font-bold text-[var(--color-accent)] hover:bg-purple-900/20"
           >
             + {t("addMember")}
           </button>
@@ -148,48 +148,48 @@ export function AboutManager({ initialConfig }: AboutManagerProps) {
           {config.members.map((m, i) => (
             <div key={m.id} className="rounded-xl border border-gray-800 bg-[#0b0e14] p-4">
               <div className="mb-3 flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                <span className="text-[10px] font-bold text-gray-500">
                   {t("memberNumber", { index: i + 1 })}
                 </span>
-                <button type="button" onClick={() => removeMember(i)} className="text-[9px] font-bold uppercase tracking-widest text-red-500 hover:text-red-400">
+                <button type="button" onClick={() => removeMember(i)} className="text-[9px] font-bold text-red-500 hover:text-red-400">
                   {t("delete")}
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-[9px] font-bold uppercase tracking-widest text-gray-500">{t("fullName")}</label>
+                  <label className="mb-1 block text-[9px] font-bold text-gray-500">{t("fullName")}</label>
                   <input
                     value={m.name}
                     onChange={(e) => updateMember(i, "name", e.target.value)}
                     placeholder='Luis "Hydro" Domínguez'
-                    className="w-full rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-200 outline-none focus:border-purple-500"
+                    className="w-full rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-200 outline-none focus:border-[var(--color-accent)]"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-[9px] font-bold uppercase tracking-widest text-gray-500">{t("nicknameLabel")}</label>
+                  <label className="mb-1 block text-[9px] font-bold text-gray-500">{t("nicknameLabel")}</label>
                   <input
                     value={m.nickname}
                     onChange={(e) => updateMember(i, "nickname", e.target.value)}
                     placeholder="Hydro"
-                    className="w-full rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-200 outline-none focus:border-purple-500"
+                    className="w-full rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-200 outline-none focus:border-[var(--color-accent)]"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-[9px] font-bold uppercase tracking-widest text-gray-500">{t("roleLabel")}</label>
+                  <label className="mb-1 block text-[9px] font-bold text-gray-500">{t("roleLabel")}</label>
                   <input
                     value={m.role}
                     onChange={(e) => updateMember(i, "role", e.target.value)}
                     placeholder="Co-founder & Project Manager"
-                    className="w-full rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-200 outline-none focus:border-purple-500"
+                    className="w-full rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-200 outline-none focus:border-[var(--color-accent)]"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-[9px] font-bold uppercase tracking-widest text-gray-500">{t("photoUrl")}</label>
+                  <label className="mb-1 block text-[9px] font-bold text-gray-500">{t("photoUrl")}</label>
                   <input
                     value={m.photo_url}
                     onChange={(e) => updateMember(i, "photo_url", e.target.value)}
                     placeholder="https://..."
-                    className="w-full rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-200 outline-none focus:border-purple-500"
+                    className="w-full rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-200 outline-none focus:border-[var(--color-accent)]"
                   />
                 </div>
               </div>

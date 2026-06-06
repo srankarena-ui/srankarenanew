@@ -14,10 +14,10 @@ interface UserTableProps {
   users: Profile[];
 }
 
-const ROLE_VARIANT: Record<string, "default" | "success" | "warning" | "danger" | "purple" | "outline"> = {
+const ROLE_VARIANT: Record<string, "default" | "success" | "warning" | "danger" | "accent" | "outline"> = {
   user: "default",
   organizer: "warning",
-  admin: "purple",
+  admin: "accent",
 };
 
 export function UserTable({ users }: UserTableProps) {
@@ -48,19 +48,19 @@ export function UserTable({ users }: UserTableProps) {
         placeholder={t("searchUsers")}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm text-gray-200 outline-hidden focus:border-purple-500"
+        className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm text-gray-200 outline-hidden focus:border-[var(--color-accent)]"
       />
 
       {filtered.map((user) => (
         <Card key={user.id}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-purple-500/20 text-sm font-black text-purple-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-hover)]/20 text-sm text-[var(--color-accent)]">
                 {(user.username || "?")[0].toUpperCase()}
               </div>
               <div>
                 <p className="text-sm font-bold text-white">{user.username || "—"}</p>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500">
+                <p className="text-[9px] font-bold text-gray-500">
                   Joined {new Date(user.created_at).toLocaleDateString()}
                 </p>
               </div>

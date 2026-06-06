@@ -29,7 +29,7 @@ export function Modal({ isOpen, onClose, children, title, className }: ModalProp
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Overlay */}
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/50 backdrop-blur-md"
         onClick={onClose}
         onKeyDown={(e) => e.key === "Escape" && onClose()}
         role="button"
@@ -39,13 +39,14 @@ export function Modal({ isOpen, onClose, children, title, className }: ModalProp
       {/* Panel */}
       <div
         className={cn(
-          "relative z-10 w-full max-w-lg rounded-2xl border border-gray-800 bg-[#121620] p-6 shadow-[0_0_40px_rgba(0,0,0,0.5)]",
+          "relative z-10 w-full max-w-lg rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6",
+          "shadow-[var(--shadow-lg)]",
           "animate-in fade-in zoom-in-95 duration-200",
           className
         )}
       >
         {title && (
-          <h2 className="mb-4 text-lg font-black uppercase tracking-wider text-white">
+          <h2 className="mb-4 text-lg font-bold text-[var(--color-text-primary)]">
             {title}
           </h2>
         )}

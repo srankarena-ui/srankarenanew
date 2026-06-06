@@ -11,14 +11,14 @@ export default async function ProductionPage({ params }: { params: Promise<{ loc
       {/* Heading */}
       <div className="mb-12 text-center">
         <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-purple-700/30 bg-purple-900/20 px-4 py-1.5">
-          <span className="text-[9px] font-black uppercase tracking-widest text-purple-400">
+          <span className="text-[9px] text-[var(--color-accent)]">
             {lang === "en" ? "Services" : "Servicios"}
           </span>
         </div>
-        <h1 className="text-5xl font-black uppercase italic tracking-tighter text-white">
+        <h1 className="text-5xl uppercase italic tracking-tighter text-white">
           {(config.heading as LocalizedString)[lang]}
         </h1>
-        <div className="mx-auto mt-3 h-1 w-20 rounded-full bg-purple-600" />
+        <div className="mx-auto mt-3 h-1 w-20 rounded-full bg-[var(--color-accent)]" />
         {(config.subheading as LocalizedString)[lang] && (
           <p className="mx-auto mt-6 max-w-2xl text-sm leading-relaxed text-gray-400">
             {(config.subheading as LocalizedString)[lang]}
@@ -37,7 +37,7 @@ export default async function ProductionPage({ params }: { params: Promise<{ loc
               {service.icon}
             </div>
             <div>
-              <h3 className="mb-2 font-black uppercase tracking-wide text-white">
+              <h3 className="mb-2 uppercase tracking-wide text-white">
                 {(service.title as LocalizedString)[lang]}
               </h3>
               <p className="text-sm leading-relaxed text-gray-400">
@@ -55,7 +55,7 @@ export default async function ProductionPage({ params }: { params: Promise<{ loc
         </p>
         <a
           href="./contact"
-          className="inline-flex items-center gap-2 rounded-full bg-purple-600 px-8 py-3 text-sm font-black uppercase tracking-widest text-white transition-all hover:shadow-[0_0_30px_rgba(168,85,247,0.4)]"
+          className="inline-flex items-center gap-2 rounded-full bg-[var(--color-accent)] px-8 py-3 text-sm text-white transition-all hover:shadow-[0_0_30px_rgba(168,85,247,0.4)]"
         >
           {lang === "en" ? "Contact Us" : "Contáctanos"}
         </a>

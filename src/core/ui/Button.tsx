@@ -14,19 +14,19 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-purple-600 text-white border-purple-500 hover:bg-purple-700 hover:border-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.2)]",
+    "bg-[var(--color-accent)] text-[var(--color-text-onaccent)] border-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] hover:border-[var(--color-accent-hover)] hover:shadow-[var(--color-accent-glow)] active:bg-[var(--color-accent-press)] active:scale-[0.97]",
   secondary:
-    "bg-transparent text-gray-200 border-gray-700 hover:border-gray-500 hover:text-white",
+    "bg-transparent text-[var(--color-text-primary)] border-[var(--color-border)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] active:scale-[0.97]",
   danger:
-    "bg-red-600/20 text-red-400 border-red-700 hover:bg-red-600/30 hover:border-red-500",
+    "bg-[var(--color-danger-soft)] text-[var(--color-danger)] border-[var(--color-danger)] hover:bg-[var(--color-danger)]/25 hover:border-[var(--color-danger)] active:scale-[0.97]",
   ghost:
-    "bg-transparent text-gray-400 border-transparent hover:text-white hover:bg-white/5",
+    "bg-transparent text-[var(--color-text-primary)] border-transparent hover:text-[var(--color-accent)] hover:bg-[var(--color-accent-soft)] active:scale-[0.97]",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: "px-3 py-1.5 text-[11px]",
-  md: "px-5 py-2.5 text-[12px]",
-  lg: "px-7 py-3.5 text-[13px]",
+  sm: "px-3 py-1.5 text-xs",
+  md: "px-5 py-2.5 text-sm",
+  lg: "px-7 py-3.5 text-base",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -35,7 +35,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center gap-2 rounded-xl border font-black uppercase tracking-widest transition-all duration-200",
+          "inline-flex items-center justify-center gap-2 rounded-2xl border font-bold transition-all duration-200",
           "disabled:opacity-50 disabled:cursor-not-allowed",
           variantClasses[variant],
           sizeClasses[size],

@@ -283,9 +283,10 @@ export async function POST(request: NextRequest) {
           losses: allStats.filter((s) => !s.win).length,
         };
 
-        const totalScore = parseFloat(
-          ((allMatches ?? []).reduce((a, m) => a + Number(m.match_score), 0)).toFixed(2)
-        );
+        // Average over matches_to_track so players with fewer games are penalized
+        // (missing games count as 0, denominator is always matches_to_track)
+        const sumScore = (allMatches ?? []).reduce((a, m) => a + Number(m.match_score), 0);
+        const totalScore = parseFloat((sumScore / matches_to_track).toFixed(2));
 
         await admin
           .from("summoner_trials_enrollments")

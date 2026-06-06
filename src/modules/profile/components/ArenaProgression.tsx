@@ -14,7 +14,7 @@ export function ArenaProgression({ profile }: ArenaProgressionProps) {
 
   return (
     <Card>
-      <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+      <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-400">
         Arena Progression
       </h3>
 
@@ -23,7 +23,7 @@ export function ArenaProgression({ profile }: ArenaProgressionProps) {
           Current Rank
         </span>
         <span
-          className="text-2xl font-black uppercase italic tracking-tighter"
+          className="text-2xl uppercase italic tracking-tighter"
           style={{ color: currentRank.color }}
         >
           Rank {currentRank.rank}

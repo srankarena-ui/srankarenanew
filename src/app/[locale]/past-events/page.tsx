@@ -31,15 +31,15 @@ export default async function PastEventsPage({ params }: { params: Promise<{ loc
       {/* Heading */}
       <div className="mb-12 text-center">
         <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-purple-700/30 bg-purple-900/20 px-4 py-1.5">
-          <span className="h-2 w-2 animate-pulse rounded-full bg-purple-500" />
-          <span className="text-[9px] font-black uppercase tracking-widest text-purple-400">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--color-accent-hover)]" />
+          <span className="text-[9px] text-[var(--color-accent)]">
             Track Record
           </span>
         </div>
-        <h1 className="text-5xl font-black uppercase italic tracking-tighter text-white">
+        <h1 className="text-5xl uppercase italic tracking-tighter text-white">
           {lang === "en" ? "Past Events" : "Eventos Realizados"}
         </h1>
-        <div className="mx-auto mt-3 h-1 w-20 rounded-full bg-purple-600" />
+        <div className="mx-auto mt-3 h-1 w-20 rounded-full bg-[var(--color-accent)]" />
         <p className="mx-auto mt-6 max-w-xl text-sm text-gray-400">
           {lang === "en"
             ? "Tournaments and events successfully completed by S-Rank Arena."
@@ -58,20 +58,20 @@ export default async function PastEventsPage({ params }: { params: Promise<{ loc
       {tournaments && tournaments.length > 0 && (
         <div className="mb-10 flex justify-center gap-10">
           <div className="text-center">
-            <p className="text-4xl font-black text-purple-400">{tournaments.length}</p>
-            <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500">{lang === "en" ? "Events" : "Eventos"}</p>
+            <p className="text-4xl text-[var(--color-accent)]">{tournaments.length}</p>
+            <p className="text-[9px] font-bold text-gray-500">{lang === "en" ? "Events" : "Eventos"}</p>
           </div>
           <div className="text-center">
-            <p className="text-4xl font-black text-purple-400">
+            <p className="text-4xl text-[var(--color-accent)]">
               {tournaments.reduce((acc, t) => acc + (t.max_participants ?? 0), 0)}
             </p>
-            <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500">{lang === "en" ? "Participants" : "Participantes"}</p>
+            <p className="text-[9px] font-bold text-gray-500">{lang === "en" ? "Participants" : "Participantes"}</p>
           </div>
           <div className="text-center">
-            <p className="text-4xl font-black text-purple-400">
+            <p className="text-4xl text-[var(--color-accent)]">
               {[...new Set(tournaments.map((t) => t.game))].length}
             </p>
-            <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500">{lang === "en" ? "Games" : "Juegos"}</p>
+            <p className="text-[9px] font-bold text-gray-500">{lang === "en" ? "Games" : "Juegos"}</p>
           </div>
         </div>
       )}
@@ -101,10 +101,10 @@ export default async function PastEventsPage({ params }: { params: Promise<{ loc
               <div className="flex flex-1 flex-col gap-2 p-5">
                 {/* Status badge */}
                 <div className="flex items-center justify-between">
-                  <span className={`rounded-full px-2.5 py-0.5 text-[8px] font-black uppercase tracking-widest ${
+                  <span className={`rounded-full px-2.5 py-0.5 text-[8px] ${
                     t.status === "completed"
                       ? "bg-green-900/40 text-green-400"
-                      : "bg-purple-900/40 text-purple-400"
+                      : "bg-purple-900/40 text-[var(--color-accent)]"
                   }`}>
                     {STATUS_LABEL[t.status] ?? t.status}
                   </span>

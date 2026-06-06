@@ -18,10 +18,10 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
     <div className="mx-auto max-w-3xl px-4 py-16">
       {/* Heading */}
       <div className="mb-12 text-center">
-        <h1 className="text-5xl font-black uppercase italic tracking-tighter text-white">
+        <h1 className="text-5xl uppercase italic tracking-tighter text-white">
           {(config.heading as LocalizedString)[lang]}
         </h1>
-        <div className="mx-auto mt-3 h-1 w-20 rounded-full bg-purple-600" />
+        <div className="mx-auto mt-3 h-1 w-20 rounded-full bg-[var(--color-accent)]" />
         {(config.description as LocalizedString)[lang] && (
           <p className="mx-auto mt-6 max-w-xl text-sm leading-relaxed text-gray-400">
             {(config.description as LocalizedString)[lang]}
@@ -42,7 +42,7 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
             >
               <span className="text-2xl">{item.icon}</span>
               <div>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500">{item.label}</p>
+                <p className="text-[9px] font-bold text-gray-500">{item.label}</p>
                 <p className="mt-0.5 text-sm font-bold text-white">{item.value}</p>
               </div>
             </a>

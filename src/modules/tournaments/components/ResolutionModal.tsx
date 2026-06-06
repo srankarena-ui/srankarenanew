@@ -73,7 +73,7 @@ export function ResolutionModal({ match, tournament }: ResolutionModalProps) {
       <div className="space-y-6">
         {/* Force winner */}
         <div>
-          <h4 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+          <h4 className="mb-3 text-[10px] font-bold text-gray-500">
             {t("forceWinner")}
           </h4>
           <div className="flex gap-3">
@@ -102,7 +102,7 @@ export function ResolutionModal({ match, tournament }: ResolutionModalProps) {
 
         {/* Manual scan */}
         <div>
-          <h4 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+          <h4 className="mb-3 text-[10px] font-bold text-gray-500">
             {t("manualScan")}
           </h4>
           <div className="flex gap-3">

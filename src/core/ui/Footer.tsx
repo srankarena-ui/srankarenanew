@@ -59,21 +59,21 @@ export function Footer({ config }: FooterProps) {
   const allSocial = config.social;
 
   return (
-    <footer className="border-t border-gray-800 bg-[#0b0e14]">
+    <footer className="border-t border-[var(--color-border)] bg-[var(--color-bg-primary)]">
       <div className="mx-auto max-w-7xl px-4 py-12">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-[200px_1fr_auto]">
           {/* Logo + tagline */}
           <div className="flex flex-col gap-4">
             <a href="/" className="flex items-center gap-3">
               <Image
-                src="/s-rank-logo.svg"
+                src="/s-rank-mark-white.png"
                 alt="S-Rank Arena"
                 width={48}
                 height={48}
-                className="h-12 w-auto brightness-0 invert"
+                className="h-12 w-auto"
               />
             </a>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600">
+            <p className="text-xs font-medium text-[var(--color-text-secondary)]">
               The Ultimate eSports Arena
             </p>
           </div>
@@ -82,7 +82,7 @@ export function Footer({ config }: FooterProps) {
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
             {config.sections.map((section) => (
               <div key={section.title}>
-                <h4 className="mb-4 text-[9px] font-black uppercase tracking-[0.2em] text-purple-400">
+                <h4 className="mb-4 text-[11px] font-mono uppercase tracking-[0.05em] text-[var(--color-accent)]">
                   {section.title}
                 </h4>
                 <ul className="space-y-2.5">
@@ -90,7 +90,7 @@ export function Footer({ config }: FooterProps) {
                     <li key={link.label}>
                       <a
                         href={link.href}
-                        className="text-[11px] font-medium text-gray-500 transition-colors hover:text-gray-300"
+                        className="text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
                       >
                         {link.label}
                       </a>
@@ -103,7 +103,7 @@ export function Footer({ config }: FooterProps) {
 
           {/* Social */}
           <div>
-            <h4 className="mb-4 text-[9px] font-black uppercase tracking-[0.2em] text-purple-400">
+            <h4 className="mb-4 text-[11px] font-mono uppercase tracking-[0.05em] text-[var(--color-accent)]">
               Follow Us
             </h4>
             <div className="flex flex-wrap gap-3">
@@ -114,7 +114,7 @@ export function Footer({ config }: FooterProps) {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={social.platform}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-800 text-gray-500 transition-all hover:border-purple-700 hover:text-purple-400"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-all hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
                 >
                   <SocialIcon platform={social.platform} />
                 </a>
@@ -125,9 +125,9 @@ export function Footer({ config }: FooterProps) {
       </div>
 
       {/* Copyright bar */}
-      <div className="border-t border-gray-800/60">
+      <div className="border-t border-[var(--color-border)]/60">
         <div className="mx-auto flex max-w-7xl items-center justify-center px-4 py-4">
-          <p className="text-[10px] font-medium text-gray-600">{config.copyright}</p>
+          <p className="text-xs font-medium text-[var(--color-text-secondary)]">{config.copyright}</p>
         </div>
       </div>
     </footer>

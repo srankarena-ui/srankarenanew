@@ -46,10 +46,10 @@ export function TournamentPlayers({
       {/* Header with count + admin action */}
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-black uppercase tracking-wider text-white">
+          <h2 className="text-sm uppercase tracking-wider text-white">
             {t("tabPlayers")}
           </h2>
-          <p className="mt-0.5 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+          <p className="mt-0.5 text-[10px] font-bold text-gray-500">
             {t("registeredCount", { current: participants.length, max: tournament.max_participants })}
           </p>
         </div>
@@ -78,14 +78,14 @@ export function TournamentPlayers({
             <span className="w-12 text-sm font-bold text-gray-500">{i + 1}</span>
             <div className="flex flex-1 items-center gap-3">
               {/* Avatar placeholder */}
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-800 text-[10px] font-black uppercase text-gray-500">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-800 text-[10px] uppercase text-gray-500">
                 {(p.profile?.username || "?").charAt(0)}
               </div>
               <div>
                 <p className="text-sm font-bold text-white">
                   {p.profile?.username || t("unknownPlayer")}
                   {p.user_id === currentUserId && (
-                    <span className="ml-2 text-[8px] font-black uppercase tracking-widest text-purple-400">
+                    <span className="ml-2 text-[8px] text-[var(--color-accent)]">
                       {t("you")}
                     </span>
                   )}

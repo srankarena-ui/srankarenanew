@@ -34,7 +34,7 @@ export function LoginForm() {
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-black uppercase italic tracking-tighter text-white">
+        <h1 className="text-3xl uppercase italic tracking-tighter text-white">
           {t("loginTitle")}
         </h1>
         <p className="mt-2 text-sm text-gray-500">{t("loginSubtitle")}</p>
@@ -105,7 +105,7 @@ export function LoginForm() {
 
       <p className="mt-6 text-center text-sm text-gray-500">
         {t("noAccount")}{" "}
-        <a href="/register" className="text-purple-400 hover:text-purple-300 font-semibold">
+        <a href="/register" className="text-[var(--color-accent)] hover:text-purple-300 font-semibold">
           {t("registerButton")}
         </a>
       </p>

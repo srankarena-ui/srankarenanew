@@ -30,17 +30,18 @@ export function useToast() {
 }
 
 const typeClasses: Record<ToastType, string> = {
-  success: "border-green-700/50 bg-green-900/40 text-green-400",
-  error: "border-red-700/50 bg-red-900/40 text-red-400",
-  info: "border-purple-700/50 bg-purple-900/40 text-purple-400",
-  warning: "border-yellow-700/50 bg-yellow-900/40 text-yellow-400",
+  success: "border-[var(--color-success)]/30 bg-[var(--color-success-soft)] text-[var(--color-success)]",
+  error: "border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] text-[var(--color-danger)]",
+  info: "border-[var(--color-info)]/30 bg-[var(--color-info-soft)] text-[var(--color-info)]",
+  warning: "border-[var(--color-warning)]/30 bg-[var(--color-warning-soft)] text-[var(--color-warning)]",
 };
 
 function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) => void }) {
   return (
     <div
       className={cn(
-        "flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium shadow-lg backdrop-blur-sm",
+        "flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium",
+        "shadow-[var(--shadow-md)] backdrop-blur-sm",
         "animate-in slide-in-from-right fade-in duration-300",
         typeClasses[toast.type]
       )}

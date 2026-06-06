@@ -15,10 +15,10 @@ interface TournamentTableProps {
   tournaments: Tournament[];
 }
 
-const STATUS_VARIANT: Record<string, "default" | "success" | "warning" | "danger" | "purple" | "outline"> = {
+const STATUS_VARIANT: Record<string, "default" | "success" | "warning" | "danger" | "accent" | "outline"> = {
   draft: "outline",
-  upcoming: "purple",
-  registration: "purple",
+  upcoming: "accent",
+  registration: "accent",
   active: "success",
   completed: "default",
   cancelled: "danger",
@@ -78,7 +78,7 @@ export function TournamentTable({ tournaments }: TournamentTableProps) {
             <div className="flex items-center gap-3">
               <div>
                 <p className="text-sm font-bold text-white">{t_item.title}</p>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500">
+                <p className="text-[9px] font-bold text-gray-500">
                   {t_item.mode} · {t_item.series_format} · {t_item.start_date ? new Date(t_item.start_date).toLocaleDateString() : "—"}
                 </p>
               </div>
@@ -91,7 +91,7 @@ export function TournamentTable({ tournaments }: TournamentTableProps) {
               <select
                 value={t_item.status}
                 onChange={(e) => handleStatusChange(t_item.id, e.target.value)}
-                className="rounded-lg border border-gray-700 bg-[#0b0e14] px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-300 outline-none focus:border-purple-500"
+                className="rounded-lg border border-gray-700 bg-[#0b0e14] px-2 py-1.5 text-[10px] text-gray-300 outline-none focus:border-[var(--color-accent)]"
               >
                 {STATUS_OPTIONS.map((s) => (
                   <option key={s} value={s}>{s}</option>

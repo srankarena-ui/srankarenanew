@@ -1,0 +1,90 @@
+<!-- @dsCard group="Components" viewport="700x540" name="Core — Buttons, Cards, Badges, Tags, Avatars" subtitle="The everyday primitives." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<link rel="stylesheet" href="../../styles.css" />
+<style>
+  body { margin: 0; padding: 26px; background: var(--bg); font-family: var(--font-sans); }
+  .grid { display: flex; flex-direction: column; gap: 22px; }
+  .sec { display: flex; flex-direction: column; gap: 10px; }
+  .lbl { font-family: var(--font-mono); font-size: 9px; letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--text-muted); }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  h4 { margin: 0 0 4px; font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  p.muted { margin: 0; font-size: 13px; color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel" data-presets="react">
+const { Button, Card, Badge, Tag, Avatar } = window.SRankArenaDesignSystem_6d53b2;
+
+function Demo() {
+  return (
+    <div className="grid">
+      <div className="sec">
+        <span className="lbl">Button · variants</span>
+        <div className="row">
+          <Button>Join now</Button>
+          <Button variant="secondary">Filters</Button>
+          <Button variant="ghost">Cancel</Button>
+          <Button variant="danger">Withdraw</Button>
+          <Button isLoading>Saving</Button>
+        </div>
+        <div className="row">
+          <Button size="sm">Small</Button>
+          <Button size="md">Medium</Button>
+          <Button size="lg">Large</Button>
+          <Button disabled>Disabled</Button>
+        </div>
+      </div>
+
+      <div className="sec">
+        <span className="lbl">Badge &amp; Tag</span>
+        <div className="row">
+          <Badge variant="accent">Open</Badge>
+          <Badge variant="danger" pulse>Live</Badge>
+          <Badge variant="success" dot>Ended</Badge>
+          <Badge variant="warning">Check-in</Badge>
+          <Badge variant="outline" size="sm">Draft</Badge>
+          <Tag>5v5 · LoL</Tag>
+          <Tag tone="accent">+250 EXP</Tag>
+          <Tag tone="cyan">EU West</Tag>
+        </div>
+      </div>
+
+      <div className="sec">
+        <span className="lbl">Avatar</span>
+        <div className="row">
+          <Avatar name="Fa" size="sm" />
+          <Avatar name="Nova" size="md" />
+          <Avatar name="Kx" size="md" rank="S" />
+          <Avatar name="Ze" size="lg" rank="A" />
+          <Avatar name="Player" size="lg" shape="circle" />
+        </div>
+      </div>
+
+      <div className="sec">
+        <span className="lbl">Card</span>
+        <div className="row" style={{ alignItems: "stretch" }}>
+          <Card hover style={{ flex: 1, minWidth: 200 }}>
+            <h4>Summoner's Clash</h4>
+            <p className="muted">Sat · 18:00 · 32 players</p>
+          </Card>
+          <Card interactive as="a" href="#" style={{ flex: 1, minWidth: 200 }}>
+            <h4>Royale Rumble</h4>
+            <p className="muted">Interactive — hover me</p>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Demo />);
+</script>
+</body>
+</html>

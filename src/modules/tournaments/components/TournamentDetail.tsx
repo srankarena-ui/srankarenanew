@@ -85,7 +85,7 @@ export function TournamentDetail({
       {/* ── Main content ── */}
       <div className="min-w-0 flex-1">
         {/* Title */}
-        <h1 className="mb-4 text-3xl font-black uppercase tracking-tight text-white">
+        <h1 className="mb-4 text-3xl uppercase tracking-tight text-white">
           {tournament.title}
         </h1>
 
@@ -106,13 +106,13 @@ export function TournamentDetail({
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={cn(
-                  "relative px-5 py-3 text-[11px] font-black uppercase tracking-[0.2em] transition-colors",
+                  "relative px-5 py-3 text-[11px] uppercase tracking-[0.2em] transition-colors",
                   isActive ? "text-white" : "text-gray-500 hover:text-gray-300"
                 )}
               >
                 {label}
                 {isActive && (
-                  <span className="absolute bottom-0 left-0 h-[2px] w-full bg-purple-500" />
+                  <span className="absolute bottom-0 left-0 h-[2px] w-full bg-[var(--color-accent-hover)]" />
                 )}
               </button>
             );
@@ -183,7 +183,7 @@ export function TournamentDetail({
         <div className="mb-4 flex items-center justify-between">
           <span
             className={cn(
-              "rounded-md px-3 py-1 text-[9px] font-black uppercase tracking-widest text-white",
+              "rounded-md px-3 py-1 text-[9px] text-white",
               tournament.registration_open ? "bg-green-600" : "bg-gray-700"
             )}
           >
@@ -192,7 +192,7 @@ export function TournamentDetail({
         </div>
 
         {/* Players / Teams count */}
-        <div className="mb-4 text-right text-[10px] font-bold uppercase tracking-widest text-gray-400">
+        <div className="mb-4 text-right text-[10px] font-bold text-gray-400">
           {(() => {
             const trialsConfig = tournament.trials_config as TrialsConfig | null;
             const isTrialsTeamBased = isSummonerTrials && (trialsConfig?.match_type === "duo" || trialsConfig?.match_type === "flex");
@@ -206,7 +206,7 @@ export function TournamentDetail({
 
         {/* Join section */}
         <div className="rounded-2xl border border-gray-800/60 bg-[#121620] p-5">
-          <h3 className="mb-4 text-[10px] font-black uppercase tracking-widest text-gray-400">
+          <h3 className="mb-4 text-[10px] text-gray-400">
             Join
           </h3>
 
@@ -264,7 +264,7 @@ export function TournamentDetail({
           ) : (
             <a
               href={`/${locale}/login`}
-              className="block w-full rounded-xl bg-purple-600 py-3 text-center text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-purple-500"
+              className="block w-full rounded-xl bg-[var(--color-accent)] py-3 text-center text-[10px] text-white transition-colors hover:bg-[var(--color-accent-hover)]"
             >
               {t("loginToJoin")}
             </a>
@@ -274,10 +274,10 @@ export function TournamentDetail({
         {/* Reward */}
         {tournament.reward_points > 0 && (
           <div className="mt-4 rounded-2xl border border-gray-800/60 bg-[#121620] p-5">
-            <h3 className="mb-2 text-[10px] font-black uppercase tracking-widest text-gray-400">
+            <h3 className="mb-2 text-[10px] text-gray-400">
               Reward
             </h3>
-            <p className="text-lg font-black text-purple-400">
+            <p className="text-lg text-[var(--color-accent)]">
               +{tournament.reward_points} EXP
             </p>
           </div>
@@ -286,7 +286,7 @@ export function TournamentDetail({
         {/* Region */}
         {tournament.region && (
           <div className="mt-4 rounded-2xl border border-gray-800/60 bg-[#121620] p-5">
-            <h3 className="mb-2 text-[10px] font-black uppercase tracking-widest text-gray-400">
+            <h3 className="mb-2 text-[10px] text-gray-400">
               Region
             </h3>
             <p className="text-sm font-bold text-white">{tournament.region}</p>
@@ -296,13 +296,13 @@ export function TournamentDetail({
         {/* Admin Actions */}
         {isAdmin && (
           <div className="mt-4 rounded-2xl border border-yellow-800/30 bg-yellow-900/10 p-5">
-            <h3 className="mb-3 text-[10px] font-black uppercase tracking-widest text-yellow-400">
+            <h3 className="mb-3 text-[10px] text-yellow-400">
               Admin
             </h3>
             <div className="space-y-2">
               <a
                 href={`/${locale}/admin/edit-tournament/${tournament.id}`}
-                className="block w-full rounded-xl border border-gray-700 bg-[#0b0e14] py-2.5 text-center text-[10px] font-black uppercase tracking-widest text-gray-300 transition-colors hover:border-purple-500/50 hover:text-white"
+                className="block w-full rounded-xl border border-gray-700 bg-[#0b0e14] py-2.5 text-center text-[10px] text-gray-300 transition-colors hover:border-[var(--color-accent)]/50 hover:text-white"
               >
                 Edit Tournament
               </a>
@@ -340,7 +340,7 @@ function InfoCard({
 }) {
   return (
     <div className="rounded-xl border border-gray-800/60 bg-[#121620] px-4 py-3">
-      <p className="mb-1 text-[9px] font-bold uppercase tracking-[0.2em] text-purple-400">
+      <p className="mb-1 text-[9px] font-bold uppercase tracking-[0.2em] text-[var(--color-accent)]">
         {label}
       </p>
       <p className="text-sm font-bold text-white">{value}</p>
@@ -373,7 +373,7 @@ function RegisterButton({ tournamentId }: { tournamentId: string }) {
     <button
       onClick={handleRegister}
       disabled={loading}
-      className="w-full rounded-xl bg-purple-600 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-purple-500 disabled:opacity-50"
+      className="w-full rounded-xl bg-[var(--color-accent)] py-3 text-[10px] text-white transition-colors hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
     >
       {loading ? "..." : t("register")}
     </button>
@@ -401,7 +401,7 @@ function UnregisterButton({ tournamentId }: { tournamentId: string }) {
     <button
       onClick={handleUnregister}
       disabled={loading}
-      className="w-full rounded-xl border border-red-800/50 py-2 text-[10px] font-black uppercase tracking-widest text-red-400 transition-colors hover:bg-red-900/20 disabled:opacity-50"
+      className="w-full rounded-xl border border-red-800/50 py-2 text-[10px] text-red-400 transition-colors hover:bg-red-900/20 disabled:opacity-50"
     >
       {loading ? "..." : t("unregister")}
     </button>

@@ -94,16 +94,16 @@ export function BracketView({ tournament, matches, participants, isAdmin }: Brac
     <div>
       {/* ── Bracket / Standings toggle ── */}
       <div className="mb-5 flex items-center justify-between">
-        <h2 className="text-sm font-black uppercase tracking-wider text-white">
+        <h2 className="text-sm uppercase tracking-wider text-white">
           {tournament.title}
         </h2>
         <div className="flex overflow-hidden rounded-lg border border-gray-800">
           <button
             onClick={() => setBracketSubTab("bracket")}
             className={cn(
-              "flex items-center gap-1.5 px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-colors",
+              "flex items-center gap-1.5 px-4 py-2 text-[10px] transition-colors",
               bracketSubTab === "bracket"
-                ? "bg-purple-600 text-white"
+                ? "bg-[var(--color-accent)] text-white"
                 : "text-gray-500 hover:text-gray-300"
             )}
           >
@@ -115,9 +115,9 @@ export function BracketView({ tournament, matches, participants, isAdmin }: Brac
           <button
             onClick={() => setBracketSubTab("standings")}
             className={cn(
-              "flex items-center gap-1.5 px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-colors",
+              "flex items-center gap-1.5 px-4 py-2 text-[10px] transition-colors",
               bracketSubTab === "standings"
-                ? "bg-purple-600 text-white"
+                ? "bg-[var(--color-accent)] text-white"
                 : "text-gray-500 hover:text-gray-300"
             )}
           >
@@ -132,7 +132,7 @@ export function BracketView({ tournament, matches, participants, isAdmin }: Brac
       {/* Demo banner */}
       {demoMode && (
         <div className="mb-4 flex items-center gap-2 rounded-xl border border-yellow-700/30 bg-yellow-900/10 px-4 py-2">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-yellow-400">
+          <span className="text-[10px] font-bold text-yellow-400">
             ⚡ Demo bracket — 16 players preview
           </span>
         </div>
@@ -141,8 +141,8 @@ export function BracketView({ tournament, matches, participants, isAdmin }: Brac
       {/* Scanning indicator */}
       {isScanning && (
         <div className="mb-4 flex items-center gap-2 rounded-xl border border-purple-700/30 bg-purple-900/20 px-4 py-2">
-          <span className="h-2 w-2 animate-pulse rounded-full bg-purple-500" />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-purple-400">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--color-accent-hover)]" />
+          <span className="text-[10px] font-bold text-[var(--color-accent)]">
             Scanning for results...
           </span>
         </div>
@@ -167,10 +167,10 @@ export function BracketView({ tournament, matches, participants, isAdmin }: Brac
                 <div key={roundNum} className="flex flex-col" style={{ minWidth: "270px", flex: 1 }}>
                   {/* Round header — Battlefy style */}
                   <div className="mb-1 flex items-center justify-between rounded-t-lg border border-gray-800/60 bg-[#0d1017] px-4 py-2.5">
-                    <span className="text-[11px] font-black uppercase tracking-wider text-white">
+                    <span className="text-[11px] uppercase tracking-wider text-white">
                       {roundLabel}
                     </span>
-                    <span className="text-[9px] font-bold uppercase tracking-widest text-gray-500">
+                    <span className="text-[9px] font-bold text-gray-500">
                       {tournament.series_format?.toUpperCase() || "Best of 1"}
                     </span>
                   </div>

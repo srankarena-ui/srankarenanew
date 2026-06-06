@@ -10,11 +10,11 @@ interface TournamentCardProps {
 }
 
 const STATUS_BADGE: Record<string, { label: string; color: string }> = {
-  draft: { label: "status_draft", color: "bg-gray-600" },
-  registration: { label: "status_registration", color: "bg-purple-600" },
-  active: { label: "status_active", color: "bg-red-500" },
-  completed: { label: "status_completed", color: "bg-gray-600" },
-  cancelled: { label: "status_cancelled", color: "bg-red-800" },
+  draft: { label: "status_draft", color: "bg-[var(--color-border)]" },
+  registration: { label: "status_registration", color: "bg-[var(--color-accent)]" },
+  active: { label: "status_active", color: "bg-[var(--color-danger)]" },
+  completed: { label: "status_completed", color: "bg-[var(--color-border)]" },
+  cancelled: { label: "status_cancelled", color: "bg-[var(--color-danger)]/80" },
 };
 
 const FORMAT_BADGE: Record<string, string> = {
@@ -46,7 +46,7 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
       href={`/${locale}/tournaments/${tournament.id}`}
       className="group block"
     >
-      <div className="overflow-hidden rounded-2xl border border-gray-800/60 bg-[#121620] transition-all duration-300 hover:border-purple-500/40 hover:shadow-[0_0_30px_rgba(168,85,247,0.08)]">
+      <div className="overflow-hidden rounded-2xl border border-gray-800/60 bg-[#121620] transition-all duration-300 hover:border-[var(--color-accent)]/40 hover:shadow-[0_0_30px_rgba(168,85,247,0.08)]">
         {/* Banner (2:1 aspect) */}
         <div className="relative aspect-[2/1] w-full overflow-hidden">
           {tournament.banner_url ? (
@@ -60,13 +60,13 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
           )}
           {/* Mode badge */}
           {tournament.mode && (
-            <span className="absolute left-3 top-3 rounded-md bg-green-500 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-white">
+            <span className="absolute left-3 top-3 rounded-md bg-green-500 px-2 py-0.5 text-[9px] uppercase tracking-wider text-white">
               {tournament.mode}
             </span>
           )}
           {/* Format badge */}
           {tournament.tournament_format && (
-            <span className={`absolute right-3 top-3 rounded-md px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-white ${FORMAT_BADGE[tournament.tournament_format] ?? "bg-gray-600/80"}`}>
+            <span className={`absolute right-3 top-3 rounded-md px-2 py-0.5 text-[9px] uppercase tracking-wider text-white ${FORMAT_BADGE[tournament.tournament_format] ?? "bg-gray-600/80"}`}>
               {t(`format_${tournament.tournament_format}` as Parameters<typeof t>[0])}
             </span>
           )}
@@ -75,7 +75,7 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
         {/* Content */}
         <div className="p-4">
           {/* Title */}
-          <h3 className="text-base font-black text-white">
+          <h3 className="text-base text-white">
             {tournament.title}
           </h3>
 
@@ -99,7 +99,7 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
                 {formattedTime}
               </span>
             )}
-            <span className={`rounded-full px-2 py-0.5 text-[8px] font-black uppercase tracking-wider text-white ${statusInfo.color}`}>
+            <span className={`rounded-full px-2 py-0.5 text-[8px] uppercase tracking-wider text-white ${statusInfo.color}`}>
               {t(statusInfo.label as Parameters<typeof t>[0])}
             </span>
           </div>
@@ -110,7 +110,7 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
               {tournament.region || "—"}
             </span>
             {tournament.reward_points > 0 && (
-              <span className="flex items-center gap-1 font-bold text-purple-400">
+              <span className="flex items-center gap-1 font-bold text-[var(--color-accent)]">
                 <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path d="M12 15l-2 5h4l-2-5z" />
                   <circle cx="12" cy="9" r="5" />
@@ -132,7 +132,7 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
               </svg>
               {tournament.game}
             </span>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 transition-colors group-hover:text-purple-400">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 transition-colors group-hover:text-[var(--color-accent)]">
               {t("viewDetails")} →
             </span>
           </div>

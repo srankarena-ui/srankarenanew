@@ -47,6 +47,7 @@ export type TrialsEnrollment = Database["public"]["Tables"]["summoner_trials_enr
 
 export interface TrialsConfig {
   matches_to_track: number;
+  end_date?: string; // ISO date string, e.g. "2026-05-01"
   match_type: "solo" | "duo" | "flex" | "draft";
   scoring_weights: {
     kda: number;

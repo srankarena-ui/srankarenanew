@@ -49,7 +49,7 @@ export function GameManager({ games }: GameManagerProps) {
     <div className="space-y-4">
       {/* New game form */}
       <Card>
-        <h3 className="mb-3 text-sm font-black uppercase tracking-wider text-white">
+        <h3 className="mb-3 text-sm uppercase tracking-wider text-white">
           {t("addGame")}
         </h3>
         <form action={handleCreate} className="grid grid-cols-3 gap-3">
@@ -69,13 +69,13 @@ export function GameManager({ games }: GameManagerProps) {
             <div className="flex items-center gap-3">
               <div>
                 <p className="text-sm font-bold text-white">{game.name}</p>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500">
+                <p className="text-[9px] font-bold text-gray-500">
                   {game.slug}
                 </p>
               </div>
               <div className="flex gap-1">
                 {game.modes?.map((mode: string) => (
-                  <Badge key={mode} variant="purple">
+                  <Badge key={mode} variant="accent">
                     {mode}
                   </Badge>
                 ))}

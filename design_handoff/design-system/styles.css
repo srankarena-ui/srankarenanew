@@ -1,0 +1,12 @@
+/* ============================================================
+   S-RANK ARENA Design System — global entry point.
+   Consumers link THIS file. It is an @import manifest only.
+   Order: fonts → tokens (colors, type, spacing) → base.
+   ============================================================ */
+
+@import "./tokens/fonts.css";
+@import "./tokens/colors.css";
+@import "./tokens/accents.css";
+@import "./tokens/typography.css";
+@import "./tokens/spacing.css";
+@import "./base.css";

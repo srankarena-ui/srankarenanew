@@ -55,7 +55,7 @@ export function PastEventsManager({ initialConfig }: PastEventsManagerProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-black uppercase tracking-widest text-white">
+        <h2 className="text-lg text-white">
           Past Events Carousel
         </h2>
         <Button onClick={handleSave} disabled={saving}>
@@ -65,7 +65,7 @@ export function PastEventsManager({ initialConfig }: PastEventsManagerProps) {
 
       {/* Add image row */}
       <div className="rounded-2xl border border-gray-800/60 bg-[#0d1017] p-4 space-y-3">
-        <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Add Image</p>
+        <p className="text-[10px] text-gray-500">Add Image</p>
         <div className="flex gap-2">
           <input
             type="url"
@@ -73,7 +73,7 @@ export function PastEventsManager({ initialConfig }: PastEventsManagerProps) {
             value={newUrl}
             onChange={(e) => setNewUrl(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addImage()}
-            className="flex-1 rounded-lg border border-gray-700 bg-[#121620] px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-purple-500 focus:outline-none"
+            className="flex-1 rounded-lg border border-gray-700 bg-[#121620] px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-[var(--color-accent)] focus:outline-none"
           />
           <input
             type="text"
@@ -81,7 +81,7 @@ export function PastEventsManager({ initialConfig }: PastEventsManagerProps) {
             value={newCaption}
             onChange={(e) => setNewCaption(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addImage()}
-            className="w-44 rounded-lg border border-gray-700 bg-[#121620] px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-purple-500 focus:outline-none"
+            className="w-44 rounded-lg border border-gray-700 bg-[#121620] px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-[var(--color-accent)] focus:outline-none"
           />
           <Button onClick={addImage} disabled={!newUrl.trim()}>
             + Add
@@ -119,14 +119,14 @@ export function PastEventsManager({ initialConfig }: PastEventsManagerProps) {
                   onChange={(e) =>
                     setImages(images.map((x) => (x.id === img.id ? { ...x, url: e.target.value } : x)))
                   }
-                  className="w-full truncate rounded-lg border border-gray-700 bg-[#0d1017] px-3 py-1.5 text-xs text-gray-300 focus:border-purple-500 focus:outline-none"
+                  className="w-full truncate rounded-lg border border-gray-700 bg-[#0d1017] px-3 py-1.5 text-xs text-gray-300 focus:border-[var(--color-accent)] focus:outline-none"
                 />
                 <input
                   type="text"
                   placeholder="Caption (optional)"
                   value={img.caption ?? ""}
                   onChange={(e) => updateCaption(img.id, e.target.value)}
-                  className="w-full rounded-lg border border-gray-700 bg-[#0d1017] px-3 py-1.5 text-xs text-gray-400 placeholder-gray-700 focus:border-purple-500 focus:outline-none"
+                  className="w-full rounded-lg border border-gray-700 bg-[#0d1017] px-3 py-1.5 text-xs text-gray-400 placeholder-gray-700 focus:border-[var(--color-accent)] focus:outline-none"
                 />
               </div>
 

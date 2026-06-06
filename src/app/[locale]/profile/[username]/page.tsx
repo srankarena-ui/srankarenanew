@@ -68,7 +68,7 @@ export default async function ProfilePage({
         {/* Right content — tournament history placeholder */}
         <div className="space-y-6">
           <div className="rounded-2xl border border-gray-800/50 bg-[#121620] p-8 text-center">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600">
+            <p className="text-[10px] font-bold text-gray-600">
               Tournament history coming soon
             </p>
           </div>

@@ -29,7 +29,7 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
         className="flex w-full items-center justify-between gap-4 py-4 text-left"
       >
         <span className="text-sm font-bold text-white">{question}</span>
-        <span className="shrink-0 text-purple-400">
+        <span className="shrink-0 text-[var(--color-accent)]">
           <ChevronIcon open={open} />
         </span>
       </button>
@@ -45,7 +45,7 @@ function CategorySection({ category, lang }: { category: HelpCategory; lang: "es
     <div className="rounded-2xl border border-gray-800/50 bg-[#121620] p-6">
       <div className="mb-4 flex items-center gap-3">
         <span className="text-2xl">{category.icon}</span>
-        <h2 className="text-base font-black uppercase tracking-widest text-white">
+        <h2 className="text-base text-white">
           {category.title[lang]}
         </h2>
       </div>
@@ -83,7 +83,7 @@ export default function HelpPage({ params }: { params: Promise<{ locale: string 
   if (!config) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600">
+        <p className="text-[10px] font-bold text-gray-600">
           {lang === "en" ? "Loading..." : "Cargando..."}
         </p>
       </div>
@@ -105,10 +105,10 @@ export default function HelpPage({ params }: { params: Promise<{ locale: string 
     <div className="mx-auto max-w-4xl px-4 py-16">
       {/* Header */}
       <div className="mb-12 text-center">
-        <h1 className="text-5xl font-black uppercase italic tracking-tighter text-white">
+        <h1 className="text-5xl uppercase italic tracking-tighter text-white">
           {config.heading[lang]}
         </h1>
-        <div className="mx-auto mt-3 h-1 w-20 rounded-full bg-purple-600" />
+        <div className="mx-auto mt-3 h-1 w-20 rounded-full bg-[var(--color-accent)]" />
         <p className="mx-auto mt-4 max-w-xl text-sm text-gray-400">
           {config.subheading[lang]}
         </p>
@@ -134,7 +134,7 @@ export default function HelpPage({ params }: { params: Promise<{ locale: string 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={lang === "en" ? "Search for answers…" : "Buscar respuestas…"}
-            className="w-full rounded-2xl border border-gray-800 bg-[#121620] py-3 pl-11 pr-4 text-sm text-gray-200 outline-none focus:border-purple-500"
+            className="w-full rounded-2xl border border-gray-800 bg-[#121620] py-3 pl-11 pr-4 text-sm text-gray-200 outline-none focus:border-[var(--color-accent)]"
           />
         </div>
       </div>
@@ -166,7 +166,7 @@ export default function HelpPage({ params }: { params: Promise<{ locale: string 
         </p>
         <a
           href={`/${lang}/contact`}
-          className="mt-4 inline-block rounded-xl bg-purple-600 px-6 py-2.5 text-xs font-black uppercase tracking-widest text-white hover:bg-purple-500 transition-colors"
+          className="mt-4 inline-block rounded-xl bg-[var(--color-accent)] px-6 py-2.5 text-xs text-white hover:bg-[var(--color-accent-hover)] transition-colors"
         >
           {lang === "en" ? "Contact Us" : "Contáctanos"}
         </a>

@@ -16,16 +16,16 @@ interface TabsProps {
 
 export function Tabs({ tabs, activeTab, onChange, className }: TabsProps) {
   return (
-    <div className={cn("flex gap-1 rounded-xl bg-[#0b0e14] p-1", className)}>
+    <div className={cn("flex gap-1 rounded-2xl bg-[var(--color-bg-card)] p-1", className)}>
       {tabs.map((tab) => (
         <button
           key={tab.id}
           onClick={() => onChange(tab.id)}
           className={cn(
-            "rounded-lg px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-200",
+            "rounded-2xl px-4 py-2 text-[12px] font-bold transition-all duration-200",
             activeTab === tab.id
-              ? "bg-purple-600 text-white shadow-[0_0_15px_rgba(168,85,247,0.3)]"
-              : "text-gray-500 hover:text-gray-300"
+              ? "bg-[var(--color-accent)] text-[var(--color-text-onaccent)] shadow-[var(--color-accent-glow)]"
+              : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
           )}
         >
           {tab.label}

@@ -1,0 +1,68 @@
+/* ============================================================
+   S-RANK ARENA · Typography tokens
+   Clean & neutral — Plus Jakarta Sans (UI/display) +
+   JetBrains Mono (stats, ranks, labels, tags). Personality
+   comes from color & shape, not aggressive casing.
+   ============================================================ */
+
+:root {
+  /* Families */
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  /* Display & body share the sans family; weight + size carry hierarchy */
+  --font-display: var(--font-sans);
+  --font-body: var(--font-sans);
+
+  /* Weights */
+  --fw-regular: 400;   /* @kind font */
+  --fw-medium: 500;    /* @kind font */
+  --fw-semibold: 600;  /* @kind font */
+  --fw-bold: 700;      /* @kind font */
+  --fw-extrabold: 800; /* @kind font */
+
+  /* Type scale (rem, 16px base) */
+  --text-2xs: 0.6875rem;  /* 11px — mono micro-labels */
+  --text-xs:  0.75rem;    /* 12px */
+  --text-sm:  0.875rem;   /* 14px */
+  --text-base:1rem;       /* 16px */
+  --text-md:  1.125rem;   /* 18px */
+  --text-lg:  1.375rem;   /* 22px */
+  --text-xl:  1.75rem;    /* 28px */
+  --text-2xl: 2.25rem;    /* 36px */
+  --text-3xl: 3rem;       /* 48px */
+  --text-4xl: 4rem;       /* 64px — hero */
+
+  /* Line heights */
+  --leading-tight: 1.05;
+  --leading-snug: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  /* Letter spacing */
+  --tracking-display: -0.035em;  /* big headings */
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-label: 0.04em;      /* mono uppercase micro-labels */
+  --tracking-wide: 0.08em;
+}
+
+/* Optional helpers — components reference vars directly, but these
+   are handy in card/specimen markup. */
+.t-display {
+  font-family: var(--font-display);
+  font-weight: var(--fw-extrabold);
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-tight);
+}
+.t-label {
+  font-family: var(--font-mono);
+  font-weight: var(--fw-medium);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+.t-stat {
+  font-family: var(--font-mono);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+}

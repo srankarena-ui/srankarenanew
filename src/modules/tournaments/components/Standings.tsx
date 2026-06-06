@@ -86,7 +86,7 @@ export function Standings({ matches, participants, demoMode }: StandingsProps) {
 
   return (
     <div>
-      <h2 className="mb-5 text-sm font-black uppercase tracking-wider text-white">
+      <h2 className="mb-5 text-sm uppercase tracking-wider text-white">
         {t("standings")}
       </h2>
 
@@ -100,7 +100,7 @@ export function Standings({ matches, participants, demoMode }: StandingsProps) {
             >
               <span
                 className={cn(
-                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-black",
+                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm",
                   PODIUM_COLORS[entry.rank] || "bg-gray-800 text-gray-400"
                 )}
               >

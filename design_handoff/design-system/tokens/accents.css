@@ -1,0 +1,46 @@
+/* ============================================================
+   S-RANK ARENA · Accent themes
+   Four selectable accent identities, each working in light & dark.
+   Set data-accent="challenger|volt|ember|aurora" on <html> (or any
+   wrapper); combine with data-theme="light|dark". The neutral
+   surfaces stay shared — only the accent (and everything derived
+   from it: soft, ring, glow, gradients) changes.
+   Default (no data-accent) = Challenger, defined in colors.css.
+   ============================================================ */
+
+/* ---- DARK accents (primary) ---- */
+[data-accent="challenger"] {
+  --accent: #3E6BFF; --accent-hover: #6486FF; --accent-press: #2F58E6;
+  --accent-2: #36D2FF; --text-onaccent: #FFFFFF;
+}
+[data-accent="volt"] {
+  --accent: #C6F24E; --accent-hover: #D4F86E; --accent-press: #AEDF2E;
+  --accent-2: #38E8FF; --text-onaccent: #0E120A;
+}
+[data-accent="ember"] {
+  --accent: #FF6A3D; --accent-hover: #FF8159; --accent-press: #E85427;
+  --accent-2: #A78BFA; --text-onaccent: #2A1206;
+}
+[data-accent="aurora"] {
+  --accent: #8B6CFF; --accent-hover: #A18BFF; --accent-press: #6D4DE0;
+  --accent-2: #34E5C0; --text-onaccent: #FFFFFF;
+}
+
+/* ---- LIGHT accents (deeper hues so the accent stays legible as
+        foreground on white surfaces) ---- */
+[data-theme="light"][data-accent="challenger"] {
+  --accent: #2F5BFF; --accent-hover: #2546DC; --accent-press: #1E3DB8;
+  --accent-2: #0FA9CE; --text-onaccent: #FFFFFF;
+}
+[data-theme="light"][data-accent="volt"] {
+  --accent: #4F7A00; --accent-hover: #5E8F00; --accent-press: #3F6300;
+  --accent-2: #0FB6D8; --text-onaccent: #FFFFFF;
+}
+[data-theme="light"][data-accent="ember"] {
+  --accent: #E8512A; --accent-hover: #FF6A3D; --accent-press: #C53F1C;
+  --accent-2: #7C5CF0; --text-onaccent: #FFFFFF;
+}
+[data-theme="light"][data-accent="aurora"] {
+  --accent: #6D4DE0; --accent-hover: #7C5CF0; --accent-press: #583BC0;
+  --accent-2: #0FB6A0; --text-onaccent: #FFFFFF;
+}

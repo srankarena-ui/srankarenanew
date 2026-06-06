@@ -40,7 +40,7 @@ export function BracketMatch({ match, matchLabel, isAdmin, seriesFormat }: Brack
           {isLive && (
             <span className="flex items-center gap-1">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" />
-              <span className="text-[8px] font-black uppercase tracking-widest text-red-400">
+              <span className="text-[8px] text-red-400">
                 Live
               </span>
             </span>
@@ -54,7 +54,7 @@ export function BracketMatch({ match, matchLabel, isAdmin, seriesFormat }: Brack
           "overflow-hidden rounded-lg border transition-all",
           isCompleted && "border-gray-700/50",
           isBye && "border-gray-800/30 opacity-50",
-          isPending && hasPlayers && "border-gray-700 cursor-pointer hover:border-purple-500/50",
+          isPending && hasPlayers && "border-gray-700 cursor-pointer hover:border-[var(--color-accent)]/50",
           isPending && !hasPlayers && "border-gray-800/30 opacity-30",
           isLive && "border-purple-600/50 shadow-[0_0_15px_rgba(168,85,247,0.1)]"
         )}
@@ -140,8 +140,8 @@ function PlayerSlot({
       {/* Score */}
       <span
         className={cn(
-          "flex h-full w-10 shrink-0 items-center justify-center text-xs font-black",
-          isWinner && "bg-purple-600/30 text-purple-300",
+          "flex h-full w-10 shrink-0 items-center justify-center text-xs",
+          isWinner && "bg-[var(--color-accent)]/30 text-purple-300",
           isLoser && "text-gray-700",
           !isWinner && !isLoser && !isEmpty && "text-gray-500",
           isEmpty && "text-gray-800"

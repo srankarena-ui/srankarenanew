@@ -72,7 +72,7 @@ export function ScoreModal({ match, seriesFormat }: ScoreModalProps) {
               max={maxWins}
               value={p1Score}
               onChange={(e) => setP1Score(Number(e.target.value))}
-              className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-center text-lg font-black text-white outline-hidden focus:border-purple-500"
+              className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-center text-lg text-white outline-hidden focus:border-[var(--color-accent)]"
             />
           </div>
           <div>
@@ -85,7 +85,7 @@ export function ScoreModal({ match, seriesFormat }: ScoreModalProps) {
               max={maxWins}
               value={p2Score}
               onChange={(e) => setP2Score(Number(e.target.value))}
-              className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-center text-lg font-black text-white outline-hidden focus:border-purple-500"
+              className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-center text-lg text-white outline-hidden focus:border-[var(--color-accent)]"
             />
           </div>
         </div>

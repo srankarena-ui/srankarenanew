@@ -1,0 +1,9 @@
+/* ============================================================
+   S-RANK ARENA · Webfonts
+   Plus Jakarta Sans (UI/display) + JetBrains Mono (stats/labels).
+   NOTE: loaded from Google Fonts CDN for portability. For
+   production, self-host the .woff2 files and replace the @import
+   below with local @font-face rules. (Flagged to the team.)
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600;1,700&family=JetBrains+Mono:wght@400;500;700&display=swap');

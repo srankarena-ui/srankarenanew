@@ -45,7 +45,7 @@ export function AdminDashboard({ tournaments, users, games, footerConfig, aboutC
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-black uppercase italic tracking-tighter text-white">
+          <h1 className="text-3xl uppercase italic tracking-tighter text-white">
             {t("title")}
           </h1>
           <p className="mt-1 text-sm text-gray-500">{t("subtitle")}</p>
@@ -66,8 +66,8 @@ export function AdminDashboard({ tournaments, users, games, footerConfig, aboutC
             key={stat.label}
             className="rounded-2xl border border-gray-800/50 bg-[#121620] p-4 text-center"
           >
-            <p className="text-2xl font-black text-purple-400">{stat.value}</p>
-            <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500">
+            <p className="text-2xl text-[var(--color-accent)]">{stat.value}</p>
+            <p className="text-[9px] font-bold text-gray-500">
               {stat.label}
             </p>
           </div>

@@ -65,7 +65,7 @@ export function TournamentWizard({ games, onClose }: TournamentWizardProps) {
   const steps = [
     // Step 0: Basic info
     <div key="basic" className="space-y-3">
-      <h3 className="text-sm font-black uppercase tracking-wider text-white">
+      <h3 className="text-sm uppercase tracking-wider text-white">
         {t("step")} 1: {t("basicInfo")}
       </h3>
       <Input
@@ -83,14 +83,14 @@ export function TournamentWizard({ games, onClose }: TournamentWizardProps) {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm text-gray-200 outline-hidden focus:border-purple-500"
+          className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm text-gray-200 outline-hidden focus:border-[var(--color-accent)]"
         />
       </div>
     </div>,
 
     // Step 1: Game settings
     <div key="game" className="space-y-3">
-      <h3 className="text-sm font-black uppercase tracking-wider text-white">
+      <h3 className="text-sm uppercase tracking-wider text-white">
         {t("step")} 2: {t("gameSettings")}
       </h3>
       <div>
@@ -103,7 +103,7 @@ export function TournamentWizard({ games, onClose }: TournamentWizardProps) {
             setGameId(e.target.value);
             setMode("");
           }}
-          className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm text-gray-200 outline-hidden focus:border-purple-500"
+          className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm text-gray-200 outline-hidden focus:border-[var(--color-accent)]"
         >
           {games.map((g) => (
             <option key={g.id} value={g.id}>{g.name}</option>
@@ -123,7 +123,7 @@ export function TournamentWizard({ games, onClose }: TournamentWizardProps) {
                 onClick={() => setMode(m)}
                 className={`rounded-xl border px-4 py-2 text-xs font-bold transition-colors ${
                   mode === m
-                    ? "border-purple-500 bg-purple-500/20 text-purple-400"
+                    ? "border-[var(--color-accent)] bg-[var(--color-accent-hover)]/20 text-[var(--color-accent)]"
                     : "border-gray-800 bg-[#0b0e14] text-gray-500 hover:border-gray-600"
                 }`}
               >
@@ -145,7 +145,7 @@ export function TournamentWizard({ games, onClose }: TournamentWizardProps) {
               onClick={() => setSeriesFormat(sf)}
               className={`rounded-xl border px-4 py-2 text-xs font-bold uppercase transition-colors ${
                 seriesFormat === sf
-                  ? "border-purple-500 bg-purple-500/20 text-purple-400"
+                  ? "border-[var(--color-accent)] bg-[var(--color-accent-hover)]/20 text-[var(--color-accent)]"
                   : "border-gray-800 bg-[#0b0e14] text-gray-500 hover:border-gray-600"
               }`}
             >
@@ -158,7 +158,7 @@ export function TournamentWizard({ games, onClose }: TournamentWizardProps) {
 
     // Step 2: Players & schedule
     <div key="players" className="space-y-3">
-      <h3 className="text-sm font-black uppercase tracking-wider text-white">
+      <h3 className="text-sm uppercase tracking-wider text-white">
         {t("step")} 3: {t("playersAndSchedule")}
       </h3>
       <div className="grid grid-cols-2 gap-3">
@@ -189,7 +189,7 @@ export function TournamentWizard({ games, onClose }: TournamentWizardProps) {
 
     // Step 3: Rules & confirm
     <div key="rules" className="space-y-3">
-      <h3 className="text-sm font-black uppercase tracking-wider text-white">
+      <h3 className="text-sm uppercase tracking-wider text-white">
         {t("step")} 4: {t("rulesAndConfirm")}
       </h3>
       <div>
@@ -201,11 +201,11 @@ export function TournamentWizard({ games, onClose }: TournamentWizardProps) {
           onChange={(e) => setRules(e.target.value)}
           rows={4}
           placeholder={t("rulesPlaceholder")}
-          className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm text-gray-200 outline-hidden focus:border-purple-500"
+          className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm text-gray-200 outline-hidden focus:border-[var(--color-accent)]"
         />
       </div>
       <div className="rounded-xl border border-gray-800 bg-[#0b0e14] p-4">
-        <p className="mb-2 text-[9px] font-bold uppercase tracking-widest text-gray-500">
+        <p className="mb-2 text-[9px] font-bold text-gray-500">
           {t("summary")}
         </p>
         <div className="space-y-1 text-sm text-gray-300">
@@ -229,7 +229,7 @@ export function TournamentWizard({ games, onClose }: TournamentWizardProps) {
           <div
             key={i}
             className={`h-1 flex-1 rounded-full transition-colors ${
-              i <= wizardStep ? "bg-purple-500" : "bg-gray-800"
+              i <= wizardStep ? "bg-[var(--color-accent-hover)]" : "bg-gray-800"
             }`}
           />
         ))}
