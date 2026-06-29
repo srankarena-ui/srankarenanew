@@ -17,6 +17,7 @@ import { ScoreModal } from "./ScoreModal";
 import { ResolutionModal } from "./ResolutionModal";
 import { SummonerTrialsLeaderboard } from "./SummonerTrialsLeaderboard";
 import type { Tournament, TournamentParticipant, Profile, MatchWithPlayers, TrialsEnrollmentWithProfile, TrialsConfig } from "@/core/types";
+import type { PickableItem as PrizeItem } from "@/modules/vault/components/VaultPrizePicker";
 
 interface TournamentDetailProps {
   tournament: Tournament;
@@ -27,6 +28,7 @@ interface TournamentDetailProps {
   isAdmin: boolean;
   trialsEnrollments?: TrialsEnrollmentWithProfile[];
   teamRegistrationCount?: number;
+  prizeItems?: PrizeItem[];
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -61,6 +63,7 @@ export function TournamentDetail({
   isAdmin,
   trialsEnrollments,
   teamRegistrationCount = 0,
+  prizeItems = [],
 }: TournamentDetailProps) {
   const t = useTranslations("tournaments");
   const locale = useLocale();
@@ -147,7 +150,7 @@ export function TournamentDetail({
 
         {/* Tab content */}
         {activeTab === "overview" && (
-          <TournamentOverview tournament={tournament} />
+          <TournamentOverview tournament={tournament} prizeItems={prizeItems} />
         )}
         {activeTab === "players" && (
           <TournamentPlayers

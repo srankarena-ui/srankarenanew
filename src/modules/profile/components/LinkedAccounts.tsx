@@ -7,13 +7,15 @@ import type { Profile } from "@/core/types";
 interface GameConnectionsProps {
   profile: Profile;
   locale: string;
+  dotaPersonaName?: string | null;
 }
 
-export function GameConnections({ profile, locale }: GameConnectionsProps) {
+export function GameConnections({ profile, locale, dotaPersonaName }: GameConnectionsProps) {
   const t = useTranslations("profile");
   const settingsT = useTranslations("settings");
   const hasRiot = !!profile.riot_gamename;
   const hasCR = !!profile.cr_tag;
+  const hasDota2 = !!profile.dota2_account_id;
   const riotRegionKey = getRiotRegionTranslationKey(profile.lol_region);
 
   return (
@@ -86,6 +88,43 @@ export function GameConnections({ profile, locale }: GameConnectionsProps) {
               className="mt-2 inline-block text-xs font-bold text-[var(--color-accent)] hover:text-purple-300"
             >
               {t("linkCrTag")}
+            </a>
+          </div>
+        )}
+      </div>
+
+      {/* Dota 2 */}
+      <div className="mt-3 rounded-xl border border-gray-800 bg-[#0b0e14] p-4">
+        {hasDota2 ? (
+          <a
+            href={`https://www.opendota.com/players/${profile.dota2_account_id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block transition-opacity hover:opacity-80"
+          >
+            <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-gray-500">
+              Dota 2
+            </p>
+            <p className="mt-1 text-sm font-bold text-white">
+              {dotaPersonaName ?? `ID: ${profile.dota2_account_id}`}
+            </p>
+            {dotaPersonaName && (
+              <p className="text-[10px] text-gray-500">ID: {profile.dota2_account_id}</p>
+            )}
+            <span className="text-[8px] font-bold text-red-400">
+              Ver en OpenDota →
+            </span>
+          </a>
+        ) : (
+          <div className="text-center">
+            <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-gray-600">
+              No Dota 2 account linked
+            </p>
+            <a
+              href={`/${locale}/settings`}
+              className="mt-2 inline-block text-xs font-bold text-[var(--color-accent)] hover:text-purple-300"
+            >
+              Link Dota 2
             </a>
           </div>
         )}

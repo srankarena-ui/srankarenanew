@@ -425,6 +425,185 @@ export async function unlinkCRAccount() {
   return { success: true };
 }
 
+async function resolveToAccountId(input: string): Promise<{ accountId: number } | { error: string }> {
+  const raw = input.trim();
+
+  // Case 1: bare SteamID64
+  if (/^\d{17}$/.test(raw)) {
+    const accountId = Number(BigInt(raw) - BigInt("76561197960265728"));
+    return accountId > 0 ? { accountId } : { error: "Invalid SteamID64" };
+  }
+
+  // Case 2: steamcommunity.com URL — extract vanity name or numeric ID
+  const profileMatch = raw.match(/steamcommunity\.com\/profiles\/(\d{17})/);
+  if (profileMatch) {
+    const accountId = Number(BigInt(profileMatch[1]) - BigInt("76561197960265728"));
+    return accountId > 0 ? { accountId } : { error: "Invalid Steam profile URL" };
+  }
+
+  const vanityMatch = raw.match(/steamcommunity\.com\/id\/([^/?#]+)/);
+  if (vanityMatch) {
+    // Resolve vanity URL via Steam API
+    const apiKey = process.env.STEAM_API_KEY;
+    if (!apiKey) return { error: "Steam API key not configured — contact an admin" };
+    const res = await fetch(
+      `https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/?key=${apiKey}&vanityurl=${encodeURIComponent(vanityMatch[1])}`
+    );
+    if (!res.ok) return { error: "Could not reach Steam API" };
+    const data = await res.json() as { response: { success: number; steamid?: string } };
+    if (data.response.success !== 1 || !data.response.steamid)
+      return { error: "Steam profile not found" };
+    const accountId = Number(BigInt(data.response.steamid) - BigInt("76561197960265728"));
+    return { accountId };
+  }
+
+  return { error: "Paste your Steam profile URL or SteamID64" };
+}
+
+const STEAM_VERIFICATION_TTL_MS = 15 * 60 * 1000;
+
+async function ensureSteamAccountAvailable(userId: string, accountId: number) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("dota2_account_id", accountId)
+    .neq("id", userId)
+    .maybeSingle();
+  if (data) return { error: "This Steam account is already linked to another S-Rank Arena account" };
+  return {};
+}
+
+export async function startSteamVerification(input: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const resolved = await resolveToAccountId(input);
+  if ("error" in resolved) return resolved;
+  const { accountId } = resolved;
+
+  const availability = await ensureSteamAccountAvailable(user.id, accountId);
+  if (availability.error) return availability;
+
+  const code = "| S-Rank Arena";
+  const now = new Date();
+  const { error } = await supabase.from("steam_verification_challenges").upsert({
+    user_id: user.id,
+    account_id: accountId,
+    code,
+    created_at: now.toISOString(),
+    expires_at: new Date(now.getTime() + STEAM_VERIFICATION_TTL_MS).toISOString(),
+    verified_at: null,
+  });
+
+  if (error) return { error: error.message };
+  revalidatePath("/", "layout");
+  return { success: true, code, accountId };
+}
+
+export async function completeSteamVerification() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { data: challenge } = await supabase
+    .from("steam_verification_challenges")
+    .select("*")
+    .eq("user_id", user.id)
+    .is("verified_at", null)
+    .gt("expires_at", new Date().toISOString())
+    .single();
+
+  if (!challenge) return { error: "No active verification challenge. Start a new one." };
+
+  const apiKey = process.env.STEAM_API_KEY;
+  if (!apiKey) return { error: "Steam API key not configured" };
+
+  // Convert 32-bit account_id back to SteamID64
+  const steamId64 = (BigInt(challenge.account_id) + BigInt("76561197960265728")).toString();
+  const res = await fetch(
+    `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=${apiKey}&steamids=${steamId64}`
+  );
+  if (!res.ok) return { error: "Could not reach Steam API" };
+
+  const data = await res.json() as { response: { players: { personaname: string }[] } };
+  const player = data.response.players[0];
+  if (!player) return { error: "Steam profile not found" };
+
+  if (!player.personaname.includes(challenge.code))
+    return { error: `Code not found in your Steam display name. Make sure it shows "${challenge.code}" and try again.` };
+
+  const availability = await ensureSteamAccountAvailable(user.id, challenge.account_id);
+  if (availability.error) return availability;
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ dota2_account_id: challenge.account_id })
+    .eq("id", user.id);
+  if (error) return { error: error.message };
+
+  await supabase
+    .from("steam_verification_challenges")
+    .update({ verified_at: new Date().toISOString() })
+    .eq("user_id", user.id);
+
+  revalidatePath("/", "layout");
+  return { success: true };
+}
+
+export async function cancelSteamVerification() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  await supabase.from("steam_verification_challenges").delete().eq("user_id", user.id);
+  revalidatePath("/", "layout");
+  return { success: true };
+}
+
+export async function linkDota2Account(input: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const resolved = await resolveToAccountId(input);
+  if ("error" in resolved) return resolved;
+  const { accountId } = resolved;
+
+  // Verify the account exists on OpenDota
+  const check = await fetch(`https://api.opendota.com/api/players/${accountId}`, {
+    next: { revalidate: 0 },
+  });
+  if (!check.ok) return { error: "Steam account not found on OpenDota" };
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ dota2_account_id: accountId })
+    .eq("id", user.id);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/", "layout");
+  return { success: true, accountId };
+}
+
+export async function unlinkDota2Account() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ dota2_account_id: null })
+    .eq("id", user.id);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/", "layout");
+  return { success: true };
+}
+
 export async function updateProfile(formData: FormData) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

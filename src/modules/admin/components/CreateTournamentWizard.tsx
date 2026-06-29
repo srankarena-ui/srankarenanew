@@ -8,10 +8,12 @@ import { Button } from "@/core/ui/Button";
 import { useToast } from "@/core/ui/Toast";
 import { RichTextEditor } from "@/core/ui/RichTextEditor";
 import { createTournament } from "@/modules/admin/actions";
+import { VaultPrizePicker, type PickableItem } from "@/modules/vault/components/VaultPrizePicker";
 import type { Game } from "@/core/types";
 
 interface Props {
   games: Game[];
+  vaultItems?: PickableItem[];
 }
 
 const STEPS = ["basics", "info", "settings"] as const;
@@ -63,7 +65,7 @@ const TRIAL_MATCH_TYPES = [
   },
 ];
 
-export function CreateTournamentWizard({ games }: Props) {
+export function CreateTournamentWizard({ games, vaultItems = [] }: Props) {
   const t = useTranslations("admin");
   const locale = useLocale();
   const router = useRouter();
@@ -84,6 +86,7 @@ export function CreateTournamentWizard({ games }: Props) {
   const [contactLink, setContactLink] = useState("");
   const [rules, setRules] = useState("");
   const [prizes, setPrizes] = useState("");
+  const [prizeItemIds, setPrizeItemIds] = useState<Set<string>>(new Set());
 
   // Step 3 — Settings
   const [seriesFormat, setSeriesFormat] = useState("bo1");
@@ -107,10 +110,19 @@ export function CreateTournamentWizard({ games }: Props) {
 
   const selectedGame = useMemo(() => games.find((g) => g.name === gameName), [games, gameName]);
   const isLoL = gameName === "League of Legends";
+  const isDota = gameName === "Dota 2";
   const isSummonerTrials = isLoL && tournamentFormat === "summoner_trials";
 
   function goTo(step: number) {
     if (step >= 0 && step <= 2) setCurrentStep(step);
+  }
+
+  function togglePrize(assetId: string) {
+    setPrizeItemIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(assetId)) next.delete(assetId); else next.add(assetId);
+      return next;
+    });
   }
 
   async function handleSubmit() {
@@ -135,6 +147,9 @@ export function CreateTournamentWizard({ games }: Props) {
     formData.set("banner_url", bannerUrl);
     formData.set("contact_method", contactLink ? `${contactMethod}: ${contactLink}` : contactMethod);
     formData.set("reward_points", rewardPoints);
+    if (isDota && prizeItemIds.size) {
+      formData.set("prize_item_ids", JSON.stringify([...prizeItemIds]));
+    }
     if (!isSummonerTrials) {
       formData.set("team_size", String(teamSize));
     }
@@ -349,6 +364,19 @@ export function CreateTournamentWizard({ games }: Props) {
             rows={3}
           />
         </div>
+
+        {/* Dota 2: pick real items from the vault as prizes */}
+        {isDota && (
+          <div className="rounded-xl border border-gray-800 bg-[#0b0e14] p-4">
+            <label className="mb-1 block text-[9px] font-bold uppercase tracking-[0.2em] text-gray-500">
+              🎁 Premios del Vault (Dota 2)
+            </label>
+            <p className="mb-3 text-[10px] text-gray-600">
+              Selecciona items donados para asignarlos como premios de este torneo.
+            </p>
+            <VaultPrizePicker items={vaultItems} selected={prizeItemIds} onToggle={togglePrize} />
+          </div>
+        )}
       </div>
     );
   }

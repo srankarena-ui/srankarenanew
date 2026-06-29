@@ -14,7 +14,7 @@ export async function createTournament(formData: FormData) {
 
   const raw = Object.fromEntries(formData.entries());
 
-  const { error } = await supabase.from("tournaments").insert({
+  const { data: created, error } = await supabase.from("tournaments").insert({
     title: raw.title as string,
     description: (raw.description as string) || null,
     game: raw.game as string,
@@ -36,9 +36,19 @@ export async function createTournament(formData: FormData) {
       ? { trials_config: JSON.parse(raw.trials_config as string) }
       : {}),
     created_by: user.id,
-  });
+  }).select("id").single();
 
   if (error) return { error: error.message };
+
+  // Link selected vault items as prizes for this tournament.
+  const prizeIds = raw.prize_item_ids
+    ? (JSON.parse(raw.prize_item_ids as string) as string[])
+    : [];
+  if (prizeIds.length) {
+    await supabase.from("vault_items")
+      .update({ tournament_id: created.id, status: "assigned" })
+      .in("asset_id", prizeIds);
+  }
 
   revalidatePath("/admin");
   revalidatePath("/tournaments");
@@ -56,6 +66,32 @@ export async function updateTournament(id: string, updates: Database["public"]["
 
   revalidatePath("/admin");
   revalidatePath(`/tournaments/${id}`);
+  return { success: true };
+}
+
+// Sync which vault items are assigned as prizes for a tournament.
+// Releases items no longer selected (keeping any already 'delivered').
+export async function setTournamentPrizes(tournamentId: string, assetIds: string[]) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  let release = supabase.from("vault_items")
+    .update({ tournament_id: null, status: "available" })
+    .eq("tournament_id", tournamentId)
+    .eq("status", "assigned");
+  if (assetIds.length) release = release.not("asset_id", "in", `(${assetIds.join(",")})`);
+  const { error: relErr } = await release;
+  if (relErr) return { error: relErr.message };
+
+  if (assetIds.length) {
+    const { error: assignErr } = await supabase.from("vault_items")
+      .update({ tournament_id: tournamentId, status: "assigned" })
+      .in("asset_id", assetIds);
+    if (assignErr) return { error: assignErr.message };
+  }
+
+  revalidatePath(`/tournaments/${tournamentId}`);
   return { success: true };
 }
 

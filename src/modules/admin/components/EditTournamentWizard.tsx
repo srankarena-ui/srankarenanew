@@ -7,12 +7,15 @@ import { Input } from "@/core/ui/Input";
 import { Button } from "@/core/ui/Button";
 import { useToast } from "@/core/ui/Toast";
 import { RichTextEditor } from "@/core/ui/RichTextEditor";
-import { updateTournament } from "@/modules/admin/actions";
+import { updateTournament, setTournamentPrizes } from "@/modules/admin/actions";
+import { VaultPrizePicker, type PickableItem } from "@/modules/vault/components/VaultPrizePicker";
 import type { Game, Tournament } from "@/core/types";
 
 interface Props {
   tournament: Tournament;
   games: Game[];
+  vaultItems?: PickableItem[];
+  assignedPrizeIds?: string[];
 }
 
 const STEPS = ["basics", "info", "settings"] as const;
@@ -20,7 +23,7 @@ const SERIES_FORMATS = ["bo1", "bo3", "bo5"];
 const CONTACT_METHODS = ["discord", "whatsapp", "telegram", "other"];
 const PLAYER_LIMITS = ["limited", "unlimited"];
 
-export function EditTournamentWizard({ tournament, games }: Props) {
+export function EditTournamentWizard({ tournament, games, vaultItems = [], assignedPrizeIds = [] }: Props) {
   const t = useTranslations("admin");
   const locale = useLocale();
   const router = useRouter();
@@ -47,6 +50,7 @@ export function EditTournamentWizard({ tournament, games }: Props) {
   const [contactLink, setContactLink] = useState(contactParts[1] || "");
   const [rules, setRules] = useState(tournament.rules || "");
   const [prizes, setPrizes] = useState(tournament.prizes || "");
+  const [prizeItemIds, setPrizeItemIds] = useState<Set<string>>(new Set(assignedPrizeIds));
 
   // Step 3 — Settings
   const [seriesFormat, setSeriesFormat] = useState(tournament.series_format || "bo1");
@@ -60,9 +64,18 @@ export function EditTournamentWizard({ tournament, games }: Props) {
   const [rewardPoints, setRewardPoints] = useState(String(tournament.reward_points));
 
   const isLoL = gameName === "League of Legends";
+  const isDota = gameName === "Dota 2";
 
   function goTo(step: number) {
     if (step >= 0 && step <= 2) setCurrentStep(step);
+  }
+
+  function togglePrize(assetId: string) {
+    setPrizeItemIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(assetId)) next.delete(assetId); else next.add(assetId);
+      return next;
+    });
   }
 
   async function handleSubmit() {
@@ -92,10 +105,21 @@ export function EditTournamentWizard({ tournament, games }: Props) {
 
     if (result.error) {
       toast(result.error, "error");
-    } else {
-      toast("Tournament updated!", "success");
-      router.push(`/${locale}/admin`);
+      setLoading(false);
+      return;
     }
+
+    if (isDota) {
+      const prizeResult = await setTournamentPrizes(tournament.id, [...prizeItemIds]);
+      if (prizeResult.error) {
+        toast(`Premios: ${prizeResult.error}`, "error");
+        setLoading(false);
+        return;
+      }
+    }
+
+    toast("Tournament updated!", "success");
+    router.push(`/${locale}/admin`);
     setLoading(false);
   }
 
@@ -255,6 +279,19 @@ export function EditTournamentWizard({ tournament, games }: Props) {
             rows={3}
           />
         </div>
+
+        {/* Dota 2: pick real items from the vault as prizes */}
+        {isDota && (
+          <div className="rounded-xl border border-gray-800 bg-[#0b0e14] p-4">
+            <label className="mb-1 block text-[9px] font-bold uppercase tracking-[0.2em] text-gray-500">
+              🎁 Premios del Vault (Dota 2)
+            </label>
+            <p className="mb-3 text-[10px] text-gray-600">
+              Selecciona items donados para asignarlos como premios de este torneo.
+            </p>
+            <VaultPrizePicker items={vaultItems} selected={prizeItemIds} onToggle={togglePrize} />
+          </div>
+        )}
       </div>
     );
   }

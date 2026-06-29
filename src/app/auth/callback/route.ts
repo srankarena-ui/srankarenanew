@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { logLogin } from "@/core/lib/activity-logger";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
+  const next = searchParams.get("next") ?? "/es";
 
   if (code) {
     const cookieStore = await cookies();
@@ -26,11 +27,18 @@ export async function GET(request: Request) {
       }
     );
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error && data.user) {
+      // Detect which OAuth provider was used
+      const provider = data.user.app_metadata?.provider;
+      if (provider === "google" || provider === "discord") {
+        const userAgent = request.headers.get("user-agent") || "";
+        await logLogin(data.user.id, provider, { userAgent });
+      }
+
       return NextResponse.redirect(`${origin}${next}`);
     }
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth_callback_error`);
+  return NextResponse.redirect(`${origin}/es/login?error=auth_callback_error`);
 }

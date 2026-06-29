@@ -9,6 +9,7 @@ export type Tournament = Database["public"]["Tables"]["tournaments"]["Row"];
 export type TournamentInsert = Database["public"]["Tables"]["tournaments"]["Insert"];
 export type TournamentUpdate = Database["public"]["Tables"]["tournaments"]["Update"];
 export type RiotVerificationChallenge = Database["public"]["Tables"]["riot_verification_challenges"]["Row"];
+export type SteamVerificationChallenge = Database["public"]["Tables"]["steam_verification_challenges"]["Row"];
 
 export type TournamentParticipant = Database["public"]["Tables"]["tournament_participants"]["Row"];
 export type TournamentMatch = Database["public"]["Tables"]["tournament_matches"]["Row"];

@@ -20,13 +20,19 @@ import {
   linkCRAccountDirect,
   unlinkCRAccount,
   updateProfile,
+  linkDota2Account,
+  unlinkDota2Account,
+  startSteamVerification,
+  completeSteamVerification,
+  cancelSteamVerification,
 } from "@/modules/settings/actions";
-import type { Profile, RiotVerificationChallenge, VerificationConfig } from "@/core/types";
+import type { Profile, RiotVerificationChallenge, SteamVerificationChallenge, VerificationConfig } from "@/core/types";
 
 interface SettingsViewProps {
   profile: Profile;
   riotVerificationChallenge: RiotVerificationChallenge | null;
   verificationConfig: VerificationConfig;
+  steamVerificationChallenge: SteamVerificationChallenge | null;
 }
 
 const PROFILE_ICON_CDN_VERSION = "14.10.1";
@@ -70,7 +76,7 @@ function ProfileIconPreview({ iconId, label }: { iconId: number; label: string }
   );
 }
 
-export function SettingsView({ profile, riotVerificationChallenge, verificationConfig }: SettingsViewProps) {
+export function SettingsView({ profile, riotVerificationChallenge, verificationConfig, steamVerificationChallenge }: SettingsViewProps) {
   const t = useTranslations("settings");
   const router = useRouter();
   const { toast } = useToast();
@@ -100,6 +106,11 @@ export function SettingsView({ profile, riotVerificationChallenge, verificationC
   const [crTag, setCrTag] = useState("");
   const [crToken, setCrToken] = useState("");
   const [crLoading, setCrLoading] = useState(false);
+
+  // Dota 2 state
+  const [steamId64, setSteamId64] = useState("");
+  const [dota2Loading, setDota2Loading] = useState(false);
+  const [showSteamHelp, setShowSteamHelp] = useState(false);
 
   // Profile state
   const [profileLoading, setProfileLoading] = useState(false);
@@ -395,6 +406,120 @@ export function SettingsView({ profile, riotVerificationChallenge, verificationC
             <p className="text-xs text-gray-500">{requireCrVerification ? t("crVerificationHint") : t("crDirectLinkHint")}</p>
             <Button onClick={handleLinkCR} isLoading={crLoading} disabled={requireCrVerification ? !crTag || !crToken : !crTag}>
               {requireCrVerification ? t("verifyAndLink") : t("link")}
+            </Button>
+          </div>
+        )}
+      </Card>
+
+      {/* ── DOTA 2 ── */}
+      <Card>
+        <h2 className="mb-4 text-lg font-bold text-white">Dota 2</h2>
+
+        {profile.dota2_account_id ? (
+          /* ── Linked ── */
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-300">Account ID: <span className="text-white font-mono">{profile.dota2_account_id}</span></p>
+              <a href={`https://www.opendota.com/players/${profile.dota2_account_id}`} target="_blank" rel="noreferrer" className="text-xs text-blue-400 hover:underline">
+                Ver en OpenDota
+              </a>
+            </div>
+            <Button variant="danger" size="sm" isLoading={dota2Loading} onClick={async () => {
+              setDota2Loading(true);
+              const r = await unlinkDota2Account();
+              setDota2Loading(false);
+              if (r.error) toast(r.error, "error");
+              else { toast("Dota 2 desvinculado", "info"); router.refresh(); }
+            }}>
+              Unlink
+            </Button>
+          </div>
+
+        ) : steamVerificationChallenge ? (
+          /* ── Challenge active ── */
+          <div className="space-y-4">
+            <div className="rounded-xl border border-amber-700/40 bg-amber-950/20 p-4 space-y-3">
+              <p className="text-sm font-semibold text-amber-300">Agrega este código a tu nombre de Steam</p>
+              <div className="flex items-center gap-3">
+                <code className="text-xl font-bold tracking-widest text-white bg-[#1e2436] px-4 py-2 rounded-lg border border-amber-700/40">
+                  {steamVerificationChallenge.code}
+                </code>
+              </div>
+              <ol className="text-xs text-gray-300 space-y-1 list-decimal list-inside">
+                <li>Abre Steam → haz clic en tu nombre → <strong className="text-white">Editar perfil</strong>.</li>
+                <li>En <strong className="text-white">Nombre del perfil</strong>, agrega el texto de arriba al final (ej: <span className="text-amber-300">SethStt | S-Rank Arena</span>).</li>
+                <li>Guarda y haz clic en <strong className="text-white">Verificar</strong> abajo.</li>
+                <li>Luego puedes quitar el texto de tu nombre.</li>
+              </ol>
+              <p className="text-[11px] text-gray-500">
+                Expira a las {hasMounted ? new Date(steamVerificationChallenge.expires_at).toLocaleTimeString() : "--:--:--"}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button isLoading={dota2Loading} onClick={async () => {
+                setDota2Loading(true);
+                const r = await completeSteamVerification();
+                setDota2Loading(false);
+                if ("error" in r) toast(r.error, "error");
+                else { toast("¡Cuenta de Steam verificada!", "success"); router.refresh(); }
+              }}>
+                Verificar
+              </Button>
+              <Button variant="ghost" size="sm" isLoading={dota2Loading} onClick={async () => {
+                setDota2Loading(true);
+                await cancelSteamVerification();
+                setDota2Loading(false);
+                router.refresh();
+              }}>
+                Cancelar
+              </Button>
+            </div>
+          </div>
+
+        ) : (
+          /* ── Not linked ── */
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-gray-400">Pega el link de tu perfil de Steam.</p>
+              <button
+                type="button"
+                onClick={() => setShowSteamHelp(v => !v)}
+                className="flex-shrink-0 w-5 h-5 rounded-full bg-[#1e2436] border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 text-xs font-bold transition-colors"
+              >
+                ?
+              </button>
+            </div>
+
+            {showSteamHelp && (
+              <div className="rounded-xl border border-blue-800/40 bg-blue-950/20 p-4 text-xs text-gray-300 space-y-2">
+                <p className="font-semibold text-white">¿Cómo obtener el link de tu perfil?</p>
+                <div className="flex gap-2">
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-800/60 text-blue-200 flex items-center justify-center text-[10px] font-bold">1</span>
+                  <p>Abre Steam → haz clic en tu nombre → <strong className="text-white">Ver mi perfil</strong>.</p>
+                </div>
+                <div className="flex gap-2">
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-800/60 text-blue-200 flex items-center justify-center text-[10px] font-bold">2</span>
+                  <p>Copia la URL del navegador y pégala aquí. Funciona con URLs personalizadas y numéricas.</p>
+                </div>
+              </div>
+            )}
+
+            <Input
+              value={steamId64}
+              onChange={(e) => setSteamId64(e.target.value)}
+              label="Perfil de Steam"
+              placeholder="https://steamcommunity.com/id/SethStt"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <Button isLoading={dota2Loading} disabled={!steamId64.trim()} onClick={async () => {
+              setDota2Loading(true);
+              const r = await startSteamVerification(steamId64);
+              setDota2Loading(false);
+              if ("error" in r && r.error) toast(r.error, "error");
+              else router.refresh();
+            }}>
+              Vincular Dota 2
             </Button>
           </div>
         )}

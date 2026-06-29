@@ -14,17 +14,13 @@ export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, profile, setProfile } = useAuthStore();
-  const { theme, accent, setTheme, setAccent } = useTheme();
+  const { accent, setAccent } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
-  };
 
   // Fallback: if user is set but profile didn't load via AuthProvider, fetch it via server API
   useEffect(() => {
@@ -85,7 +81,7 @@ export function Navbar() {
         {/* Logo */}
         <a href={`/${locale}`} className="flex items-center gap-2">
           <img
-            src={theme === "dark" ? "/s-rank-mark-white.png" : "/s-rank-mark.png"}
+            src="/s-rank-mark-white.png"
             alt="S-Rank Arena"
             className="h-9 w-auto"
           />
@@ -128,24 +124,6 @@ export function Navbar() {
 
         {/* Right side */}
         <div className="flex items-center gap-2">
-          {/* Theme toggle */}
-          <button
-            onClick={toggleTheme}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
-            title={theme === "dark" ? "Light mode" : "Dark mode"}
-          >
-            {theme === "dark" ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="5" />
-                <path d="M12 1v6M12 17v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M17 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24" />
-              </svg>
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-              </svg>
-            )}
-          </button>
-
           {/* Accent selector */}
           <div className="hidden items-center gap-1 sm:flex">
             {(["challenger", "volt", "ember", "aurora"] as Accent[]).map((acc) => (
@@ -179,18 +157,6 @@ export function Navbar() {
           {/* Logged in */}
           {isLoggedIn && (
             <div className="flex items-center gap-2">
-              {/* Admin panel button */}
-              {isAdminUser && (
-                <a
-                  href={`/${locale}/admin`}
-                  className="flex items-center gap-1.5 rounded-lg border border-[var(--color-warning)]/40 bg-[var(--color-warning-soft)] px-3 py-1.5 text-xs font-bold text-[var(--color-warning)] transition-all hover:border-[var(--color-warning)]/70 hover:shadow-[var(--color-accent-glow)]"
-                >
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                  </svg>
-                  Admin
-                </a>
-              )}
               {/* Username — links to public profile */}
               <a
                 href={`/${locale}/profile/${encodeURIComponent(profile?.username || user?.id || "")}`}

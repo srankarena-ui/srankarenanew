@@ -36,6 +36,13 @@ export default async function TournamentDetailPage({
 
   const { data: { user } } = await supabase.auth.getUser();
 
+  // Vault items assigned as prizes for this tournament.
+  const { data: prizeItems } = await supabase
+    .from("vault_items")
+    .select("asset_id, name, icon_url, rarity, price_cents")
+    .eq("tournament_id", id)
+    .order("price_cents", { ascending: false, nullsFirst: false });
+
   const isRegistered = user
     ? (participants || []).some((p) => p.user_id === user.id)
     : false;
@@ -85,6 +92,7 @@ export default async function TournamentDetailPage({
         isAdmin={userProfile?.role === "admin" || userProfile?.role === "organizador"}
         trialsEnrollments={trialsEnrollments}
         teamRegistrationCount={teamRegistrationCount}
+        prizeItems={prizeItems || []}
       />
     </div>
   );

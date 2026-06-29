@@ -23,6 +23,7 @@ export type Database = {
           cr_tag: string | null;
           cr_name: string | null;
           riot_linked_at: string | null;
+          dota2_account_id: number | null;
           is_dummy: boolean;
           created_at: string;
           updated_at: string;
@@ -40,6 +41,7 @@ export type Database = {
           cr_tag?: string | null;
           cr_name?: string | null;
           riot_linked_at?: string | null;
+          dota2_account_id?: number | null;
           is_dummy?: boolean;
           created_at?: string;
           updated_at?: string;
@@ -57,9 +59,103 @@ export type Database = {
           cr_tag?: string | null;
           cr_name?: string | null;
           riot_linked_at?: string | null;
+          dota2_account_id?: number | null;
           is_dummy?: boolean;
           created_at?: string;
           updated_at?: string;
+        };
+        Relationships: [];
+      };
+      vault_items: {
+        Row: {
+          asset_id: string;
+          class_id: string;
+          name: string;
+          icon_url: string;
+          rarity: string | null;
+          hero: string | null;
+          item_type: string | null;
+          market_hash_name: string | null;
+          price_cents: number | null;
+          price_updated_at: string | null;
+          tournament_id: string | null;
+          donor_profile_id: string | null;
+          status: string;
+          synced_at: string;
+        };
+        Insert: {
+          asset_id: string;
+          class_id: string;
+          name: string;
+          icon_url: string;
+          rarity?: string | null;
+          hero?: string | null;
+          item_type?: string | null;
+          market_hash_name?: string | null;
+          price_cents?: number | null;
+          price_updated_at?: string | null;
+          tournament_id?: string | null;
+          donor_profile_id?: string | null;
+          status?: string;
+          synced_at?: string;
+        };
+        Update: {
+          asset_id?: string;
+          class_id?: string;
+          name?: string;
+          icon_url?: string;
+          rarity?: string | null;
+          hero?: string | null;
+          item_type?: string | null;
+          market_hash_name?: string | null;
+          price_cents?: number | null;
+          price_updated_at?: string | null;
+          tournament_id?: string | null;
+          donor_profile_id?: string | null;
+          status?: string;
+          synced_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "vault_items_tournament_id_fkey";
+            columns: ["tournament_id"];
+            isOneToOne: false;
+            referencedRelation: "tournaments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "vault_items_donor_profile_id_fkey";
+            columns: ["donor_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      steam_verification_challenges: {
+        Row: {
+          user_id: string;
+          account_id: number;
+          code: string;
+          created_at: string;
+          expires_at: string;
+          verified_at: string | null;
+        };
+        Insert: {
+          user_id: string;
+          account_id: number;
+          code: string;
+          created_at?: string;
+          expires_at: string;
+          verified_at?: string | null;
+        };
+        Update: {
+          user_id?: string;
+          account_id?: number;
+          code?: string;
+          created_at?: string;
+          expires_at?: string;
+          verified_at?: string | null;
         };
         Relationships: [];
       };

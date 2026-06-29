@@ -64,26 +64,29 @@ export default async function LocaleLayout({
   ]);
 
   return (
-    <html className={`${plusJakartaSans.variable} ${jetbrainsMono.variable}`} data-theme="dark" data-accent="challenger" suppressHydrationWarning>
+    <html className={`${plusJakartaSans.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <head>
-        {/* Prevent theme flash: read from localStorage and set data-* before React hydrates */}
+        {/* Prevent accent flash: read from localStorage before React hydrates */}
         <script
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                const theme = localStorage.getItem('theme') || 'dark';
-                const accent = localStorage.getItem('accent') || 'challenger';
-                document.documentElement.setAttribute('data-theme', theme);
-                document.documentElement.setAttribute('data-accent', accent);
+                try {
+                  const accent = localStorage.getItem('accent') || 'challenger';
+                  document.documentElement.setAttribute('data-accent', accent);
+                } catch (e) {
+                  // localStorage not available
+                }
               })();
             `,
           }}
         />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <AuthProvider initialUser={authData.initialUser} initialProfile={authData.initialProfile}>
-            <ThemeProvider initialTheme="dark" initialAccent="challenger">
+            <ThemeProvider initialAccent="challenger">
               <ToastProvider>
                 <Navbar />
                 <main className="min-h-[calc(100vh-57px)]">{children}</main>

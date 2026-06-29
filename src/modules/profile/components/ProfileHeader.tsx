@@ -1,6 +1,7 @@
 import { Badge } from "@/core/ui/Badge";
 import { Card } from "@/core/ui/Card";
 import { getRankForXp } from "@/core/lib/ranks";
+import { donorTier, fmtUsd } from "@/modules/vault/donor-tiers";
 import type { Profile } from "@/core/types";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -8,12 +9,14 @@ import { useTranslations } from "next-intl";
 interface ProfileHeaderProps {
   profile: Profile;
   locale: string;
+  donationTotalCents?: number;
 }
 
-export function ProfileHeader({ profile, locale }: ProfileHeaderProps) {
+export function ProfileHeader({ profile, locale, donationTotalCents = 0 }: ProfileHeaderProps) {
   const t = useTranslations("profile");
   const xp = profile.experience ?? 0;
   const currentRank = getRankForXp(xp);
+  const tier = donorTier(donationTotalCents);
 
   return (
     <Card className="relative overflow-hidden">
@@ -43,6 +46,15 @@ export function ProfileHeader({ profile, locale }: ProfileHeaderProps) {
             <Badge variant="accent">
               {t("levelLabel", { level: Math.floor(xp / 100) + 1 })}
             </Badge>
+            {tier && (
+              <span
+                className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+                style={{ color: tier.color, borderColor: tier.color }}
+                title={`Donante ${tier.name} · ${fmtUsd(donationTotalCents)} donados`}
+              >
+                {tier.emoji} Donante {tier.name}
+              </span>
+            )}
           </div>
           <Link
             href={`/${locale}/profile/${encodeURIComponent(profile.username ?? "")}/achievements`}

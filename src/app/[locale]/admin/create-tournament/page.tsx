@@ -21,9 +21,16 @@ export default async function CreateTournamentPage() {
     .select("*")
     .order("name");
 
+  // Available vault items (Dota 2 prizes) the wizard can assign.
+  const { data: vaultItems } = await supabase
+    .from("vault_items")
+    .select("asset_id, name, icon_url, rarity, price_cents")
+    .eq("status", "available")
+    .order("price_cents", { ascending: false, nullsFirst: false });
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <CreateTournamentWizard games={games || []} />
+      <CreateTournamentWizard games={games || []} vaultItems={vaultItems || []} />
     </div>
   );
 }

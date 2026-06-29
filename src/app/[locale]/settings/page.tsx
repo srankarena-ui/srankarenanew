@@ -27,9 +27,22 @@ export default async function SettingsPage() {
   const verificationConfig = await getVerificationConfig();
   const resolvedProfile = profile ? await withResolvedClashRoyaleName(profile) : profile;
 
+  const { data: steamVerificationChallenge } = await supabase
+    .from("steam_verification_challenges")
+    .select("*")
+    .eq("user_id", user.id)
+    .is("verified_at", null)
+    .gt("expires_at", new Date().toISOString())
+    .maybeSingle();
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <SettingsView profile={resolvedProfile!} riotVerificationChallenge={riotVerificationChallenge} verificationConfig={verificationConfig} />
+      <SettingsView
+        profile={resolvedProfile!}
+        riotVerificationChallenge={riotVerificationChallenge}
+        verificationConfig={verificationConfig}
+        steamVerificationChallenge={steamVerificationChallenge}
+      />
     </div>
   );
 }
