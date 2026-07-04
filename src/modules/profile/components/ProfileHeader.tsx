@@ -38,6 +38,11 @@ export function ProfileHeader({ profile, locale, donationTotalCents = 0 }: Profi
         <div>
           <h1 className="text-3xl uppercase italic tracking-tighter text-white">
             {profile.username}
+            {profile.discriminator && (
+              <span className="ml-1 text-lg not-italic tracking-normal text-gray-600">
+                #{profile.discriminator}
+              </span>
+            )}
           </h1>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <Badge variant={profile.role === "admin" ? "danger" : profile.role === "organizador" ? "warning" : "success"}>

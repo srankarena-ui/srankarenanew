@@ -5,6 +5,20 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { logLogin, logAccountCreated } from "@/core/lib/activity-logger";
 
+type DbClient = Awaited<ReturnType<typeof createClient>>;
+
+// Find a 6-digit discriminator that makes username#disc unique (case-insensitive).
+async function pickDiscriminator(supabase: DbClient, username: string): Promise<string | null> {
+  const pattern = username.replace(/[\\%_]/g, (c) => `\\${c}`); // escape ILIKE wildcards
+  for (let i = 0; i < 12; i++) {
+    const disc = String(Math.floor(100000 + Math.random() * 900000));
+    const { data } = await supabase
+      .from("profiles").select("id").ilike("username", pattern).eq("discriminator", disc).maybeSingle();
+    if (!data) return disc;
+  }
+  return null;
+}
+
 export async function signInWithEmail(formData: FormData) {
   const supabase = await createClient();
   const email = formData.get("email") as string;
@@ -44,11 +58,12 @@ export async function signUpWithEmail(formData: FormData) {
     return { error: error.message };
   }
 
-  // Update profile with username
+  // Update profile with username + a unique discriminator (tag)
   if (data.user) {
+    const discriminator = await pickDiscriminator(supabase, username);
     await supabase
       .from("profiles")
-      .update({ username })
+      .update({ username, discriminator, onboarded: true })
       .eq("id", data.user.id);
 
     // Log account creation
@@ -67,12 +82,11 @@ export async function completeOnboarding(username: string) {
   if (clean.length < 3 || clean.length > 20) return { error: "El usuario debe tener entre 3 y 20 caracteres" };
   if (!/^[a-zA-Z0-9_]+$/.test(clean)) return { error: "Solo letras, números y guion bajo" };
 
-  const { data: taken } = await supabase
-    .from("profiles").select("id").eq("username", clean).neq("id", user.id).maybeSingle();
-  if (taken) return { error: "Ese usuario ya está tomado" };
+  const discriminator = await pickDiscriminator(supabase, clean);
+  if (!discriminator) return { error: "No se pudo generar el tag, intenta de nuevo" };
 
   const { error } = await supabase
-    .from("profiles").update({ username: clean, onboarded: true }).eq("id", user.id);
+    .from("profiles").update({ username: clean, discriminator, onboarded: true }).eq("id", user.id);
   if (error) return { error: error.message };
 
   return { success: true };

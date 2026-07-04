@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { completeOnboarding } from "@/modules/auth/actions";
 import { Button } from "@/core/ui/Button";
 import { Input } from "@/core/ui/Input";
@@ -12,7 +11,6 @@ function initialValue(suggested: string) {
 }
 
 export function OnboardingForm({ suggested }: { suggested: string }) {
-  const router = useRouter();
   const [username, setUsername] = useState(initialValue(suggested));
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -27,8 +25,8 @@ export function OnboardingForm({ suggested }: { suggested: string }) {
       setLoading(false);
       return;
     }
-    router.push("/");
-    router.refresh();
+    // Full navigation — reliable and forces a fresh session-aware render.
+    window.location.href = "/";
   }
 
   return (
