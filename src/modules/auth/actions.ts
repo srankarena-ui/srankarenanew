@@ -61,7 +61,15 @@ export async function signUpWithEmail(formData: FormData) {
 export async function signInWithOAuth(provider: "google" | "discord") {
   const supabase = await createClient();
   const headerList = await headers();
-  const origin = headerList.get("origin") || "";
+
+  // Build an absolute origin. If the Origin header is missing, fall back to the
+  // Host header so redirectTo is never relative (a relative value makes Supabase
+  // ignore it and bounce back to site_url root with ?code=).
+  let origin = headerList.get("origin");
+  if (!origin) {
+    const host = headerList.get("host");
+    if (host) origin = `${host.startsWith("localhost") ? "http" : "https"}://${host}`;
+  }
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
