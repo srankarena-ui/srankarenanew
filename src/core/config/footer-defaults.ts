@@ -5,16 +5,15 @@ export const DEFAULT_FOOTER_CONFIG: FooterConfig = {
     {
       title: "S-Rank Arena",
       links: [
-        { label: "About", href: "#" },
-        { label: "Contact", href: "#" },
+        { label: "About", href: "/about-us" },
+        { label: "Contact", href: "/contact" },
       ],
     },
     {
       title: "Legal & Privacy",
       links: [
-        { label: "Terms of Service", href: "#" },
-        { label: "Privacy Policy", href: "#" },
-        { label: "Cookie Policy", href: "#" },
+        { label: "Terms of Service", href: "/terms" },
+        { label: "Privacy Policy", href: "/privacy" },
       ],
     },
   ],
