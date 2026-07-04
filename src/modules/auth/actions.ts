@@ -58,6 +58,26 @@ export async function signUpWithEmail(formData: FormData) {
   redirect("/");
 }
 
+export async function completeOnboarding(username: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "No autenticado" };
+
+  const clean = username.trim();
+  if (clean.length < 3 || clean.length > 20) return { error: "El usuario debe tener entre 3 y 20 caracteres" };
+  if (!/^[a-zA-Z0-9_]+$/.test(clean)) return { error: "Solo letras, números y guion bajo" };
+
+  const { data: taken } = await supabase
+    .from("profiles").select("id").eq("username", clean).neq("id", user.id).maybeSingle();
+  if (taken) return { error: "Ese usuario ya está tomado" };
+
+  const { error } = await supabase
+    .from("profiles").update({ username: clean, onboarded: true }).eq("id", user.id);
+  if (error) return { error: error.message };
+
+  return { success: true };
+}
+
 export async function signInWithOAuth(provider: "google" | "discord") {
   const supabase = await createClient();
   const headerList = await headers();

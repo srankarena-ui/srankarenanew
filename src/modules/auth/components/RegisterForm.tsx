@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signUpWithEmail } from "@/modules/auth/actions";
 import { Button } from "@/core/ui/Button";
 import { Input } from "@/core/ui/Input";
+import { OAuthButtons } from "./OAuthButtons";
 import { useTranslations } from "next-intl";
 
 export function RegisterForm() {
@@ -69,6 +70,8 @@ export function RegisterForm() {
           {t("registerButton")}
         </Button>
       </form>
+
+      <OAuthButtons />
 
       <p className="mt-6 text-center text-sm text-gray-500">
         {t("hasAccount")}{" "}

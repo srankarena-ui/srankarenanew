@@ -36,6 +36,13 @@ export async function GET(request: Request) {
         await logLogin(data.user.id, provider, { userAgent });
       }
 
+      // New OAuth users have a placeholder username — send them to pick one.
+      const { data: profile } = await supabase
+        .from("profiles").select("onboarded").eq("id", data.user.id).single();
+      if (profile && !profile.onboarded) {
+        return NextResponse.redirect(`${origin}/onboarding`);
+      }
+
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

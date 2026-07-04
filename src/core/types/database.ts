@@ -24,6 +24,7 @@ export type Database = {
           cr_name: string | null;
           riot_linked_at: string | null;
           dota2_account_id: number | null;
+          onboarded: boolean;
           is_dummy: boolean;
           created_at: string;
           updated_at: string;
@@ -42,6 +43,7 @@ export type Database = {
           cr_name?: string | null;
           riot_linked_at?: string | null;
           dota2_account_id?: number | null;
+          onboarded?: boolean;
           is_dummy?: boolean;
           created_at?: string;
           updated_at?: string;
@@ -60,6 +62,7 @@ export type Database = {
           cr_name?: string | null;
           riot_linked_at?: string | null;
           dota2_account_id?: number | null;
+          onboarded?: boolean;
           is_dummy?: boolean;
           created_at?: string;
           updated_at?: string;
