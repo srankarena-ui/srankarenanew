@@ -40,7 +40,7 @@ export default async function VaultPage({
   const from = (page - 1) * PAGE_SIZE
   let rowsQ = supabase
     .from("vault_items")
-    .select("asset_id, name, icon_url, rarity, price_cents, status, tournament_id, tournaments(id, title), donor:profiles!vault_items_donor_profile_id_fkey(username)")
+    .select("asset_id, name, icon_url, rarity, price_cents, status, tournament_id, tournaments(id, title), donor:profiles!vault_items_donor_profile_id_fkey(username, discriminator)")
     .order("name")
     .range(from, from + PAGE_SIZE - 1)
   if (filter !== "all") rowsQ = rowsQ.eq("status", filter)
@@ -66,22 +66,24 @@ export default async function VaultPage({
     : { data: null }
 
   // Donor leaderboard — small aggregate over all donated items.
+  // Keyed by donor profile id (not username, which may collide across accounts).
   const { data: donatedRows } = await supabase
     .from("vault_items")
-    .select("price_cents, donor:profiles!vault_items_donor_profile_id_fkey(username)")
+    .select("price_cents, donor:profiles!vault_items_donor_profile_id_fkey(id, username, discriminator)")
     .not("donor_profile_id", "is", null)
 
-  const donorMap = new Map<string, { count: number; totalCents: number }>()
+  type DonorAgg = { username: string; discriminator: string | null; count: number; totalCents: number }
+  const donorMap = new Map<string, DonorAgg>()
   for (const row of donatedRows ?? []) {
-    const username = (row.donor as { username: string } | null)?.username
-    if (!username) continue
-    const cur = donorMap.get(username) ?? { count: 0, totalCents: 0 }
+    const donor = row.donor as { id: string; username: string | null; discriminator: string | null } | null
+    if (!donor?.username) continue
+    const cur = donorMap.get(donor.id) ?? { username: donor.username, discriminator: donor.discriminator, count: 0, totalCents: 0 }
     cur.count += 1
     cur.totalCents += row.price_cents ?? 0
-    donorMap.set(username, cur)
+    donorMap.set(donor.id, cur)
   }
   const donors = [...donorMap.entries()]
-    .map(([username, s]) => ({ username, ...s }))
+    .map(([id, s]) => ({ id, ...s }))
     .sort((a, b) => b.totalCents - a.totalCents)
 
   const counts = {

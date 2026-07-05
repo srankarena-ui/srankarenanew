@@ -1,6 +1,9 @@
 import { createClient } from "@/core/supabase/server";
 import { notFound } from "next/navigation";
 import { AchievementsList } from "@/modules/profile/components/AchievementsList";
+import { ProfileDisambiguation } from "@/modules/profile/components/ProfileDisambiguation";
+import { resolveProfileSlug } from "@/modules/profile/lookup";
+import { formatProfileSlug } from "@/core/lib/tag";
 import Link from "next/link";
 
 export default async function AchievementsPage({
@@ -12,13 +15,12 @@ export default async function AchievementsPage({
   const decoded = decodeURIComponent(username);
   const supabase = await createClient();
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, username")
-    .eq("username", decoded)
-    .single();
-
-  if (!profile) notFound();
+  const lookup = await resolveProfileSlug(supabase, decoded);
+  if (lookup.type === "not_found") notFound();
+  if (lookup.type === "ambiguous") {
+    return <ProfileDisambiguation matches={lookup.matches} locale={locale} />;
+  }
+  const profile = lookup.profile;
 
   const { data: achievementsData } = await supabase
     .rpc("get_user_achievements", { p_user_id: profile.id });
@@ -27,7 +29,7 @@ export default async function AchievementsPage({
     <div className="mx-auto max-w-4xl px-4 py-8">
       <div className="mb-6 flex items-center gap-4">
         <Link
-          href={`/${locale}/profile/${encodeURIComponent(profile.username ?? "")}`}
+          href={`/${locale}/profile/${encodeURIComponent(formatProfileSlug(profile.username, profile.discriminator))}`}
           className="text-[10px] text-gray-500 hover:text-[var(--color-accent)] transition-colors"
         >
           ← {profile.username}

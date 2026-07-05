@@ -1,6 +1,7 @@
 import { Badge } from "@/core/ui/Badge";
 import { Card } from "@/core/ui/Card";
 import { getRankForXp } from "@/core/lib/ranks";
+import { formatProfileSlug } from "@/core/lib/tag";
 import { donorTier, fmtUsd } from "@/modules/vault/donor-tiers";
 import type { Profile } from "@/core/types";
 import Link from "next/link";
@@ -62,7 +63,7 @@ export function ProfileHeader({ profile, locale, donationTotalCents = 0 }: Profi
             )}
           </div>
           <Link
-            href={`/${locale}/profile/${encodeURIComponent(profile.username ?? "")}/achievements`}
+            href={`/${locale}/profile/${encodeURIComponent(formatProfileSlug(profile.username, profile.discriminator))}/achievements`}
             className="mt-2 inline-block text-[10px] font-bold text-gray-500 hover:text-[var(--color-accent)] transition-colors"
           >
             {t("viewAchievements")} →

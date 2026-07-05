@@ -1,7 +1,8 @@
 import Link from "next/link"
 import { donorTier, fmtUsd } from "../donor-tiers"
+import { formatProfileSlug } from "@/core/lib/tag"
 
-type Donor = { username: string; count: number; totalCents: number }
+type Donor = { id: string; username: string; discriminator: string | null; count: number; totalCents: number }
 
 export function DonorWall({ donors, locale }: { donors: Donor[]; locale: string }) {
   if (!donors.length) return null
@@ -16,8 +17,8 @@ export function DonorWall({ donors, locale }: { donors: Donor[]; locale: string 
           const tier = donorTier(d.totalCents)
           return (
             <Link
-              key={d.username}
-              href={`/${locale}/profile/${encodeURIComponent(d.username)}`}
+              key={d.id}
+              href={`/${locale}/profile/${encodeURIComponent(formatProfileSlug(d.username, d.discriminator))}`}
               className="flex items-center gap-3 rounded-lg bg-[#1a1f2e] hover:bg-[#242b3d] border border-gray-800 px-4 py-2.5 transition-colors"
             >
               <span className="text-gray-600 font-bold text-sm w-5 text-center">{i + 1}</span>

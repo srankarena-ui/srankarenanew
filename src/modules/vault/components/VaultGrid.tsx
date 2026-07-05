@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
+import { formatProfileSlug } from "@/core/lib/tag"
 
 type VaultItem = {
   asset_id: string
@@ -13,7 +14,7 @@ type VaultItem = {
   price_cents: number | null
   tournament_id: string | null
   tournaments?: { id: string; title: string } | null
-  donor?: { username: string | null } | null
+  donor?: { username: string | null; discriminator: string | null } | null
 }
 
 type Filter = "all" | "available" | "assigned"
@@ -96,7 +97,7 @@ function ItemCard({ item, isAdmin, locale }: { item: VaultItem; isAdmin: boolean
           <p className="text-[9px] text-yellow-400 truncate">🏆 {item.tournaments.title}</p>
         )}
         {item.donor?.username && (
-          <Link href={`/${locale}/profile/${encodeURIComponent(item.donor.username)}`}
+          <Link href={`/${locale}/profile/${encodeURIComponent(formatProfileSlug(item.donor.username, item.donor.discriminator))}`}
             className="text-[9px] text-sky-400 hover:text-sky-300 truncate mt-auto pt-0.5">
             🎁 {item.donor.username}
           </Link>

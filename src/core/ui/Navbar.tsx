@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/core/lib/cn";
+import { formatProfileSlug } from "@/core/lib/tag";
 import { useAuthStore } from "@/modules/auth/store";
 import { useTheme, type Accent } from "@/core/ui/ThemeProvider";
 import { useTranslations, useLocale } from "next-intl";
@@ -159,7 +160,7 @@ export function Navbar() {
             <div className="flex items-center gap-2">
               {/* Username — links to public profile */}
               <a
-                href={`/${locale}/profile/${encodeURIComponent(profile?.username || user?.id || "")}`}
+                href={`/${locale}/profile/${encodeURIComponent(profile ? formatProfileSlug(profile.username, profile.discriminator) : user?.id || "")}`}
                 className="rounded-full bg-[var(--color-accent)] px-4 py-1.5 text-xs font-bold text-[var(--color-text-onaccent)] transition-all hover:shadow-[var(--color-accent-glow)]"
               >
                 {profile?.username || "Profile"}

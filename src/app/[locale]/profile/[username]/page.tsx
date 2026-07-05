@@ -5,7 +5,9 @@ import { ArenaProgression } from "@/modules/profile/components/ArenaProgression"
 import { GameConnections } from "@/modules/profile/components/LinkedAccounts";
 import { DuosTeamsPanel } from "@/modules/profile/components/DuosTeamsPanel";
 import { Dota2StatsPanel } from "@/modules/profile/components/Dota2StatsPanel";
+import { ProfileDisambiguation } from "@/modules/profile/components/ProfileDisambiguation";
 import { getProfileDuosAndTeams } from "@/modules/profile/actions";
+import { resolveProfileSlug } from "@/modules/profile/lookup";
 import { withResolvedClashRoyaleName } from "@/core/lib/clash-royale";
 
 async function getSteamPersonaName(accountId: number): Promise<string | null> {
@@ -34,28 +36,13 @@ export default async function ProfilePage({
   const decoded = decodeURIComponent(username);
   const supabase = await createClient();
 
-  // Try lookup by username first, then by user ID as fallback
-  let profile;
-  const { data: byUsername } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("username", decoded)
-    .single();
-
-  if (byUsername) {
-    profile = byUsername;
-  } else {
-    const { data: byId } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", decoded)
-      .single();
-    profile = byId;
+  const lookup = await resolveProfileSlug(supabase, decoded);
+  if (lookup.type === "not_found") notFound();
+  if (lookup.type === "ambiguous") {
+    return <ProfileDisambiguation matches={lookup.matches} locale={locale} />;
   }
 
-  if (!profile) notFound();
-
-  profile = await withResolvedClashRoyaleName(profile);
+  const profile = await withResolvedClashRoyaleName(lookup.profile);
 
   const { data: { user } } = await supabase.auth.getUser();
   const isOwner = !!user && user.id === profile.id;
