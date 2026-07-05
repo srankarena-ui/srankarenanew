@@ -411,9 +411,10 @@ export function SettingsView({ profile, riotVerificationChallenge, verificationC
         )}
       </Card>
 
-      {/* ── DOTA 2 ── */}
+      {/* ── STEAM (Dota 2 + CS2) ── */}
       <Card>
-        <h2 className="mb-4 text-lg font-bold text-white">Dota 2</h2>
+        <h2 className="mb-4 text-lg font-bold text-white">Steam</h2>
+        <p className="-mt-3 mb-4 text-xs text-gray-500">Vincula tu cuenta de Steam para desbloquear el trackeo de Dota 2 y Counter-Strike 2.</p>
 
         {profile.dota2_account_id ? (
           /* ── Linked ── */
@@ -429,7 +430,7 @@ export function SettingsView({ profile, riotVerificationChallenge, verificationC
               const r = await unlinkDota2Account();
               setDota2Loading(false);
               if (r.error) toast(r.error, "error");
-              else { toast("Dota 2 desvinculado", "info"); router.refresh(); }
+              else { toast("Steam desvinculado", "info"); router.refresh(); }
             }}>
               Unlink
             </Button>
@@ -519,7 +520,7 @@ export function SettingsView({ profile, riotVerificationChallenge, verificationC
               if ("error" in r && r.error) toast(r.error, "error");
               else router.refresh();
             }}>
-              Vincular Dota 2
+              Vincular Steam
             </Button>
           </div>
         )}
