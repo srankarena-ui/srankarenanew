@@ -24,8 +24,8 @@ export default async function LandingPage() {
   return (
     <>
       <HeroSection />
-      <ServicesGrid />
       <FeaturedEventsCarousel tournaments={featuredTournaments as never} />
+      <ServicesGrid />
       <CTASection />
     </>
   );
