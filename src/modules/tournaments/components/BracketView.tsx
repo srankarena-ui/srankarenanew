@@ -184,6 +184,7 @@ export function BracketView({ tournament, matches, participants, isAdmin }: Brac
                         matchLabel={`Match ${match.match_number + 1}`}
                         isAdmin={isAdmin}
                         seriesFormat={tournament.series_format}
+                        game={tournament.game}
                       />
                     ))}
                   </div>

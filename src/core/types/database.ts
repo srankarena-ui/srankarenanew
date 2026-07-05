@@ -24,6 +24,7 @@ export type Database = {
           cr_name: string | null;
           riot_linked_at: string | null;
           dota2_account_id: number | null;
+          steam_id64: string | null;
           discriminator: string | null;
           onboarded: boolean;
           is_dummy: boolean;
@@ -44,6 +45,7 @@ export type Database = {
           cr_name?: string | null;
           riot_linked_at?: string | null;
           dota2_account_id?: number | null;
+          steam_id64?: string | null;
           discriminator?: string | null;
           onboarded?: boolean;
           is_dummy?: boolean;
@@ -64,6 +66,7 @@ export type Database = {
           cr_name?: string | null;
           riot_linked_at?: string | null;
           dota2_account_id?: number | null;
+          steam_id64?: string | null;
           discriminator?: string | null;
           onboarded?: boolean;
           is_dummy?: boolean;
@@ -325,6 +328,7 @@ export type Database = {
           player1_score: number;
           player2_score: number;
           api_match_id: string | null;
+          cs2_connect_url: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -340,6 +344,7 @@ export type Database = {
           player1_score?: number;
           player2_score?: number;
           api_match_id?: string | null;
+          cs2_connect_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -355,6 +360,7 @@ export type Database = {
           player1_score?: number;
           player2_score?: number;
           api_match_id?: string | null;
+          cs2_connect_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };

@@ -2,6 +2,8 @@
 
 import { createClient } from "@/core/supabase/server";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+import { createCs2Match, type Cs2MatchPlayer } from "@/core/lib/dathost";
 import type { TrialsConfig } from "@/core/types";
 
 // ─── Types for team-based registration ────────────────────────────────────────
@@ -500,4 +502,120 @@ export async function advanceWinner(matchId: string, winnerId: string) {
 
   revalidatePath("/tournaments");
   return { success: true };
+}
+
+// ─── CS2 match tracking (DatHost) ──────────────────────────────────────────────
+
+// A tournament_matches side (player1_id/player2_id) holds the team captain for
+// team_size > 1 brackets (see registerTeamForTournament) — resolve the full roster.
+async function resolveCs2Roster(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  tournamentId: string,
+  teamSize: number,
+  captainId: string
+): Promise<{ userIds: string[] } | { error: string }> {
+  if (teamSize === 1) return { userIds: [captainId] };
+
+  const { data: reg } = await supabase
+    .from("tournament_team_registrations")
+    .select("duo_id, team_id")
+    .eq("tournament_id", tournamentId)
+    .eq("registered_by", captainId)
+    .maybeSingle();
+  if (!reg) return { error: "Could not find this side's team registration" };
+
+  if (reg.duo_id) {
+    const { data: duo } = await supabase
+      .from("player_duos")
+      .select("requester_id, partner_id")
+      .eq("id", reg.duo_id)
+      .single();
+    if (!duo) return { error: "Duo not found" };
+    return { userIds: [duo.requester_id, duo.partner_id] };
+  }
+
+  const { data: members } = await supabase
+    .from("team_members")
+    .select("user_id")
+    .eq("team_id", reg.team_id!)
+    .eq("status", "accepted");
+  if (!members?.length) return { error: "Team has no accepted members" };
+  return { userIds: members.map((m) => m.user_id) };
+}
+
+export async function startCs2Match(
+  matchId: string
+): Promise<{ error: string } | { success: true; connectUrl: string | null }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  if (profile?.role !== "admin" && profile?.role !== "organizador") return { error: "Forbidden" };
+
+  const { data: match } = await supabase
+    .from("tournament_matches")
+    .select("id, tournament_id, player1_id, player2_id")
+    .eq("id", matchId)
+    .single();
+  if (!match) return { error: "Match not found" };
+  if (!match.player1_id || !match.player2_id) return { error: "Match needs both sides filled" };
+
+  const { data: tournament } = await supabase
+    .from("tournaments")
+    .select("game, team_size, map")
+    .eq("id", match.tournament_id)
+    .single();
+  if (!tournament) return { error: "Tournament not found" };
+  if (tournament.game !== "Counter-Strike 2") return { error: "Not a Counter-Strike 2 tournament" };
+
+  const teamSize = tournament.team_size ?? 1;
+  const [side1, side2] = await Promise.all([
+    resolveCs2Roster(supabase, match.tournament_id, teamSize, match.player1_id),
+    resolveCs2Roster(supabase, match.tournament_id, teamSize, match.player2_id),
+  ]);
+  if ("error" in side1) return { error: `Team 1: ${side1.error}` };
+  if ("error" in side2) return { error: `Team 2: ${side2.error}` };
+
+  const allUserIds = [...side1.userIds, ...side2.userIds];
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, username, steam_id64")
+    .in("id", allUserIds);
+  const steamById = new Map((profiles ?? []).map((p) => [p.id, p.steam_id64]));
+
+  const missing = allUserIds.filter((id) => !steamById.get(id));
+  if (missing.length) {
+    const names = (profiles ?? []).filter((p) => missing.includes(p.id)).map((p) => p.username).join(", ");
+    return { error: `These players need to verify their Steam account first: ${names}` };
+  }
+
+  const players: Cs2MatchPlayer[] = [
+    ...side1.userIds.map((id) => ({ steam_id_64: steamById.get(id)!, team: "team1" as const })),
+    ...side2.userIds.map((id) => ({ steam_id_64: steamById.get(id)!, team: "team2" as const })),
+  ];
+
+  const gameServerId = process.env.DATHOST_GAME_SERVER_ID;
+  if (!gameServerId) return { error: "DATHOST_GAME_SERVER_ID not configured" };
+
+  const headerList = await headers();
+  const host = headerList.get("host") ?? "srankarena.com";
+  const origin = `${host.startsWith("localhost") ? "http" : "https"}://${host}`;
+
+  const result = await createCs2Match({
+    gameServerId,
+    players,
+    map: tournament.map || "de_mirage",
+    webhookUrl: `${origin}/api/cs2/webhook`,
+  });
+  if ("error" in result) return { error: result.error };
+
+  const { error } = await supabase
+    .from("tournament_matches")
+    .update({ api_match_id: result.data.id, cs2_connect_url: result.data.connect_url, status: "in_progress" })
+    .eq("id", matchId);
+  if (error) return { error: error.message };
+
+  revalidatePath(`/tournaments/${match.tournament_id}`);
+  return { success: true, connectUrl: result.data.connect_url };
 }

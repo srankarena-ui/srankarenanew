@@ -539,7 +539,7 @@ export async function completeSteamVerification() {
 
   const { error } = await supabase
     .from("profiles")
-    .update({ dota2_account_id: challenge.account_id })
+    .update({ dota2_account_id: challenge.account_id, steam_id64: steamId64 })
     .eq("id", user.id);
   if (error) return { error: error.message };
 

@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { cn } from "@/core/lib/cn";
 import { useTournamentStore } from "@/modules/tournaments/store";
+import { startCs2Match } from "@/modules/tournaments/actions";
 import type { MatchWithPlayers, SeriesFormat } from "@/core/types";
 
 interface BracketMatchProps {
@@ -9,16 +11,21 @@ interface BracketMatchProps {
   matchLabel?: string;
   isAdmin: boolean;
   seriesFormat: SeriesFormat;
+  game?: string;
 }
 
-export function BracketMatch({ match, matchLabel, isAdmin, seriesFormat }: BracketMatchProps) {
+export function BracketMatch({ match, matchLabel, isAdmin, seriesFormat, game }: BracketMatchProps) {
   const { openScoreModal, openResolutionModal } = useTournamentStore();
+  const [startingCs2, setStartingCs2] = useState(false);
+  const [cs2Error, setCs2Error] = useState<string | null>(null);
 
   const isBye = match.status === "bye";
   const isCompleted = match.status === "completed";
   const isPending = match.status === "pending";
   const isLive = match.status === "in_progress";
   const hasPlayers = match.player1_id || match.player2_id;
+  const hasBothPlayers = match.player1_id && match.player2_id;
+  const isCs2 = game === "Counter-Strike 2";
 
   function handleClick() {
     if (!hasPlayers) return;
@@ -27,6 +34,15 @@ export function BracketMatch({ match, matchLabel, isAdmin, seriesFormat }: Brack
     } else if (!isCompleted && hasPlayers) {
       openScoreModal(match);
     }
+  }
+
+  async function handleStartCs2Match(e: React.MouseEvent) {
+    e.stopPropagation();
+    setStartingCs2(true);
+    setCs2Error(null);
+    const result = await startCs2Match(match.id);
+    setStartingCs2(false);
+    if ("error" in result) setCs2Error(result.error);
   }
 
   return (
@@ -84,6 +100,30 @@ export function BracketMatch({ match, matchLabel, isAdmin, seriesFormat }: Brack
           position="bottom"
         />
       </div>
+
+      {/* CS2: start match via DatHost / connect link, once both sides are set */}
+      {isCs2 && !isCompleted && hasBothPlayers && (
+        <div className="mt-1.5">
+          {match.cs2_connect_url ? (
+            <a
+              href={match.cs2_connect_url}
+              onClick={(e) => e.stopPropagation()}
+              className="block rounded-md border border-green-700/40 bg-green-900/20 px-2 py-1 text-center text-[9px] font-bold text-green-400 hover:bg-green-900/30"
+            >
+              🔌 Conectar al servidor
+            </a>
+          ) : isAdmin ? (
+            <button
+              onClick={handleStartCs2Match}
+              disabled={startingCs2}
+              className="w-full rounded-md border border-gray-700 bg-[#1a1f2e] px-2 py-1 text-[9px] font-bold text-gray-300 hover:border-[var(--color-accent)] disabled:opacity-50"
+            >
+              {startingCs2 ? "Iniciando…" : "Iniciar partida CS2"}
+            </button>
+          ) : null}
+          {cs2Error && <p className="mt-1 text-[8px] text-red-400">{cs2Error}</p>}
+        </div>
+      )}
     </div>
   );
 }
