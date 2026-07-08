@@ -15,6 +15,7 @@ import { TournamentPlayers } from "./TournamentPlayers";
 import { BracketView } from "./BracketView";
 import { ScoreModal } from "./ScoreModal";
 import { ResolutionModal } from "./ResolutionModal";
+import { TournamentReminderPanel } from "./TournamentReminderPanel";
 import { SummonerTrialsLeaderboard } from "./SummonerTrialsLeaderboard";
 import type { Tournament, TournamentParticipant, Profile, MatchWithPlayers, TrialsEnrollmentWithProfile, TrialsConfig } from "@/core/types";
 import type { PickableItem as PrizeItem } from "@/modules/vault/components/VaultPrizePicker";
@@ -309,6 +310,7 @@ export function TournamentDetail({
               >
                 Edit Tournament
               </a>
+              <TournamentReminderPanel tournamentId={tournament.id} />
             </div>
           </div>
         )}

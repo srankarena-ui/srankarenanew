@@ -422,3 +422,79 @@ export async function getHelpConfig(): Promise<HelpConfig> {
 export async function updateHelpConfig(config: HelpConfig): Promise<{ error?: string }> {
   return setSiteConfig("help", config, "/help");
 }
+
+// ─── Manual tournament email reminders (admin-triggered, never automatic) ────
+
+function reminderEmailHtml(subject: string, message: string): string {
+  // Minimal branded wrapper — message is plain text from the admin, escaped
+  // and line-broken, not rich HTML (keeps the compose box simple).
+  const escaped = message
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/\n/g, "<br/>");
+  return `
+    <div style="font-family:sans-serif;background:#0b0e14;color:#e5e7eb;padding:32px">
+      <h2 style="color:#fff;margin:0 0 16px">${subject}</h2>
+      <p style="line-height:1.6;font-size:14px">${escaped}</p>
+      <p style="margin-top:32px;font-size:11px;color:#6b7280">S-Rank Arena</p>
+    </div>`;
+}
+
+export async function sendTournamentReminder(
+  tournamentId: string,
+  subject: string,
+  message: string
+): Promise<{ error: string } | { success: true; sent: number }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  if (profile?.role !== "admin" && profile?.role !== "organizador") return { error: "Forbidden" };
+
+  if (!subject.trim() || !message.trim()) return { error: "Subject and message are required" };
+
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return { error: "RESEND_API_KEY not configured" };
+
+  const { data: participants } = await supabase
+    .from("tournament_participants")
+    .select("user_id")
+    .eq("tournament_id", tournamentId);
+  if (!participants?.length) return { error: "This tournament has no participants yet" };
+
+  const admin = createServiceClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  const emails: string[] = [];
+  for (const p of participants) {
+    const { data } = await admin.auth.admin.getUserById(p.user_id);
+    if (data.user?.email) emails.push(data.user.email);
+  }
+  if (!emails.length) return { error: "Could not resolve any participant emails" };
+
+  const html = reminderEmailHtml(subject, message);
+  const payloads = emails.map((to) => ({
+    from: "S-Rank Arena Tournaments <tournaments@srankarena.com>",
+    to,
+    subject,
+    html,
+  }));
+
+  // ponytail: Resend's batch endpoint caps at 100 emails per call — chunk for
+  // larger tournaments. Sequential awaits, fine for an admin-triggered,
+  // occasional action (not a hot path).
+  let sent = 0;
+  for (let i = 0; i < payloads.length; i += 100) {
+    const chunk = payloads.slice(i, i + 100);
+    const res = await fetch("https://api.resend.com/emails/batch", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify(chunk),
+    });
+    if (!res.ok) return { error: `Resend API ${res.status}: ${await res.text()}` };
+    sent += chunk.length;
+  }
+
+  return { success: true, sent };
+}
