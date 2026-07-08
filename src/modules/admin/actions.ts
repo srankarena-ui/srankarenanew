@@ -1,11 +1,24 @@
 "use server";
 
 import { createClient } from "@/core/supabase/server";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import type { Database } from "@/core/types/database";
 import type { FooterConfig } from "@/core/types/footer";
 import { DEFAULT_FOOTER_CONFIG } from "@/core/config/footer-defaults";
 import type { AboutConfig, ProductionConfig, ContactConfig, PastEventsConfig, FeaturedEventsConfig, HelpConfig, VerificationConfig } from "@/core/types/site-content";
+
+// Confirms the current session belongs to an admin. Server actions can be
+// invoked directly by any logged-in user, so role-changing actions must check
+// this themselves, not rely on the admin page being gated.
+async function requireAdmin(): Promise<{ error: string } | { ok: true }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  if (profile?.role !== "admin") return { error: "Forbidden" };
+  return { ok: true };
+}
 
 export async function createTournament(formData: FormData) {
   const supabase = await createClient();
@@ -106,13 +119,21 @@ export async function deleteTournament(id: string) {
   return { success: true };
 }
 
-export async function updateUserRole(userId: string, role: string) {
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("profiles")
-    .update({ role })
-    .eq("id", userId);
+const VALID_ROLES = ["admin", "organizador", "usuario"];
 
+export async function updateUserRole(userId: string, role: string) {
+  const guard = await requireAdmin();
+  if ("error" in guard) return guard;
+  if (!VALID_ROLES.includes(role)) return { error: "Invalid role" };
+
+  // Role is a protected column (see migration 023) — only service-role writes
+  // get past the trigger, so this must run with the service key, not the
+  // caller's session. requireAdmin above is what authorizes it.
+  const admin = createServiceClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+  const { error } = await admin.from("profiles").update({ role }).eq("id", userId);
   if (error) return { error: error.message };
 
   revalidatePath("/admin");

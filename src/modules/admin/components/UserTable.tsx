@@ -34,7 +34,7 @@ export function UserTable({ users }: UserTableProps) {
 
   async function handleRoleChange(userId: string, newRole: string) {
     const result = await updateUserRole(userId, newRole);
-    if (result.error) toast(result.error, "error");
+    if ("error" in result) toast(result.error, "error");
     else {
       toast("Role updated", "success");
       router.refresh();
