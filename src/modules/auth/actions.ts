@@ -23,8 +23,13 @@ export async function signInWithEmail(formData: FormData) {
   const supabase = await createClient();
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
+  const captchaToken = formData.get("captchaToken") as string;
 
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+    options: { captchaToken },
+  });
 
   if (error) {
     return { error: error.message };
@@ -45,12 +50,14 @@ export async function signUpWithEmail(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   const username = formData.get("username") as string;
+  const captchaToken = formData.get("captchaToken") as string;
 
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: { username },
+      captchaToken,
     },
   });
 

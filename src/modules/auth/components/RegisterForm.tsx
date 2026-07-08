@@ -5,16 +5,19 @@ import { signUpWithEmail } from "@/modules/auth/actions";
 import { Button } from "@/core/ui/Button";
 import { Input } from "@/core/ui/Input";
 import { OAuthButtons } from "./OAuthButtons";
+import { HCaptchaWidget } from "./HCaptchaWidget";
 import { useTranslations } from "next-intl";
 
 export function RegisterForm() {
   const t = useTranslations("auth");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   async function handleSubmit(formData: FormData) {
     setIsLoading(true);
     setError(null);
+    formData.set("captchaToken", captchaToken ?? "");
     const result = await signUpWithEmail(formData);
     if (result?.error) {
       setError(result.error);
@@ -60,13 +63,15 @@ export function RegisterForm() {
           minLength={8}
         />
 
+        <HCaptchaWidget onVerify={setCaptchaToken} />
+
         {error && (
           <div className="rounded-xl border border-red-700/50 bg-red-900/20 px-4 py-3 text-sm text-red-400">
             {error}
           </div>
         )}
 
-        <Button type="submit" className="w-full" size="lg" isLoading={isLoading}>
+        <Button type="submit" className="w-full" size="lg" isLoading={isLoading} disabled={!captchaToken}>
           {t("registerButton")}
         </Button>
       </form>
