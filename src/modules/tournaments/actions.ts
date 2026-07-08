@@ -598,6 +598,9 @@ export async function startCs2Match(
   const gameServerId = process.env.DATHOST_GAME_SERVER_ID;
   if (!gameServerId) return { error: "DATHOST_GAME_SERVER_ID not configured" };
 
+  const webhookSecret = process.env.CS2_WEBHOOK_SECRET;
+  if (!webhookSecret) return { error: "CS2_WEBHOOK_SECRET not configured" };
+
   const headerList = await headers();
   const host = headerList.get("host") ?? "srankarena.com";
   const origin = `${host.startsWith("localhost") ? "http" : "https"}://${host}`;
@@ -606,7 +609,9 @@ export async function startCs2Match(
     gameServerId,
     players,
     map: tournament.map || "de_mirage",
-    webhookUrl: `${origin}/api/cs2/webhook`,
+    // Secret in the URL itself — the only way to authenticate an inbound
+    // webhook when the sender's own signing scheme isn't confirmed.
+    webhookUrl: `${origin}/api/cs2/webhook?key=${webhookSecret}`,
   });
   if ("error" in result) return { error: result.error };
 

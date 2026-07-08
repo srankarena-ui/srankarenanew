@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAuthedRequest } from "@/core/lib/require-auth";
 
 export async function POST(request: NextRequest) {
+  const authError = await requireAuthedRequest();
+  if (authError) return authError;
+
   const { gameName, tagline, region } = await request.json();
 
   if (!gameName || !tagline) {

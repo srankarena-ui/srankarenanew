@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { requireAuthedRequest } from "@/core/lib/require-auth";
 import type { Database } from "@/core/types/database";
 
 function getAdminClient() {
@@ -10,6 +11,9 @@ function getAdminClient() {
 }
 
 export async function POST(request: NextRequest) {
+  const authError = await requireAuthedRequest();
+  if (authError) return authError;
+
   const supabaseAdmin = getAdminClient();
   const { tournamentMatchId } = await request.json();
 

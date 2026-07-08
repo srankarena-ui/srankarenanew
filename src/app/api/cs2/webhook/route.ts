@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { timingSafeEqual } from "crypto";
 import type { Database } from "@/core/types/database";
 import type { Cs2WebhookPayload } from "@/core/lib/dathost";
 
@@ -10,10 +11,22 @@ function getAdminClient() {
   );
 }
 
+function isValidWebhookKey(provided: string | null): boolean {
+  const expected = process.env.CS2_WEBHOOK_SECRET;
+  if (!expected || !provided) return false;
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 // DatHost posts here on every round end and at match end (same URL for both —
 // see createCs2Match). Only a finished match with a declared winner is acted on;
 // round-by-round pings and already-completed matches are no-ops (idempotent).
 export async function POST(request: NextRequest) {
+  if (!isValidWebhookKey(request.nextUrl.searchParams.get("key"))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const payload = await request.json() as Cs2WebhookPayload;
   if (!payload.finished || !payload.winner?.team) {
     return NextResponse.json({ ok: true, skipped: true });
