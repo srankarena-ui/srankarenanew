@@ -13,6 +13,11 @@ const protectedRoutes = ["/settings", "/admin"];
 const adminRoutes = ["/admin"];
 const authRoutes = ["/login", "/register"];
 
+// Site-wide "under construction" gate. Set MAINTENANCE_MODE=true in Vercel env
+// vars (and redeploy) to lock the public site while keeping it open for admins.
+const MAINTENANCE_MODE = process.env.MAINTENANCE_MODE === "true";
+const maintenanceAllowedRoutes = ["/maintenance", "/login"];
+
 function getPathnameWithoutLocale(pathname: string): string {
   const segments = pathname.split("/");
   // If second segment is a locale, remove it
@@ -62,6 +67,28 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = `/${locale}`;
     return NextResponse.redirect(url);
+  }
+
+  // 3.5. Maintenance gate — everyone except logged-in admins/organizers gets
+  // bounced to the "under construction" page. /login stays open so an admin
+  // can actually sign in to unlock access.
+  if (MAINTENANCE_MODE && !maintenanceAllowedRoutes.some((route) => pathnameWithoutLocale.startsWith(route))) {
+    let isAdminUser = false;
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+      isAdminUser = profile?.role === "admin" || profile?.role === "organizador";
+    }
+
+    if (!isAdminUser) {
+      const locale = pathname.split("/")[1] || defaultLocale;
+      const url = request.nextUrl.clone();
+      url.pathname = `/${locale}/maintenance`;
+      return NextResponse.redirect(url);
+    }
   }
 
   // 4. Apply next-intl middleware (locale detection & redirect)
