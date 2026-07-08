@@ -57,7 +57,7 @@ export function RegisterForm() {
           label={t("password")}
           placeholder="••••••••"
           required
-          minLength={6}
+          minLength={8}
         />
 
         {error && (
