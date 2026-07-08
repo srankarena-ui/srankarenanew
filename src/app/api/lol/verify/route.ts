@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuthedRequest } from "@/core/lib/require-auth";
 
 export async function POST(request: NextRequest) {
-  const authError = await requireAuthedRequest();
-  if (authError) return authError;
+  const auth = await requireAuthedRequest("lol-verify");
+  if ("response" in auth) return auth.response;
 
   const { gameName, tagline, region } = await request.json();
 

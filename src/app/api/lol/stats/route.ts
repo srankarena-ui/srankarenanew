@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit, rateLimitResponse, clientIp } from "@/core/lib/rate-limit";
 
 function getCluster(platform: string): string {
   const p = platform.toLowerCase();
@@ -71,6 +72,8 @@ type MatchSummary = {
 };
 
 export async function GET(request: NextRequest) {
+  if (!(await checkRateLimit(`lol-stats:${clientIp(request)}`, 30, 60))) return rateLimitResponse();
+
   const { searchParams } = request.nextUrl;
   const puuid = searchParams.get("puuid");
   const region = searchParams.get("region") ?? "na1";

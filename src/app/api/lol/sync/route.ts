@@ -11,8 +11,8 @@ function getAdminClient() {
 }
 
 export async function POST(request: NextRequest) {
-  const authError = await requireAuthedRequest();
-  if (authError) return authError;
+  const auth = await requireAuthedRequest("lol-sync");
+  if ("response" in auth) return auth.response;
 
   const supabaseAdmin = getAdminClient();
   const { matchId } = await request.json();

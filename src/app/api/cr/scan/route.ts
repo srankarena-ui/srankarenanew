@@ -11,8 +11,8 @@ function getAdminClient() {
 }
 
 export async function POST(request: NextRequest) {
-  const authError = await requireAuthedRequest();
-  if (authError) return authError;
+  const auth = await requireAuthedRequest("cr-scan");
+  if ("response" in auth) return auth.response;
 
   const supabaseAdmin = getAdminClient();
   const { tournamentMatchId } = await request.json();

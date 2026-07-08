@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit, rateLimitResponse, clientIp } from "@/core/lib/rate-limit";
 
 // Map platform (na1, euw1, etc.) to regional cluster (americas, europe, asia, sea)
 function getCluster(platform: string): string {
@@ -11,6 +12,8 @@ function getCluster(platform: string): string {
 }
 
 export async function GET(request: NextRequest) {
+  if (!(await checkRateLimit(`lol-player:${clientIp(request)}`, 30, 60))) return rateLimitResponse();
+
   const { searchParams } = request.nextUrl;
   const gameName = searchParams.get("gameName");
   const tagline = searchParams.get("tagline");

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { checkRateLimit, rateLimitResponse, clientIp } from "@/core/lib/rate-limit"
 
 const OPENDOTA = "https://api.opendota.com/api"
 
@@ -31,6 +32,8 @@ type RawMatch = {
 type HeroMap = Record<number, { localized_name: string; name: string }>
 
 export async function GET(req: NextRequest) {
+  if (!(await checkRateLimit(`dota2-stats:${clientIp(req)}`, 30, 60))) return rateLimitResponse()
+
   const { searchParams } = req.nextUrl
   const accountId = searchParams.get("account_id")
   const count = Math.min(parseInt(searchParams.get("count") ?? "20"), 50)
