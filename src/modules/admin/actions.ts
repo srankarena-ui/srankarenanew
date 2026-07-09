@@ -498,3 +498,34 @@ export async function sendTournamentReminder(
 
   return { success: true, sent };
 }
+
+// ─── Discord slash commands ────────────────────────────────────────────────
+// One-off setup action (or re-run whenever the command list changes) — not
+// called on every request, and never called from this side with the bot
+// token exposed to us; it reads DISCORD_BOT_TOKEN from the server's own env.
+
+export async function registerDiscordCommands(): Promise<{ error: string } | { success: true }> {
+  const guard = await requireAdmin();
+  if ("error" in guard) return guard;
+
+  const { registerGlobalCommands } = await import("@/core/lib/discord");
+  try {
+    await registerGlobalCommands([
+      {
+        name: "vincular",
+        description: "Vincula tu cuenta de Discord con tu perfil de S-Rank Arena",
+        options: [
+          { name: "codigo", description: "Código generado en Ajustes de la web", type: 3, required: true },
+        ],
+      },
+      {
+        name: "perfil",
+        description: "Muestra tu rango y stats de S-Rank Arena",
+      },
+    ]);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Unknown error" };
+  }
+
+  return { success: true };
+}

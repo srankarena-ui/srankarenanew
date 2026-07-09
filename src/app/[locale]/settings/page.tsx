@@ -35,6 +35,14 @@ export default async function SettingsPage() {
     .gt("expires_at", new Date().toISOString())
     .maybeSingle();
 
+  const { data: discordLinkChallenge } = await supabase
+    .from("discord_link_challenges")
+    .select("*")
+    .eq("user_id", user.id)
+    .is("verified_at", null)
+    .gt("expires_at", new Date().toISOString())
+    .maybeSingle();
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <SettingsView
@@ -42,6 +50,7 @@ export default async function SettingsPage() {
         riotVerificationChallenge={riotVerificationChallenge}
         verificationConfig={verificationConfig}
         steamVerificationChallenge={steamVerificationChallenge}
+        discordLinkChallenge={discordLinkChallenge}
       />
     </div>
   );

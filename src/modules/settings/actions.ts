@@ -621,3 +621,41 @@ export async function updateProfile(formData: FormData) {
   revalidatePath("/", "layout");
   return { success: true };
 }
+
+// ─── Discord linking ───────────────────────────────────────────────────────
+// Website generates a short code; user redeems it via /vincular in Discord,
+// where the bot learns the Discord user id (see /api/discord/interactions).
+
+const DISCORD_LINK_TTL_MS = 15 * 60 * 1000;
+
+export async function startDiscordLink(): Promise<{ error: string } | { success: true; code: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const code = Math.random().toString(36).slice(2, 8).toUpperCase();
+  const now = new Date();
+  const { error } = await supabase.from("discord_link_challenges").upsert({
+    user_id: user.id,
+    code,
+    created_at: now.toISOString(),
+    expires_at: new Date(now.getTime() + DISCORD_LINK_TTL_MS).toISOString(),
+    verified_at: null,
+  });
+
+  if (error) return { error: error.message };
+  revalidatePath("/", "layout");
+  return { success: true, code };
+}
+
+export async function unlinkDiscord(): Promise<{ error: string } | { success: true }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { error } = await supabase.from("profiles").update({ discord_id: null }).eq("id", user.id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/", "layout");
+  return { success: true };
+}

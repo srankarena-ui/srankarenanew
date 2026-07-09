@@ -25,14 +25,17 @@ import {
   startSteamVerification,
   completeSteamVerification,
   cancelSteamVerification,
+  startDiscordLink,
+  unlinkDiscord,
 } from "@/modules/settings/actions";
-import type { Profile, RiotVerificationChallenge, SteamVerificationChallenge, VerificationConfig } from "@/core/types";
+import type { Profile, RiotVerificationChallenge, SteamVerificationChallenge, DiscordLinkChallenge, VerificationConfig } from "@/core/types";
 
 interface SettingsViewProps {
   profile: Profile;
   riotVerificationChallenge: RiotVerificationChallenge | null;
   verificationConfig: VerificationConfig;
   steamVerificationChallenge: SteamVerificationChallenge | null;
+  discordLinkChallenge: DiscordLinkChallenge | null;
 }
 
 const PROFILE_ICON_CDN_VERSION = "14.10.1";
@@ -76,7 +79,7 @@ function ProfileIconPreview({ iconId, label }: { iconId: number; label: string }
   );
 }
 
-export function SettingsView({ profile, riotVerificationChallenge, verificationConfig, steamVerificationChallenge }: SettingsViewProps) {
+export function SettingsView({ profile, riotVerificationChallenge, verificationConfig, steamVerificationChallenge, discordLinkChallenge }: SettingsViewProps) {
   const t = useTranslations("settings");
   const router = useRouter();
   const { toast } = useToast();
@@ -114,6 +117,9 @@ export function SettingsView({ profile, riotVerificationChallenge, verificationC
 
   // Profile state
   const [profileLoading, setProfileLoading] = useState(false);
+
+  // Discord state
+  const [discordLoading, setDiscordLoading] = useState(false);
 
   async function handleStartRiotVerification() {
     setRiotLoading(true);
@@ -521,6 +527,59 @@ export function SettingsView({ profile, riotVerificationChallenge, verificationC
               else router.refresh();
             }}>
               Vincular Steam
+            </Button>
+          </div>
+        )}
+      </Card>
+
+      {/* ── DISCORD ── */}
+      <Card>
+        <h2 className="mb-4 text-lg font-bold text-white">Discord</h2>
+
+        {profile.discord_id ? (
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-300">Cuenta de Discord vinculada ✅</p>
+            <Button variant="danger" size="sm" isLoading={discordLoading} onClick={async () => {
+              setDiscordLoading(true);
+              const r = await unlinkDiscord();
+              setDiscordLoading(false);
+              if ("error" in r) toast(r.error, "error");
+              else { toast("Discord desvinculado", "info"); router.refresh(); }
+            }}>
+              Unlink
+            </Button>
+          </div>
+        ) : discordLinkChallenge ? (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-amber-700/40 bg-amber-950/20 p-4 space-y-3">
+              <p className="text-sm font-semibold text-amber-300">Usa este código en Discord</p>
+              <code className="block w-fit text-xl font-bold tracking-widest text-white bg-[#1e2436] px-4 py-2 rounded-lg border border-amber-700/40">
+                {discordLinkChallenge.code}
+              </code>
+              <ol className="text-xs text-gray-300 space-y-1 list-decimal list-inside">
+                <li>Entra al servidor de Discord de S-Rank Arena.</li>
+                <li>Escribe <code className="text-amber-300">/vincular</code> y pega el código de arriba.</li>
+                <li>Listo — tu cuenta queda vinculada al instante.</li>
+              </ol>
+              <p className="text-[11px] text-gray-500">
+                Expira a las {hasMounted ? new Date(discordLinkChallenge.expires_at).toLocaleTimeString() : "--:--:--"}
+              </p>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => router.refresh()}>
+              Ya lo usé, actualizar
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-xs text-gray-400">Vincula tu Discord para usar comandos como /perfil en el servidor.</p>
+            <Button isLoading={discordLoading} onClick={async () => {
+              setDiscordLoading(true);
+              const r = await startDiscordLink();
+              setDiscordLoading(false);
+              if ("error" in r) toast(r.error, "error");
+              else router.refresh();
+            }}>
+              Vincular Discord
             </Button>
           </div>
         )}

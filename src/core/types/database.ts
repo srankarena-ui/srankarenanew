@@ -25,6 +25,7 @@ export type Database = {
           riot_linked_at: string | null;
           dota2_account_id: number | null;
           steam_id64: string | null;
+          discord_id: string | null;
           discriminator: string | null;
           onboarded: boolean;
           is_dummy: boolean;
@@ -46,6 +47,7 @@ export type Database = {
           riot_linked_at?: string | null;
           dota2_account_id?: number | null;
           steam_id64?: string | null;
+          discord_id?: string | null;
           discriminator?: string | null;
           onboarded?: boolean;
           is_dummy?: boolean;
@@ -67,6 +69,7 @@ export type Database = {
           riot_linked_at?: string | null;
           dota2_account_id?: number | null;
           steam_id64?: string | null;
+          discord_id?: string | null;
           discriminator?: string | null;
           onboarded?: boolean;
           is_dummy?: boolean;
@@ -161,6 +164,30 @@ export type Database = {
         Update: {
           user_id?: string;
           account_id?: number;
+          code?: string;
+          created_at?: string;
+          expires_at?: string;
+          verified_at?: string | null;
+        };
+        Relationships: [];
+      };
+      discord_link_challenges: {
+        Row: {
+          user_id: string;
+          code: string;
+          created_at: string;
+          expires_at: string;
+          verified_at: string | null;
+        };
+        Insert: {
+          user_id: string;
+          code: string;
+          created_at?: string;
+          expires_at: string;
+          verified_at?: string | null;
+        };
+        Update: {
+          user_id?: string;
           code?: string;
           created_at?: string;
           expires_at?: string;
