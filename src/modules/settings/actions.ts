@@ -653,8 +653,15 @@ export async function unlinkDiscord(): Promise<{ error: string } | { success: tr
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
+  const { data: profile } = await supabase.from("profiles").select("discord_id").eq("id", user.id).single();
+
   const { error } = await supabase.from("profiles").update({ discord_id: null }).eq("id", user.id);
   if (error) return { error: error.message };
+
+  if (profile?.discord_id) {
+    const { removeVerifiedRole } = await import("@/core/lib/discord");
+    await removeVerifiedRole(profile.discord_id); // best-effort, ignore failures
+  }
 
   revalidatePath("/", "layout");
   return { success: true };

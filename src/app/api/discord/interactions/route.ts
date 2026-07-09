@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { InteractionType, InteractionResponseType } from "discord-interactions";
-import { verifyDiscordRequest } from "@/core/lib/discord";
+import { verifyDiscordRequest, assignVerifiedRole } from "@/core/lib/discord";
 import { getRankForXp } from "@/core/lib/ranks";
 import { formatTag } from "@/core/lib/tag";
 import type { Database } from "@/core/types/database";
@@ -57,6 +57,11 @@ async function handleVincular(discordUserId: string, code: string) {
     .from("discord_link_challenges")
     .update({ verified_at: new Date().toISOString() })
     .eq("user_id", challenge.user_id);
+
+  const roleResult = await assignVerifiedRole(discordUserId);
+  if ("error" in roleResult) {
+    return reply("✅ ¡Cuenta vinculada! ⚠️ No pude asignarte el rol automáticamente — avisa a un admin.");
+  }
 
   return reply("✅ ¡Cuenta vinculada! Ya puedes usar /perfil.");
 }
