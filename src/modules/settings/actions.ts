@@ -622,6 +622,40 @@ export async function updateProfile(formData: FormData) {
   return { success: true };
 }
 
+const VALID_THEMES = ["challenger", "volt", "ember", "aurora"] as const;
+const BIO_MAX_LENGTH = 280;
+
+export async function updateProfileCustomization(formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const bio = (formData.get("bio") as string | null)?.trim() || null;
+  if (bio && bio.length > BIO_MAX_LENGTH) return { error: `La bio no puede superar ${BIO_MAX_LENGTH} caracteres.` };
+
+  const bannerUrl = (formData.get("banner_url") as string | null)?.trim() || null;
+  if (bannerUrl) {
+    try {
+      new URL(bannerUrl);
+    } catch {
+      return { error: "La URL del banner no es válida." };
+    }
+  }
+
+  const theme = (formData.get("theme") as string | null) || null;
+  if (theme && !VALID_THEMES.includes(theme as (typeof VALID_THEMES)[number])) return { error: "Tema inválido." };
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ bio, banner_url: bannerUrl, theme })
+    .eq("id", user.id);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/", "layout");
+  return { success: true };
+}
+
 // ─── Discord linking ───────────────────────────────────────────────────────
 // Website generates a short code; user redeems it via /vincular in Discord,
 // where the bot learns the Discord user id (see /api/discord/interactions).

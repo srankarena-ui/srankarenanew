@@ -20,7 +20,19 @@ export function ProfileHeader({ profile, locale, donationTotalCents = 0 }: Profi
   const tier = donorTier(donationTotalCents);
 
   return (
-    <Card className="relative overflow-hidden">
+    <Card className="relative overflow-hidden" data-accent={profile.theme || undefined}>
+      {/* Banner (pasted URL, like tournament banners) */}
+      {profile.banner_url && (
+        <div
+          className="absolute inset-0 opacity-30"
+          style={{
+            backgroundImage: `url(${profile.banner_url})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
+      )}
+
       {/* Ambient glow */}
       <div
         className="absolute -right-10 -top-10 h-48 w-48 rounded-full blur-[80px] opacity-20"
@@ -62,6 +74,9 @@ export function ProfileHeader({ profile, locale, donationTotalCents = 0 }: Profi
               </span>
             )}
           </div>
+          {profile.bio && (
+            <p className="mt-2 max-w-md text-xs text-gray-400">{profile.bio}</p>
+          )}
           <Link
             href={`/${locale}/profile/${encodeURIComponent(formatProfileSlug(profile.username, profile.discriminator))}/achievements`}
             className="mt-2 inline-block text-[10px] font-bold text-gray-500 hover:text-[var(--color-accent)] transition-colors"

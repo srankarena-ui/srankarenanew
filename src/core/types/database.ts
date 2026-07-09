@@ -29,6 +29,9 @@ export type Database = {
           discriminator: string | null;
           onboarded: boolean;
           is_dummy: boolean;
+          bio: string | null;
+          banner_url: string | null;
+          theme: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -51,6 +54,9 @@ export type Database = {
           discriminator?: string | null;
           onboarded?: boolean;
           is_dummy?: boolean;
+          bio?: string | null;
+          banner_url?: string | null;
+          theme?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -73,6 +79,9 @@ export type Database = {
           discriminator?: string | null;
           onboarded?: boolean;
           is_dummy?: boolean;
+          bio?: string | null;
+          banner_url?: string | null;
+          theme?: string | null;
           created_at?: string;
           updated_at?: string;
         };

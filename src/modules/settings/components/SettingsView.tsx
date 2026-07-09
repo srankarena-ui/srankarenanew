@@ -20,6 +20,7 @@ import {
   linkCRAccountDirect,
   unlinkCRAccount,
   updateProfile,
+  updateProfileCustomization,
   linkDota2Account,
   unlinkDota2Account,
   startSteamVerification,
@@ -118,6 +119,10 @@ export function SettingsView({ profile, riotVerificationChallenge, verificationC
   // Profile state
   const [profileLoading, setProfileLoading] = useState(false);
 
+  // Profile customization state
+  const [customizationLoading, setCustomizationLoading] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState(profile.theme || "");
+
   // Discord state
   const [discordLoading, setDiscordLoading] = useState(false);
 
@@ -203,6 +208,18 @@ export function SettingsView({ profile, riotVerificationChallenge, verificationC
     setProfileLoading(false);
   }
 
+  async function handleUpdateCustomization(formData: FormData) {
+    setCustomizationLoading(true);
+    formData.set("theme", selectedTheme);
+    const result = await updateProfileCustomization(formData);
+    if ("error" in result && result.error) toast(result.error, "error");
+    else {
+      toast(t("profileUpdated"), "success");
+      router.refresh();
+    }
+    setCustomizationLoading(false);
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -229,6 +246,62 @@ export function SettingsView({ profile, riotVerificationChallenge, verificationC
               {t("save")}
             </Button>
           </div>
+        </form>
+      </Card>
+
+      {/* Profile customization (bio, banner, theme) */}
+      <Card>
+        <h3 className="mb-4 text-sm uppercase tracking-wider text-white">
+          {t("profileCustomization")}
+        </h3>
+        <form action={handleUpdateCustomization} className="space-y-4">
+          <div>
+            <label className="mb-1 block text-xs font-bold text-gray-400">{t("bio")}</label>
+            <textarea
+              name="bio"
+              defaultValue={profile.bio || ""}
+              maxLength={280}
+              rows={3}
+              placeholder={t("bioPlaceholder")}
+              className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm text-gray-200 outline-hidden focus:border-[var(--color-accent)]"
+            />
+          </div>
+
+          <Input
+            name="banner_url"
+            defaultValue={profile.banner_url || ""}
+            label={t("bannerUrl")}
+            placeholder={t("bannerUrlPlaceholder")}
+          />
+
+          <div>
+            <label className="mb-2 block text-xs font-bold text-gray-400">{t("profileTheme")}</label>
+            <div className="flex items-center gap-2">
+              {(["", "challenger", "volt", "ember", "aurora"] as const).map((acc) => (
+                <button
+                  key={acc || "default"}
+                  type="button"
+                  onClick={() => setSelectedTheme(acc)}
+                  title={acc || "default"}
+                  className={`h-8 w-8 rounded-full border-2 transition-all ${
+                    selectedTheme === acc ? "border-white" : "border-gray-700 hover:border-gray-500"
+                  }`}
+                  style={{
+                    backgroundColor:
+                      acc === "challenger" ? "#3E6BFF" :
+                      acc === "volt" ? "#C6F24E" :
+                      acc === "ember" ? "#FF6A3D" :
+                      acc === "aurora" ? "#8B6CFF" :
+                      "#4b5563",
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          <Button type="submit" isLoading={customizationLoading}>
+            {t("save")}
+          </Button>
         </form>
       </Card>
 
