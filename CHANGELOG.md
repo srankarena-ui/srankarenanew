@@ -2,6 +2,12 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-07-09 — Bot de Discord: comandos de prueba `/perfil-imagen` y `/perfil-embed`
+
+Dos variantes de `/perfil` para que el usuario compare y elija: `/perfil-imagen` genera un PNG en el servidor (`next/og`, sin dependencias nuevas) que replica la tarjeta de perfil de la web (avatar con gradiente+inicial, nombre#tag, badge de rol, badge de rango); `/perfil-embed` usa el embed nativo de Discord (título con link a logros, color según rango, campos de rol/rango/cuentas). Pendiente: decidir cuál se queda como `/perfil` definitivo (o dejar ambas) una vez probadas en el servidor real.
+
+Archivos: `src/app/api/discord/profile-card/route.tsx` (nuevo), `src/app/api/discord/interactions/route.ts` (`handlePerfilImagen`, `handlePerfilEmbed`), `src/modules/admin/actions.ts` (registro de los 2 comandos).
+
 ## 2026-07-09 — Bot de Discord: comandos localizados a inglés (link/profile/verify)
 
 Los 3 comandos (`/vincular`, `/perfil`, `/verificar`) ahora usan `name_localizations` de Discord: un usuario con el cliente en inglés ve `/link`, `/profile`, `/verify` en vez de los nombres en español — es el mismo comando registrado una sola vez, Discord solo cambia el nombre mostrado. El handler sigue enrutando por el nombre base, sin cambios. Falta re-registrar comandos desde el panel admin para que tome efecto. Los mensajes de respuesta del bot siguen en español únicamente.
