@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { InteractionType, InteractionResponseType } from "discord-interactions";
-import { verifyDiscordRequest, assignVerifiedRole } from "@/core/lib/discord";
+import { verifyDiscordRequest, assignVerifiedRole, sendDirectMessage } from "@/core/lib/discord";
 import { getRankForXp } from "@/core/lib/ranks";
 import { formatTag } from "@/core/lib/tag";
 import type { Database } from "@/core/types/database";
@@ -58,12 +58,54 @@ async function handleVincular(discordUserId: string, code: string) {
     .update({ verified_at: new Date().toISOString() })
     .eq("user_id", challenge.user_id);
 
-  const roleResult = await assignVerifiedRole(discordUserId);
-  if ("error" in roleResult) {
-    return reply("✅ ¡Cuenta vinculada! ⚠️ No pude asignarte el rol automáticamente — avisa a un admin.");
+  return reply("✅ ¡Cuenta vinculada! Ya puedes usar /perfil.");
+}
+
+const VERIFY_TTL_MS = 10 * 60 * 1000;
+
+// Anti-raid captcha, independent of any S-Rank Arena account: /verificar
+// DMs a short-lived code, redeemed with /verificar <codigo> in the server.
+async function handleVerificar(discordUserId: string, code: string) {
+  const supabase = getAdminClient();
+
+  if (!code) {
+    const newCode = Math.random().toString(36).slice(2, 8).toUpperCase();
+    const { error } = await supabase.from("discord_verify_codes").upsert({
+      discord_user_id: discordUserId,
+      code: newCode,
+      expires_at: new Date(Date.now() + VERIFY_TTL_MS).toISOString(),
+    });
+    if (error) return reply(`❌ Error: ${error.message}`);
+
+    const dm = await sendDirectMessage(
+      discordUserId,
+      `Tu código de verificación: **${newCode}**\nVuelve al servidor y escribe \`/verificar ${newCode}\` (vence en 10 minutos).`
+    );
+    if ("error" in dm) {
+      return reply('❌ No pude enviarte un mensaje directo. Activa "Permitir mensajes directos de miembros del servidor" e intenta de nuevo.');
+    }
+
+    return reply("📩 Te envié un código por mensaje directo. Vuelve aquí y escribe `/verificar <código>`.");
   }
 
-  return reply("✅ ¡Cuenta vinculada! Ya puedes usar /perfil.");
+  const { data: challenge } = await supabase
+    .from("discord_verify_codes")
+    .select("*")
+    .eq("discord_user_id", discordUserId)
+    .eq("code", code.trim().toUpperCase())
+    .gt("expires_at", new Date().toISOString())
+    .maybeSingle();
+
+  if (!challenge) return reply("❌ Código inválido o expirado. Escribe `/verificar` sin nada para recibir uno nuevo.");
+
+  await supabase.from("discord_verify_codes").delete().eq("discord_user_id", discordUserId);
+
+  const roleResult = await assignVerifiedRole(discordUserId);
+  if ("error" in roleResult) {
+    return reply("✅ ¡Verificado! ⚠️ No pude asignarte el rol automáticamente — avisa a un admin.");
+  }
+
+  return reply("✅ ¡Verificado! Ya tienes acceso al servidor.");
 }
 
 async function handlePerfil(discordUserId: string) {
@@ -112,6 +154,10 @@ export async function POST(request: NextRequest) {
     }
     if (name === "perfil") {
       return handlePerfil(discordUserId);
+    }
+    if (name === "verificar") {
+      const code = interaction.data?.options?.find((o) => o.name === "codigo")?.value ?? "";
+      return handleVerificar(discordUserId, code);
     }
     return reply("❌ Comando no reconocido.");
   }

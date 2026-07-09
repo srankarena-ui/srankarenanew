@@ -55,17 +55,17 @@ export async function postDiscordMessage(channelId: string, content: string) {
   return { success: true };
 }
 
-// Grants/revokes the "Verificado" role on link/unlink — this is the actual
+// Grants the "Verificado" role after a /verificar captcha succeeds — the
 // anti-raid/anti-bot gate (paired with restricting @everyone in the server
 // itself). Best-effort: never throws, so a misconfigured bot never blocks
-// the DB-side link/unlink, which is the source of truth.
-async function setVerifiedRole(discordUserId: string, method: "PUT" | "DELETE") {
+// the underlying flow.
+export async function assignVerifiedRole(discordUserId: string) {
   const guildId = process.env.DISCORD_GUILD_ID;
   const roleId = process.env.DISCORD_VERIFIED_ROLE_ID;
   if (!guildId || !roleId) return { error: "DISCORD_GUILD_ID/DISCORD_VERIFIED_ROLE_ID not configured" };
   try {
     const res = await fetch(`${DISCORD_API}/guilds/${guildId}/members/${discordUserId}/roles/${roleId}`, {
-      method,
+      method: "PUT",
       headers: botHeaders(),
     });
     if (!res.ok) return { error: `Discord API ${res.status}: ${await res.text()}` };
@@ -75,5 +75,26 @@ async function setVerifiedRole(discordUserId: string, method: "PUT" | "DELETE") 
   }
 }
 
-export const assignVerifiedRole = (discordUserId: string) => setVerifiedRole(discordUserId, "PUT");
-export const removeVerifiedRole = (discordUserId: string) => setVerifiedRole(discordUserId, "DELETE");
+// DMs the user — used to deliver the /verificar captcha code out-of-band, so
+// solving it proves control of the Discord account, not just of the command box.
+export async function sendDirectMessage(discordUserId: string, content: string) {
+  try {
+    const dmChannel = await fetch(`${DISCORD_API}/users/@me/channels`, {
+      method: "POST",
+      headers: botHeaders(),
+      body: JSON.stringify({ recipient_id: discordUserId }),
+    });
+    if (!dmChannel.ok) return { error: `Discord API ${dmChannel.status}: ${await dmChannel.text()}` };
+    const { id: channelId } = (await dmChannel.json()) as { id: string };
+
+    const res = await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
+      method: "POST",
+      headers: botHeaders(),
+      body: JSON.stringify({ content }),
+    });
+    if (!res.ok) return { error: `Discord API ${res.status}: ${await res.text()}` };
+    return { success: true };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Discord DM failed" };
+  }
+}

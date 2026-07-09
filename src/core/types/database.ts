@@ -195,6 +195,24 @@ export type Database = {
         };
         Relationships: [];
       };
+      discord_verify_codes: {
+        Row: {
+          discord_user_id: string;
+          code: string;
+          expires_at: string;
+        };
+        Insert: {
+          discord_user_id: string;
+          code: string;
+          expires_at: string;
+        };
+        Update: {
+          discord_user_id?: string;
+          code?: string;
+          expires_at?: string;
+        };
+        Relationships: [];
+      };
       riot_verification_challenges: {
         Row: {
           user_id: string;

@@ -571,7 +571,7 @@ export function SettingsView({ profile, riotVerificationChallenge, verificationC
           </div>
         ) : (
           <div className="space-y-3">
-            <p className="text-xs text-gray-400">Vincula tu Discord para verificarte y desbloquear el resto del servidor (y usar /perfil).</p>
+            <p className="text-xs text-gray-400">Vincula tu Discord para usar comandos como /perfil en el servidor.</p>
             <Button isLoading={discordLoading} onClick={async () => {
               setDiscordLoading(true);
               const r = await startDiscordLink();

@@ -522,6 +522,13 @@ export async function registerDiscordCommands(): Promise<{ error: string } | { s
         name: "perfil",
         description: "Muestra tu rango y stats de S-Rank Arena",
       },
+      {
+        name: "verificar",
+        description: "Verifícate para acceder al servidor (evita bots/raids)",
+        options: [
+          { name: "codigo", description: "Código que te llegó por mensaje directo", type: 3, required: false },
+        ],
+      },
     ]);
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Unknown error" };
