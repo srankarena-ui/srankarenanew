@@ -2,6 +2,12 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-07-09 — Revertir banner de perfil como URL libre
+
+El usuario frenó el campo de texto libre para el banner apenas subido: riesgo de que se pegue una imagen inapropiada. El banner será un premio otorgado por admin/torneos (sistema por construir), no algo que el usuario escriba directo. Se quitó el input y la validación de `banner_url` en Ajustes; la columna sigue en la BD para cuando exista el catálogo de premios.
+
+Archivos: `src/modules/settings/actions.ts`, `src/modules/settings/components/SettingsView.tsx`, `src/core/i18n/dictionaries/{es,en}.json`.
+
 ## 2026-07-09 — Discord: consolidar /perfil-imagen y /perfil-embed en un solo /perfil
 
 El usuario prefirió la versión de imagen tras probar ambas. `/perfil` (texto) y `/perfil-embed` se eliminaron; `/perfil` ahora siempre devuelve el banner generado por `/api/discord/profile-card`.
