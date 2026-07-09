@@ -534,32 +534,13 @@ export async function registerDiscordCommands(): Promise<{ error: string } | { s
         ],
       },
       {
+        // Banner-style image, matches the website's profile card.
         name: "perfil",
-        description: "Muestra tu rango y stats de S-Rank Arena",
+        description: "Muestra tu perfil de S-Rank Arena como imagen",
         name_localizations: { "en-US": "profile", "en-GB": "profile" },
         description_localizations: {
-          "en-US": "Shows your rank and S-Rank Arena stats",
-          "en-GB": "Shows your rank and S-Rank Arena stats",
-        },
-      },
-      {
-        // Test A: full banner image, matches the website's profile card.
-        name: "perfil-imagen",
-        description: "[Prueba] Perfil como imagen tipo banner",
-        name_localizations: { "en-US": "profile-image", "en-GB": "profile-image" },
-        description_localizations: {
-          "en-US": "[Test] Profile as a banner-style image",
-          "en-GB": "[Test] Profile as a banner-style image",
-        },
-      },
-      {
-        // Test B: native Discord embed (fields + color), no generated image.
-        name: "perfil-embed",
-        description: "[Prueba] Perfil como embed nativo de Discord",
-        name_localizations: { "en-US": "profile-embed", "en-GB": "profile-embed" },
-        description_localizations: {
-          "en-US": "[Test] Profile as a native Discord embed",
-          "en-GB": "[Test] Profile as a native Discord embed",
+          "en-US": "Shows your S-Rank Arena profile as an image",
+          "en-GB": "Shows your S-Rank Arena profile as an image",
         },
       },
       {
