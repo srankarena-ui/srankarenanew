@@ -22,7 +22,7 @@ export function DiscordSetupPanel({ linkedCount }: { linkedCount: number }) {
     <Card>
       <h1 className="mb-2 text-lg font-bold text-white">Discord Bot Setup</h1>
       <p className="mb-6 text-xs text-gray-500">
-        One-time setup: registers <code>/vincular</code> and <code>/perfil</code> as global slash commands.
+        One-time setup: registers <code>/vincular</code>, <code>/perfil</code>, and <code>/verificar</code> as global slash commands.
         Re-run this only if the command list changes.
       </p>
 
