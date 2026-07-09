@@ -21,11 +21,15 @@ function botHeaders() {
 export type DiscordCommand = {
   name: string;
   description: string;
+  name_localizations?: Record<string, string>;
+  description_localizations?: Record<string, string>;
   options?: {
     name: string;
     description: string;
     type: number; // 3 = STRING
     required?: boolean;
+    name_localizations?: Record<string, string>;
+    description_localizations?: Record<string, string>;
   }[];
 };
 

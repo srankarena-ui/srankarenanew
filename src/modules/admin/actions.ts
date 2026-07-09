@@ -514,19 +514,54 @@ export async function registerDiscordCommands(): Promise<{ error: string } | { s
       {
         name: "vincular",
         description: "Vincula tu cuenta de Discord con tu perfil de S-Rank Arena",
+        name_localizations: { "en-US": "link", "en-GB": "link" },
+        description_localizations: {
+          "en-US": "Link your Discord account to your S-Rank Arena profile",
+          "en-GB": "Link your Discord account to your S-Rank Arena profile",
+        },
         options: [
-          { name: "codigo", description: "Código generado en Ajustes de la web", type: 3, required: true },
+          {
+            name: "codigo",
+            description: "Código generado en Ajustes de la web",
+            type: 3,
+            required: true,
+            name_localizations: { "en-US": "code", "en-GB": "code" },
+            description_localizations: {
+              "en-US": "Code generated in Settings on the website",
+              "en-GB": "Code generated in Settings on the website",
+            },
+          },
         ],
       },
       {
         name: "perfil",
         description: "Muestra tu rango y stats de S-Rank Arena",
+        name_localizations: { "en-US": "profile", "en-GB": "profile" },
+        description_localizations: {
+          "en-US": "Shows your rank and S-Rank Arena stats",
+          "en-GB": "Shows your rank and S-Rank Arena stats",
+        },
       },
       {
         name: "verificar",
         description: "Verifícate para acceder al servidor (evita bots/raids)",
+        name_localizations: { "en-US": "verify", "en-GB": "verify" },
+        description_localizations: {
+          "en-US": "Verify yourself to access the server (blocks bots/raids)",
+          "en-GB": "Verify yourself to access the server (blocks bots/raids)",
+        },
         options: [
-          { name: "codigo", description: "Código que te llegó por mensaje directo", type: 3, required: false },
+          {
+            name: "codigo",
+            description: "Código que te llegó por mensaje directo",
+            type: 3,
+            required: false,
+            name_localizations: { "en-US": "code", "en-GB": "code" },
+            description_localizations: {
+              "en-US": "Code you received via direct message",
+              "en-GB": "Code you received via direct message",
+            },
+          },
         ],
       },
     ]);
