@@ -261,8 +261,6 @@
     "profileCustomization": "Profile customization",
     "bio": "Bio",
     "bioPlaceholder": "Tell us something about yourself (max 280 characters)",
-    "bannerUrl": "Banner URL",
-    "bannerUrlPlaceholder": "https://example.com/my-banner.jpg",
     "profileTheme": "Profile theme",
     "riotLinkedDirectly": "Riot account linked",
     "riotUnlinked": "Riot account unlinked",

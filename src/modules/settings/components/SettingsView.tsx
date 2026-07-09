@@ -267,13 +267,6 @@ export function SettingsView({ profile, riotVerificationChallenge, verificationC
             />
           </div>
 
-          <Input
-            name="banner_url"
-            defaultValue={profile.banner_url || ""}
-            label={t("bannerUrl")}
-            placeholder={t("bannerUrlPlaceholder")}
-          />
-
           <div>
             <label className="mb-2 block text-xs font-bold text-gray-400">{t("profileTheme")}</label>
             <div className="flex items-center gap-2">
