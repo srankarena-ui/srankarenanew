@@ -2,6 +2,20 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-07-09 — Discord: consolidar /perfil-imagen y /perfil-embed en un solo /perfil
+
+El usuario prefirió la versión de imagen tras probar ambas. `/perfil` (texto) y `/perfil-embed` se eliminaron; `/perfil` ahora siempre devuelve el banner generado por `/api/discord/profile-card`.
+
+Archivos: `src/app/api/discord/interactions/route.ts`, `src/modules/admin/actions.ts`.
+
+## 2026-07-09 — Perfil: personalización tipo Steam (bio, banner, tema de color)
+
+Nueva sección en Ajustes para personalizar el perfil público: bio corta (280 caracteres), banner (URL pegada — mismo patrón que los banners de torneo, no hay infraestructura de subida de archivos en el proyecto todavía) y tema de color por perfil (reutiliza la paleta `challenger/volt/ember/aurora` que ya existía como preferencia de navegador — ahora se puede fijar por usuario y se ve así para cualquier visitante, vía `data-accent` escoped al `Card` del perfil en vez de `document.documentElement`).
+
+Pendiente/decisión abierta: avatar real con imagen subida (Steam-style) quedó fuera de esta ronda — requeriría armar Supabase Storage desde cero. El usuario no lo pidió esta vez, pero puede ser la siguiente fase.
+
+Archivos: `supabase/migrations/026_profile_customization.sql`, `src/core/types/database.ts`, `src/modules/settings/actions.ts` (`updateProfileCustomization`), `src/modules/settings/components/SettingsView.tsx`, `src/modules/profile/components/ProfileHeader.tsx`, `src/core/i18n/dictionaries/{es,en}.json`.
+
 ## 2026-07-09 — Panel admin de Discord: diagnóstico en vivo
 
 `/es/admin/discord` ya no solo registra comandos: consulta directo a la API de Discord y muestra estado real — qué env vars están cargadas, si el bot está conectado al servidor (nombre de la guild), si el rol `Verificado` existe, y la lista de comandos efectivamente registrados en Discord (fuente de verdad, no lo que asumimos). Motivo: el usuario quería confirmar que `/vincular` y compañía sí se desplegaron sin tener que probarlo a ciegas en Discord.
