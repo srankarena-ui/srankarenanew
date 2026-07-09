@@ -2,6 +2,12 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-07-09 — Panel admin de Discord: diagnóstico en vivo
+
+`/es/admin/discord` ya no solo registra comandos: consulta directo a la API de Discord y muestra estado real — qué env vars están cargadas, si el bot está conectado al servidor (nombre de la guild), si el rol `Verificado` existe, y la lista de comandos efectivamente registrados en Discord (fuente de verdad, no lo que asumimos). Motivo: el usuario quería confirmar que `/vincular` y compañía sí se desplegaron sin tener que probarlo a ciegas en Discord.
+
+Archivos: `src/core/lib/discord.ts` (`getRegisteredCommands`, `getGuildStatus`), `src/app/[locale]/admin/discord/page.tsx`, `src/modules/admin/components/DiscordSetupPanel.tsx`.
+
 ## 2026-07-09 — Bot de Discord: comandos de prueba `/perfil-imagen` y `/perfil-embed`
 
 Dos variantes de `/perfil` para que el usuario compare y elija: `/perfil-imagen` genera un PNG en el servidor (`next/og`, sin dependencias nuevas) que replica la tarjeta de perfil de la web (avatar con gradiente+inicial, nombre#tag, badge de rol, badge de rango); `/perfil-embed` usa el embed nativo de Discord (título con link a logros, color según rango, campos de rol/rango/cuentas). Pendiente: decidir cuál se queda como `/perfil` definitivo (o dejar ambas) una vez probadas en el servidor real.
