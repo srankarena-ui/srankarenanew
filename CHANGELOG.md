@@ -2,7 +2,15 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
-## 2026-07-08 — Bot de Discord, Fase 1: rol "Verificado" al vincular cuenta
+## 2026-07-09 — Bot de Discord: comando `/verificar` (captcha por DM), desacoplado de la cuenta
+
+Reemplaza el diseño anterior (rol al vincular cuenta) por un gate anti-raid independiente: `/verificar` sin argumentos manda un código de un solo uso por DM (vence en 10 min, tabla nueva `discord_verify_codes`); `/verificar <código>` lo redime y asigna el rol `Verificado`. Motivo: el usuario no quería exigir cuenta de S-Rank Arena para entrar al servidor, solo un filtro simple anti-bot. `/vincular` y "Unlink" en Ajustes ya no tocan el rol — quedan solo para `/perfil` y fases futuras.
+
+Deploy en producción ya hecho (env vars cargadas, bot invitado, rol `Verificado` configurado, endpoint de interacciones verificado en `www.srankarena.com`). Pendiente: re-registrar comandos desde el panel admin (`/es/admin/discord`) para que Discord reconozca `/verificar`, y prueba end-to-end.
+
+Archivos: `src/core/lib/discord.ts` (`assignVerifiedRole`, `sendDirectMessage`), `src/app/api/discord/interactions/route.ts` (`handleVerificar`), `src/modules/admin/actions.ts` (registro del comando), `src/modules/settings/actions.ts` (`unlinkDiscord` revertido), `supabase/migrations/025_discord_verify_codes.sql`.
+
+## 2026-07-08 — Bot de Discord, Fase 1: rol "Verificado" al vincular cuenta (superado por la entrada de arriba)
 
 Al vincular Discord (`/vincular <código>`) o desvincularlo desde Ajustes, el bot ahora otorga/retira automáticamente un rol `Verificado` en el servidor — es el mecanismo anti-raid/anti-spam (combinado con restringir `@everyone` a un canal `#verifícate` en la config del servidor, hecho a mano en Discord). Falla en modo best-effort: si el bot no tiene permisos, el vínculo en la base de datos igual se completa y se avisa con un mensaje de advertencia.
 
