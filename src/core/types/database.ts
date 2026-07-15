@@ -9,6 +9,57 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      football_scoreboard: {
+        Row: {
+          id: number;
+          home_team: string;
+          away_team: string;
+          home_abbr: string;
+          away_abbr: string;
+          home_flag_url: string | null;
+          away_flag_url: string | null;
+          home_score: number;
+          away_score: number;
+          clock_seconds: number;
+          clock_running: boolean;
+          clock_started_at: string | null;
+          added_time_minutes: number;
+          updated_at: string;
+        };
+        Insert: {
+          id?: number;
+          home_team?: string;
+          away_team?: string;
+          home_abbr?: string;
+          away_abbr?: string;
+          home_flag_url?: string | null;
+          away_flag_url?: string | null;
+          home_score?: number;
+          away_score?: number;
+          clock_seconds?: number;
+          clock_running?: boolean;
+          clock_started_at?: string | null;
+          added_time_minutes?: number;
+          updated_at?: string;
+        };
+        Update: {
+          id?: number;
+          home_team?: string;
+          away_team?: string;
+          home_abbr?: string;
+          away_abbr?: string;
+          home_flag_url?: string | null;
+          away_flag_url?: string | null;
+          home_score?: number;
+          away_score?: number;
+          clock_seconds?: number;
+          clock_running?: boolean;
+          clock_started_at?: string | null;
+          added_time_minutes?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           id: string;

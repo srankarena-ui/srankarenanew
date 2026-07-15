@@ -572,3 +572,97 @@ export async function registerDiscordCommands(): Promise<{ error: string } | { s
 
   return { success: true };
 }
+
+// ─── Football scoreboard (provisional stream overlay) ─────────────────────
+
+export async function updateFootballScoreboard(formData: FormData) {
+  const guard = await requireAdmin();
+  if ("error" in guard) return guard;
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("football_scoreboard")
+    .update({
+      home_team: (formData.get("home_team") as string) || "Inglaterra",
+      away_team: (formData.get("away_team") as string) || "Argentina",
+      home_abbr: ((formData.get("home_abbr") as string) || "ENG").toUpperCase(),
+      away_abbr: ((formData.get("away_abbr") as string) || "ARG").toUpperCase(),
+      home_flag_url: (formData.get("home_flag_url") as string) || null,
+      away_flag_url: (formData.get("away_flag_url") as string) || null,
+      home_score: Number(formData.get("home_score")) || 0,
+      away_score: Number(formData.get("away_score")) || 0,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", 1);
+
+  if (error) return { error: error.message };
+  revalidatePath("/admin/scoreboard");
+  return { success: true };
+}
+
+export async function startFootballClock() {
+  const guard = await requireAdmin();
+  if ("error" in guard) return guard;
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("football_scoreboard")
+    .update({ clock_running: true, clock_started_at: new Date().toISOString() })
+    .eq("id", 1);
+
+  if (error) return { error: error.message };
+  revalidatePath("/admin/scoreboard");
+  return { success: true };
+}
+
+export async function pauseFootballClock() {
+  const guard = await requireAdmin();
+  if ("error" in guard) return guard;
+
+  const supabase = await createClient();
+  const { data: current } = await supabase.from("football_scoreboard").select("*").eq("id", 1).single();
+  if (!current) return { error: "Scoreboard not found" };
+
+  const elapsed = current.clock_running && current.clock_started_at
+    ? current.clock_seconds + Math.floor((Date.now() - new Date(current.clock_started_at).getTime()) / 1000)
+    : current.clock_seconds;
+
+  const { error } = await supabase
+    .from("football_scoreboard")
+    .update({ clock_seconds: elapsed, clock_running: false, clock_started_at: null })
+    .eq("id", 1);
+
+  if (error) return { error: error.message };
+  revalidatePath("/admin/scoreboard");
+  return { success: true };
+}
+
+export async function resetFootballClock() {
+  const guard = await requireAdmin();
+  if ("error" in guard) return guard;
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("football_scoreboard")
+    .update({ clock_seconds: 0, clock_running: false, clock_started_at: null, added_time_minutes: 0 })
+    .eq("id", 1);
+
+  if (error) return { error: error.message };
+  revalidatePath("/admin/scoreboard");
+  return { success: true };
+}
+
+export async function setFootballAddedTime(minutes: number) {
+  const guard = await requireAdmin();
+  if ("error" in guard) return guard;
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("football_scoreboard")
+    .update({ added_time_minutes: Math.max(0, minutes) })
+    .eq("id", 1);
+
+  if (error) return { error: error.message };
+  revalidatePath("/admin/scoreboard");
+  return { success: true };
+}
