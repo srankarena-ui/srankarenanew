@@ -3,6 +3,7 @@ import { Card } from "@/core/ui/Card";
 import { getRankForXp } from "@/core/lib/ranks";
 import { formatProfileSlug } from "@/core/lib/tag";
 import { donorTier, fmtUsd } from "@/modules/vault/donor-tiers";
+import { ProfileEditToggle } from "@/modules/profile/components/ProfileEditToggle";
 import type { Profile } from "@/core/types";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -11,9 +12,10 @@ interface ProfileHeaderProps {
   profile: Profile;
   locale: string;
   donationTotalCents?: number;
+  isOwner?: boolean;
 }
 
-export function ProfileHeader({ profile, locale, donationTotalCents = 0 }: ProfileHeaderProps) {
+export function ProfileHeader({ profile, locale, donationTotalCents = 0, isOwner = false }: ProfileHeaderProps) {
   const t = useTranslations("profile");
   const xp = profile.experience ?? 0;
   const currentRank = getRankForXp(xp);
@@ -83,6 +85,7 @@ export function ProfileHeader({ profile, locale, donationTotalCents = 0 }: Profi
           >
             {t("viewAchievements")} →
           </Link>
+          {isOwner && <ProfileEditToggle profile={profile} />}
         </div>
       </div>
     </Card>

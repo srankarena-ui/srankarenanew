@@ -63,7 +63,7 @@ export default async function ProfilePage({
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 space-y-8">
-      <ProfileHeader profile={profile} locale={locale} donationTotalCents={donationTotalCents} />
+      <ProfileHeader profile={profile} locale={locale} donationTotalCents={donationTotalCents} isOwner={isOwner} />
 
       <div className="grid gap-8 lg:grid-cols-[300px_1fr]">
         {/* Left sidebar */}
