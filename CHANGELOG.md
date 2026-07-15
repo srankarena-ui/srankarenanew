@@ -2,6 +2,18 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-07-09 — Marcador de fútbol provisional para stream overlay
+
+Feature rápida y provisional (no relacionada al roadmap del producto): panel admin en `/admin/scoreboard` para controlar un marcador en vivo (equipos, siglas, banderas por URL, marcador, reloj con inicio/pausa/reinicio y tiempo agregado), consumido por `/overlay/football` como fuente transparente para OBS. Se actualiza solo cada 3 segundos por polling (sin Supabase Realtime, no había precedente de esto en el proyecto). El reloj no simula medio tiempo/45 min exactos, cuenta corrido en MM:SS con el tiempo agregado mostrado aparte.
+
+Archivos: `supabase/migrations/027_football_scoreboard.sql`, `src/core/lib/football-clock.ts`, `src/modules/admin/actions.ts`, `src/modules/admin/components/FootballScoreboardPanel.tsx`, `src/app/api/football-scoreboard/route.ts`, `src/app/overlay/football/`.
+
+## 2026-07-09 — Perfil: mover edición de bio/tema al perfil público
+
+El botón "Editar perfil" ahora vive en la página pública del perfil (debajo de "Ver logros"), no en Ajustes — se quitó la tarjeta duplicada de Ajustes. Al hacer clic se despliega inline el formulario de bio y tema de color, mismo server action de antes (`updateProfileCustomization`).
+
+Archivos: `src/modules/profile/components/ProfileEditToggle.tsx` (nuevo), `src/modules/profile/components/ProfileHeader.tsx`, `src/app/[locale]/profile/[username]/page.tsx`, `src/modules/settings/components/SettingsView.tsx`.
+
 ## 2026-07-09 — Revertir banner de perfil como URL libre
 
 El usuario frenó el campo de texto libre para el banner apenas subido: riesgo de que se pegue una imagen inapropiada. El banner será un premio otorgado por admin/torneos (sistema por construir), no algo que el usuario escriba directo. Se quitó el input y la validación de `banner_url` en Ajustes; la columna sigue en la BD para cuando exista el catálogo de premios.
