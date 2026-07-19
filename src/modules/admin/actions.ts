@@ -652,6 +652,23 @@ export async function resetFootballClock() {
   return { success: true };
 }
 
+export async function setFootballClock(seconds: number) {
+  const guard = await requireAdmin();
+  if ("error" in guard) return guard;
+
+  const supabase = await createClient();
+  // Set to an exact value and freeze it (paused), so the operator can dial in
+  // any time; press Iniciar afterwards to resume from there.
+  const { error } = await supabase
+    .from("football_scoreboard")
+    .update({ clock_seconds: Math.max(0, Math.floor(seconds)), clock_running: false, clock_started_at: null })
+    .eq("id", 1);
+
+  if (error) return { error: error.message };
+  revalidatePath("/admin/scoreboard");
+  return { success: true };
+}
+
 export async function setFootballAddedTime(minutes: number) {
   const guard = await requireAdmin();
   if ("error" in guard) return guard;

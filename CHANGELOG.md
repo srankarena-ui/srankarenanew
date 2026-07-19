@@ -2,6 +2,12 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-07-19 — Marcador de fútbol: fijar el reloj manualmente
+
+Se agregó un input "Fijar reloj" (MM:SS o minutos sueltos) en `/admin/scoreboard` para poner el cronómetro en cualquier valor cuando el operador quiera. Nueva acción `setFootballClock` que congela el reloj (lo deja pausado) en el valor dado; luego se presiona Iniciar para reanudar desde ahí.
+
+Archivos: `src/modules/admin/actions.ts`, `src/modules/admin/components/FootballScoreboardPanel.tsx`.
+
 ## 2026-07-09 — Marcador de fútbol provisional para stream overlay
 
 Feature rápida y provisional (no relacionada al roadmap del producto): panel admin en `/admin/scoreboard` para controlar un marcador en vivo (equipos, siglas, banderas por URL, marcador, reloj con inicio/pausa/reinicio y tiempo agregado), consumido por `/overlay/football` como fuente transparente para OBS. Se actualiza solo cada 3 segundos por polling (sin Supabase Realtime, no había precedente de esto en el proyecto). El reloj no simula medio tiempo/45 min exactos, cuenta corrido en MM:SS con el tiempo agregado mostrado aparte.

@@ -10,6 +10,7 @@ import {
   startFootballClock,
   pauseFootballClock,
   resetFootballClock,
+  setFootballClock,
   setFootballAddedTime,
 } from "@/modules/admin/actions";
 import { computeElapsedSeconds, formatClock } from "@/core/lib/football-clock";
@@ -32,6 +33,7 @@ export function FootballScoreboardPanel({ scoreboard }: { scoreboard: Scoreboard
   const [clockSeconds, setClockSeconds] = useState(scoreboard?.clock_seconds ?? 0);
   const [clockStartedAt, setClockStartedAt] = useState(scoreboard?.clock_started_at ?? null);
   const [tick, setTick] = useState(0);
+  const [clockInput, setClockInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [clockLoading, setClockLoading] = useState(false);
 
@@ -87,6 +89,22 @@ export function FootballScoreboardPanel({ scoreboard }: { scoreboard: Scoreboard
     setClockRunning(false);
     setClockStartedAt(null);
     setAddedMinutes(0);
+  }
+
+  async function handleSetClock() {
+    // Accept "MM:SS" or plain minutes ("45").
+    const m = clockInput.match(/^\s*(\d+)(?::(\d{1,2}))?\s*$/);
+    if (!m) return toast("Formato inválido. Usa MM:SS o minutos.", "error");
+    const seconds = Number(m[1]) * 60 + (m[2] ? Number(m[2]) : 0);
+    setClockLoading(true);
+    const result = await setFootballClock(seconds);
+    setClockLoading(false);
+    if ("error" in result && result.error) return toast(result.error, "error");
+    setClockSeconds(seconds);
+    setClockRunning(false);
+    setClockStartedAt(null);
+    setClockInput("");
+    toast("Reloj ajustado", "success");
   }
 
   async function handleAddedTime(minutes: number) {
@@ -145,6 +163,20 @@ export function FootballScoreboardPanel({ scoreboard }: { scoreboard: Scoreboard
             <Button onClick={handleStart} isLoading={clockLoading} className="flex-1">Iniciar</Button>
           )}
           <Button variant="ghost" onClick={handleReset} isLoading={clockLoading}>Reiniciar</Button>
+        </div>
+
+        <div className="mt-3 flex items-center gap-2">
+          <span className="text-xs text-gray-400">Fijar reloj:</span>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={clockInput}
+            onChange={(e) => setClockInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSetClock()}
+            placeholder="MM:SS"
+            className="w-24 rounded-lg border border-gray-800 bg-[#0d1117] px-2 py-1 text-center font-mono text-sm text-white outline-hidden focus:border-[var(--color-accent)]"
+          />
+          <Button variant="ghost" onClick={handleSetClock} isLoading={clockLoading}>Aplicar</Button>
         </div>
 
         <div className="mt-4 flex items-center gap-2">
