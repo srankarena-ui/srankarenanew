@@ -10,9 +10,14 @@ const cs = b(4, 5, 6, 7, 8);
 // Los percentiles caen donde deben, y fuera del rango se satura sin pasarse.
 assert.equal(normalize(6, cs), 0.5);
 assert.equal(normalize(8, cs), 1);
-assert.equal(normalize(4, cs), 0);
 assert.equal(normalize(99, cs), 1);
+// Por debajo del p10 la escala sigue teniendo pendiente: el p10 vale 0.1 y solo
+// un cero absoluto puntúa cero, para que nadie salga con la nada por una mala
+// partida.
+assert.equal(normalize(4, cs), 0.1);
+assert.equal(normalize(2, cs), 0.05);
 assert.equal(normalize(0, cs), 0);
+assert.ok(normalize(1, cs) > 0 && normalize(1, cs) < normalize(3, cs));
 // Interpolación entre dos percentiles: 6.5 está a mitad de p50→p75.
 assert.equal(normalize(6.5, cs), 0.625);
 

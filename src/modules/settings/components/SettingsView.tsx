@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { getRiotRegionTranslationKey } from "@/core/lib/riot-regions";
 import { getRiotVerificationTargetIconId } from "@/core/lib/riot-verification";
+import { ACTIVE_GAMES } from "@/core/config/games";
 import { Card } from "@/core/ui/Card";
 import { Button } from "@/core/ui/Button";
 import { Input } from "@/core/ui/Input";
@@ -78,6 +79,11 @@ function ProfileIconPreview({ iconId, label }: { iconId: number; label: string }
     </div>
   );
 }
+
+// ponytail: solo LoL activo por ahora — ver src/core/config/games.ts.
+const showCR = (ACTIVE_GAMES as readonly string[]).includes("Clash Royale");
+const showSteam = (ACTIVE_GAMES as readonly string[]).includes("Dota 2")
+  || (ACTIVE_GAMES as readonly string[]).includes("Counter-Strike 2");
 
 export function SettingsView({ profile, riotVerificationChallenge, verificationConfig, steamVerificationChallenge, discordLinkChallenge }: SettingsViewProps) {
   const t = useTranslations("settings");
@@ -353,7 +359,8 @@ export function SettingsView({ profile, riotVerificationChallenge, verificationC
         )}
       </Card>
 
-      {/* Clash Royale Account */}
+      {/* Clash Royale Account — oculto mientras solo LoL esté activo (src/core/config/games.ts) */}
+      {showCR && (
       <Card>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-sm uppercase tracking-wider text-white">
@@ -417,7 +424,10 @@ export function SettingsView({ profile, riotVerificationChallenge, verificationC
         )}
       </Card>
 
-      {/* ── STEAM (Dota 2 + CS2) ── */}
+      )}
+
+      {/* ── STEAM (Dota 2 + CS2) ── oculto igual que Clash Royale */}
+      {showSteam && (
       <Card>
         <h2 className="mb-4 text-lg font-bold text-white">Steam</h2>
         <p className="-mt-3 mb-4 text-xs text-gray-500">Vincula tu cuenta de Steam para desbloquear el trackeo de Dota 2 y Counter-Strike 2.</p>
@@ -531,6 +541,7 @@ export function SettingsView({ profile, riotVerificationChallenge, verificationC
           </div>
         )}
       </Card>
+      )}
 
       {/* ── DISCORD ── */}
       <Card>

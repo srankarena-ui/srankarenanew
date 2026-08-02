@@ -1,23 +1,32 @@
 // Junta partidas del parche actual desde la Riot API y las vuelca a CSV,
 // una fila por participante (10 por partida, con el rol ya etiquetado).
+// El objetivo se reparte a partes iguales entre los rangos pedidos, para poder
+// comparar rendimiento por rol *y* por liga.
 //
-//   node scripts/collect-matches.mjs --matches 300
-//   node scripts/collect-matches.mjs --region euw1 --tiers DIAMOND,PLATINUM --out data/parche.csv
+//   node scripts/collect-matches.mjs --matches 1000
+//   node scripts/collect-matches.mjs --region euw1 --tiers DIAMOND,MASTER --out data/parche.csv
 //
 // Lee RIOT_API_KEY de .env.local. La key personal caduca cada 24h: si empieza a
-// dar 403, regenérala en developer.riotgames.com y vuelve a correrlo (el CSV se
-// escribe a medida, así que lo ya bajado no se pierde).
-import { appendFileSync, existsSync, readFileSync, mkdirSync, writeFileSync } from "node:fs";
+// dar 401/403, regenérala en developer.riotgames.com y vuelve a correrlo (el CSV
+// se escribe a medida, así que lo ya bajado no se pierde).
+import { appendFileSync, existsSync, readFileSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { parseArgs } from "node:util";
 
 const { values: args } = parseArgs({
   options: {
     region: { type: "string", default: "la1" },
-    tiers: { type: "string", default: "DIAMOND,EMERALD,PLATINUM" },
-    division: { type: "string", default: "I" },
+    tiers: { type: "string", default: "BRONZE,SILVER,GOLD,PLATINUM,EMERALD,DIAMOND" },
+    // Se muestrean dos divisiones por rango: usar solo la I sesgaría cada tramo
+    // hacia su parte alta.
+    divisions: { type: "string", default: "I,III" },
     queue: { type: "string", default: "420" },
-    matches: { type: "string", default: "300" },
+    matches: { type: "string", default: "1000" },
+    // Solo se piden partidas de los últimos N días. Sin esto, los jugadores de
+    // rangos bajos (que juegan menos a menudo) devuelven sobre todo partidas de
+    // parches anteriores: se gastaba una petición por cada una para acabar
+    // descartándola. Los parches duran unas 2 semanas.
+    days: { type: "string", default: "14" },
     out: { type: "string", default: "data/matches.csv" },
   },
 });
@@ -26,16 +35,40 @@ const REGION = args.region;
 const CLUSTER = clusterFor(REGION);
 const QUEUE_ID = Number(args.queue);
 const TARGET = Number(args.matches);
+const SINCE = Math.floor(Date.now() / 1000) - Number(args.days) * 86400;
+const TIERS = args.tiers.split(",").map((t) => t.trim().toUpperCase()).filter(Boolean);
+const DIVISIONS = args.divisions.split(",").map((d) => d.trim().toUpperCase()).filter(Boolean);
 
-// ponytail: espera fija entre requests para no pasar el límite de la key
-// personal (100 req/2min = 50/min). Si algún día se usa una production key,
-// bajar este número es todo lo que hace falta.
-const DELAY_MS = 1300;
+// El límite de la key personal es 100 peticiones / 2 min (1,2 s de media), pero
+// la comparten el sitio en producción y cualquier otro script, así que ir al
+// borde sale caro: cada 429 cuesta una espera de hasta 30 s y el ritmo real se
+// desploma. A 2 s (60 req/2min) sobra margen y el crawl acaba antes, aunque
+// parezca lo contrario. Con production key esto se puede bajar.
+const DELAY_MS = 2000;
 
 const API_KEY = readApiKey();
 if (!API_KEY) {
   console.error("Falta RIOT_API_KEY en .env.local");
   process.exit(1);
+}
+
+// Dos crawls a la vez se pisan el rate limit, se llenan de 429 y escriben
+// duplicados en el mismo CSV. Un candado con el PID lo impide.
+const LOCK = ".crawl.lock";
+if (existsSync(LOCK)) {
+  const pid = Number(readFileSync(LOCK, "utf8").trim());
+  let alive = false;
+  try { process.kill(pid, 0); alive = true; } catch {}
+  if (alive) {
+    console.error(`Ya hay un crawl corriendo (PID ${pid}). Ciérralo antes de lanzar otro.`);
+    process.exit(1);
+  }
+}
+writeFileSync(LOCK, String(process.pid));
+const releaseLock = () => { try { rmSync(LOCK); } catch {} };
+process.on("exit", releaseLock);
+for (const sig of ["SIGINT", "SIGTERM", "SIGHUP", "SIGBREAK"]) {
+  process.on(sig, () => { releaseLock(); process.exit(1); });
 }
 
 function readApiKey() {
@@ -58,6 +91,7 @@ function clusterFor(platform) {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 let requests = 0;
+let throttled = 0;
 
 async function riot(url) {
   for (let attempt = 0; attempt < 4; attempt++) {
@@ -68,6 +102,7 @@ async function riot(url) {
     if (res.ok) return res.json();
 
     if (res.status === 429) {
+      throttled++;
       const wait = Number(res.headers.get("retry-after") ?? 10);
       console.warn(`  429, esperando ${wait}s…`);
       await sleep(wait * 1000);
@@ -96,28 +131,36 @@ async function currentPatch() {
   return versions[0].split(".").slice(0, 2).join(".");
 }
 
-// Semilla: jugadores de los tiers pedidos. De cada uno saldrán sus partidas
+// Semilla: jugadores del rango pedido. De cada uno saldrán sus partidas
 // recientes; como cada partida trae 10 participantes, los roles salen
-// balanceados solos.
-async function seedPuuids() {
+// balanceados solos. El rango del semilla se usa como rango de la partida:
+// el emparejamiento junta gente de nivel parecido, así que es buena
+// aproximación sin gastar 10 peticiones extra por partida para mirar el
+// rango real de cada participante.
+async function seedPuuids(tier) {
   const puuids = new Set();
 
-  for (const tier of args.tiers.split(",").map((t) => t.trim().toUpperCase())) {
-    const url = `https://${REGION}.api.riotgames.com/lol/league-exp/v4/entries/RANKED_SOLO_5x5/${tier}/${args.division}?page=1`;
+  for (const division of DIVISIONS) {
+    const url = `https://${REGION}.api.riotgames.com/lol/league-exp/v4/entries/RANKED_SOLO_5x5/${tier}/${division}?page=1`;
     const entries = await riot(url);
 
     if (!entries?.length) {
-      console.warn(`  sin entradas para ${tier} ${args.division}`);
+      console.warn(`  sin entradas para ${tier} ${division}`);
       continue;
     }
-
     for (const entry of entries) {
-      if (entry.puuid) puuids.add(JSON.stringify({ puuid: entry.puuid, tier }));
+      if (entry.puuid) puuids.add(entry.puuid);
     }
-    console.log(`  ${tier}: ${entries.length} jugadores`);
   }
 
-  return [...puuids].map((s) => JSON.parse(s));
+  // Barajar para no tirar siempre de los mismos jugadores del principio de la
+  // página, que están ordenados por LP.
+  const list = [...puuids];
+  for (let i = list.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+  return list;
 }
 
 const CSV_COLUMNS = [
@@ -159,62 +202,70 @@ const csvCell = (v) => (/[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '
 
 async function main() {
   const patch = await currentPatch();
-  console.log(`Parche actual: ${patch} — objetivo: ${TARGET} partidas (${REGION})`);
+  const perTier = Math.ceil(TARGET / TIERS.length);
+  console.log(`Parche ${patch} · ${REGION} · objetivo ${TARGET} partidas`);
+  console.log(`Rangos: ${TIERS.join(", ")} (~${perTier} cada uno)\n`);
 
   mkdirSync(dirname(args.out), { recursive: true });
   writeFileSync(args.out, CSV_COLUMNS.join(",") + "\n");
 
-  console.log("Buscando jugadores semilla…");
-  const seeds = await seedPuuids();
-  if (!seeds.length) {
-    console.error("No se consiguió ningún puuid semilla. ¿Tiers/región válidos?");
-    process.exit(1);
-  }
-  console.log(`${seeds.length} jugadores semilla\n`);
-
   const seen = new Set();
-  let collected = 0;
+  let total = 0;
   let skippedOldPatch = 0;
+  const started = Date.now();
 
-  for (const seed of seeds) {
-    if (collected >= TARGET) break;
+  for (const tier of TIERS) {
+    const seeds = await seedPuuids(tier);
+    if (!seeds.length) {
+      console.warn(`${tier}: sin jugadores semilla, se salta\n`);
+      continue;
+    }
 
-    const ids = await riot(
-      `https://${CLUSTER}.api.riotgames.com/lol/match/v5/matches/by-puuid/${seed.puuid}/ids`
-        + `?queue=${QUEUE_ID}&start=0&count=10`
-    );
-    if (!ids?.length) continue;
+    let collected = 0;
+    for (const puuid of seeds) {
+      if (collected >= perTier) break;
 
-    for (const id of ids) {
-      if (collected >= TARGET) break;
-      if (seen.has(id)) continue;
-      seen.add(id);
+      const ids = await riot(
+        `https://${CLUSTER}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids`
+          + `?queue=${QUEUE_ID}&startTime=${SINCE}&start=0&count=10`
+      );
+      if (!ids?.length) continue;
 
-      const match = await riot(`https://${CLUSTER}.api.riotgames.com/lol/match/v5/matches/${id}`);
-      if (!match?.info?.participants) continue;
+      for (const id of ids) {
+        if (collected >= perTier) break;
+        if (seen.has(id)) continue;
+        seen.add(id);
 
-      // gameVersion es "15.14.678.9042": comparamos solo major.minor.
-      if (!match.info.gameVersion?.startsWith(patch + ".")) {
-        skippedOldPatch++;
-        continue;
-      }
-      // Partidas remake (menos de 5 min) ensucian cualquier promedio.
-      if (match.info.gameDuration < 300) continue;
+        const match = await riot(`https://${CLUSTER}.api.riotgames.com/lol/match/v5/matches/${id}`);
+        if (!match?.info?.participants) continue;
 
-      const lines = rowsFor(match, seed.tier, patch)
-        .map((row) => row.map(csvCell).join(","))
-        .join("\n");
-      appendFileSync(args.out, lines + "\n");
+        // gameVersion es "16.15.678.9042": comparamos solo major.minor.
+        if (!match.info.gameVersion?.startsWith(patch + ".")) {
+          skippedOldPatch++;
+          continue;
+        }
+        // Partidas remake (menos de 5 min) ensucian cualquier promedio.
+        if (match.info.gameDuration < 300) continue;
 
-      collected++;
-      if (collected % 10 === 0) {
-        console.log(`  ${collected}/${TARGET} partidas · ${requests} requests · ${skippedOldPatch} de parches viejos`);
+        appendFileSync(
+          args.out,
+          rowsFor(match, tier, patch).map((row) => row.map(csvCell).join(",")).join("\n") + "\n"
+        );
+
+        collected++;
+        total++;
+        if (collected % 25 === 0) {
+          const mins = ((Date.now() - started) / 60000).toFixed(1);
+          console.log(`  ${tier} ${collected}/${perTier} · total ${total}/${TARGET} · ${requests} req · ${throttled} throttles · ${mins} min`);
+        }
       }
     }
+    console.log(`${tier}: ${collected} partidas\n`);
   }
 
-  console.log(`\nListo: ${collected} partidas (${collected * 10} filas) en ${args.out}`);
-  console.log(`${requests} requests a Riot · ${skippedOldPatch} descartadas por parche viejo`);
+  const mins = ((Date.now() - started) / 60000).toFixed(1);
+  console.log(`Listo: ${total} partidas (${total * 10} filas) en ${args.out}`);
+  console.log(`${requests} requests · ${throttled} throttles · ${skippedOldPatch} de parches viejos · ${mins} min`);
 }
 
 main();

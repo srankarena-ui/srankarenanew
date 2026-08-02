@@ -2,6 +2,20 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-08-02 — Puntuación de partida y retos de torneo, calibrados con datos reales
+
+Se cerró el diseño del sistema de puntos y los 20 retos de torneo, todo medido contra la API en vez de estimado. Está documentado en `docs/retos-verificacion.md`; aquí solo lo que cambió en código.
+
+`scripts/collect-matches.mjs`: cuotas por rango (reparte el objetivo entre los tiers pedidos), filtro `startTime` en la petición de identificadores —los jugadores de rango bajo devolvían sobre todo partidas de parches viejos y se gastaba una petición por cada descarte, pasó de ~4 a 20 partidas cada 5 minutos— y candado por PID, porque llegaron a correr tres crawls a la vez pisándose el rate limit y escribiendo duplicados. `scripts/analyze-roles.mjs` deriva la participación en asesinatos del propio CSV y desglosa por rango. Nuevos `collect-challenges.mjs` (recoge el bloque `challenges` de partidas ya conocidas, reanudable) y `analyze-feats.mjs` (frecuencia real de cada gesta).
+
+`role-score.ts`: por debajo del p10 ahora interpola de 0 a 0,1 en vez de cortar en cero, para que el 10% inferior no sea indistinguible y nadie salga con la nada.
+
+Además, la página de Ajustes seguía mostrando las tarjetas de vinculación de Clash Royale y Steam pese a `ACTIVE_GAMES`, y la portada prometía "League of Legends, Clash Royale y más próximamente". Ambos corregidos.
+
+Dataset: 1.002 partidas del parche 16.15 repartidas entre seis rangos, en `data/` (ignorado por git); los baselines derivados sí se commitean en `src/core/config/role-baselines.json`.
+
+Archivos: `docs/retos-verificacion.md`, `scripts/*.mjs`, `src/core/lib/role-score.ts`, `src/core/config/role-baselines.json`, `src/modules/settings/components/SettingsView.tsx`, `src/core/i18n/dictionaries/*.json`.
+
 ## 2026-08-02 — SEO: sitemap, robots, metadata por página y arreglo de layouts duplicados
 
 El sitio no aparecía en Google. Dos bugs de fondo, además de la falta de metadatos:

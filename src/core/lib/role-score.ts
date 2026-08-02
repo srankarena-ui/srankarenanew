@@ -41,7 +41,10 @@ export function normalize(value: number, baseline: StatBaseline, lowerIsBetter =
   let position: number;
 
   if (value <= baseline.p10) {
-    position = 0;
+    // Por debajo del p10 se sigue interpolando, de 0 a 0.1, en vez de cortar en
+    // cero: si no, todo el 10% inferior puntúa igual y una partida mala es
+    // indistinguible de una desastrosa.
+    position = baseline.p10 > 0 ? Math.max(0, (value / baseline.p10) * 0.1) : 0;
   } else if (value >= baseline.p90) {
     position = 1;
   } else {
