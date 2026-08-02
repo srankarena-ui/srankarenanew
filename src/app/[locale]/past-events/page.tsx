@@ -1,6 +1,7 @@
 import { createClient } from "@/core/supabase/server";
 import { getPastEventsConfig } from "@/modules/admin/actions";
 import { ImageCarousel } from "@/modules/landing/components/ImageCarousel";
+import { ACTIVE_GAMES } from "@/core/config/games";
 
 const STATUS_LABEL_ES: Record<string, string> = {
   completed: "Completado",
@@ -24,6 +25,7 @@ export default async function PastEventsPage({ params }: { params: Promise<{ loc
     .from("tournaments")
     .select("id, title, game, mode, start_date, max_participants, banner_url, status, reward_points")
     .in("status", ["completed", "active"])
+    .in("game", ACTIVE_GAMES)
     .order("start_date", { ascending: false });
 
   return (

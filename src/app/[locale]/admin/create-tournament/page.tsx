@@ -1,6 +1,7 @@
 import { createClient } from "@/core/supabase/server";
 import { redirect } from "next/navigation";
 import { CreateTournamentWizard } from "@/modules/admin/components/CreateTournamentWizard";
+import { ACTIVE_GAMES } from "@/core/config/games";
 
 export default async function CreateTournamentPage() {
   const supabase = await createClient();
@@ -21,6 +22,10 @@ export default async function CreateTournamentPage() {
     .select("*")
     .order("name");
 
+  const activeGames = (games || []).filter((g) =>
+    (ACTIVE_GAMES as readonly string[]).includes(g.name)
+  );
+
   // Available vault items (Dota 2 prizes) the wizard can assign.
   const { data: vaultItems } = await supabase
     .from("vault_items")
@@ -30,7 +35,7 @@ export default async function CreateTournamentPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <CreateTournamentWizard games={games || []} vaultItems={vaultItems || []} />
+      <CreateTournamentWizard games={activeGames} vaultItems={vaultItems || []} />
     </div>
   );
 }

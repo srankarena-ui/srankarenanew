@@ -12,6 +12,11 @@ export type RiotVerificationChallenge = Database["public"]["Tables"]["riot_verif
 export type SteamVerificationChallenge = Database["public"]["Tables"]["steam_verification_challenges"]["Row"];
 export type DiscordLinkChallenge = Database["public"]["Tables"]["discord_link_challenges"]["Row"];
 
+export type Challenge = Database["public"]["Tables"]["challenges"]["Row"];
+export type ChallengeInsert = Database["public"]["Tables"]["challenges"]["Insert"];
+export type ChallengeAssignment = Database["public"]["Tables"]["challenge_assignments"]["Row"];
+export type ChallengeCompletion = Database["public"]["Tables"]["challenge_completions"]["Row"];
+
 export type TournamentParticipant = Database["public"]["Tables"]["tournament_participants"]["Row"];
 export type TournamentMatch = Database["public"]["Tables"]["tournament_matches"]["Row"];
 

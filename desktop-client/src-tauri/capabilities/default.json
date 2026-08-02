@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "La ventana solo invoca comandos propios y escucha eventos; todo el trabajo (red, disco, autostart) pasa en Rust.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

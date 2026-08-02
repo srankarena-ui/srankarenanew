@@ -312,6 +312,114 @@ export type Database = {
         };
         Relationships: [];
       };
+      challenges: {
+        Row: {
+          id: string;
+          tournament_id: string | null;
+          title: string;
+          description: string | null;
+          game: string;
+          conditions: Json;
+          is_active: boolean;
+          starts_at: string | null;
+          ends_at: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tournament_id?: string | null;
+          title: string;
+          description?: string | null;
+          game?: string;
+          conditions: Json;
+          is_active?: boolean;
+          starts_at?: string | null;
+          ends_at?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tournament_id?: string | null;
+          title?: string;
+          description?: string | null;
+          game?: string;
+          conditions?: Json;
+          is_active?: boolean;
+          starts_at?: string | null;
+          ends_at?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      challenge_assignments: {
+        Row: {
+          id: string;
+          challenge_id: string;
+          user_id: string;
+          status: string;
+          assigned_at: string;
+          completed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          challenge_id: string;
+          user_id: string;
+          status?: string;
+          assigned_at?: string;
+          completed_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          challenge_id?: string;
+          user_id?: string;
+          status?: string;
+          assigned_at?: string;
+          completed_at?: string | null;
+        };
+        Relationships: [];
+      };
+      challenge_completions: {
+        Row: {
+          id: string;
+          challenge_id: string;
+          user_id: string;
+          assignment_id: string | null;
+          riot_game_id: number;
+          evidence: Json;
+          verified: boolean;
+          source: string;
+          reported_at: string;
+        };
+        Insert: {
+          id?: string;
+          challenge_id: string;
+          user_id: string;
+          assignment_id?: string | null;
+          riot_game_id: number;
+          evidence?: Json;
+          verified?: boolean;
+          source?: string;
+          reported_at?: string;
+        };
+        Update: {
+          id?: string;
+          challenge_id?: string;
+          user_id?: string;
+          assignment_id?: string | null;
+          riot_game_id?: number;
+          evidence?: Json;
+          verified?: boolean;
+          source?: string;
+          reported_at?: string;
+        };
+        Relationships: [];
+      };
       tournaments: {
         Row: {
           id: string;

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>S-Rank Arena</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <h1>S-Rank Arena</h1>
+
+    <section id="login">
+      <p class="hint">Inicia sesión con tu cuenta de S-Rank Arena.</p>
+      <form id="login-form">
+        <input id="email" type="email" placeholder="Email" autocomplete="username" required />
+        <input id="password" type="password" placeholder="Contraseña" autocomplete="current-password" required />
+        <button type="submit" id="login-button">Entrar</button>
+      </form>
+      <p id="login-error" class="error" role="alert"></p>
+    </section>
+
+    <section id="app" hidden>
+      <p class="account">Sesión: <strong id="account-email"></strong></p>
+
+      <div id="status" class="status">
+        <span id="status-dot" class="dot"></span>
+        <span id="status-text">Conectando…</span>
+      </div>
+
+      <ul id="log" class="log" aria-live="polite"></ul>
+
+      <label class="toggle">
+        <input type="checkbox" id="autostart" />
+        Iniciar con Windows
+      </label>
+
+      <button id="logout" class="secondary">Cerrar sesión</button>
+    </section>
+
+    <div id="confirm" class="overlay" hidden>
+      <div class="dialog" role="alertdialog" aria-labelledby="confirm-title">
+        <h2 id="confirm-title">¿Cerrar el cliente?</h2>
+        <p>
+          Si lo cierras, las partidas que estés jugando dejarán de verificarse
+          automáticamente para los retos que dependen de datos en vivo.
+        </p>
+        <div class="actions">
+          <button id="stay">Mantener abierto</button>
+          <button id="quit" class="danger">Cerrar igual</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="main.js"></script>
+  </body>
+</html>

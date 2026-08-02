@@ -3,6 +3,11 @@ import { Card } from "@/core/ui/Card";
 import { useTranslations } from "next-intl";
 import { getRiotRegionTranslationKey } from "@/core/lib/riot-regions";
 import type { Profile } from "@/core/types";
+import { ACTIVE_GAMES } from "@/core/config/games";
+
+// ponytail: solo LoL activo por ahora — ver src/core/config/games.ts.
+const showCR = (ACTIVE_GAMES as readonly string[]).includes("Clash Royale");
+const showDota2 = (ACTIVE_GAMES as readonly string[]).includes("Dota 2");
 
 interface GameConnectionsProps {
   profile: Profile;
@@ -65,6 +70,7 @@ export function GameConnections({ profile, locale, dotaPersonaName }: GameConnec
       </div>
 
       {/* Clash Royale */}
+      {showCR && (
       <div className="mt-3 rounded-xl border border-gray-800 bg-[#0b0e14] p-4">
         {hasCR ? (
           <div>
@@ -92,8 +98,10 @@ export function GameConnections({ profile, locale, dotaPersonaName }: GameConnec
           </div>
         )}
       </div>
+      )}
 
       {/* Dota 2 */}
+      {showDota2 && (
       <div className="mt-3 rounded-xl border border-gray-800 bg-[#0b0e14] p-4">
         {hasDota2 ? (
           <a
@@ -129,6 +137,7 @@ export function GameConnections({ profile, locale, dotaPersonaName }: GameConnec
           </div>
         )}
       </div>
+      )}
     </Card>
   );
 }

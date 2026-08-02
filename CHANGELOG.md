@@ -2,6 +2,32 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-08-01 — Puntuación por rol: normalización por percentiles + dataset propio
+
+Base para que los puntos sean comparables entre roles. En vez de mantener 5 juegos de pesos sobre valores crudos (que castigan al support en CS y al jungla en visión), se puntúa **en qué percentil de tu rol caes**: un support en el p90 de visión suma lo mismo que un mid en el p90 de CS. Los pesos siguen diciendo qué se valora (un solo juego); la tabla de baselines dice qué es normal en cada rol y se regenera por parche.
+
+`scripts/collect-matches.mjs` baja partidas del parche actual vía Riot API (semilla desde league-exp-v4 por tier; cada partida da 10 filas con rol ya etiquetado) a CSV. `scripts/analyze-roles.mjs` lo resume en percentiles por rol y escribe `src/core/config/role-baselines.json`, que es lo que consume `roleScore()`. Ambos sin dependencias, con espera fija para no pasar el rate limit de la key personal.
+
+Pendiente: correr el crawl (la key de `.env.local` devolvía 401, caducada) y recién ahí enganchar `roleScore()` en `computeMatchScore` de `lol/trials/sync`, que sigue usando valores crudos.
+
+Archivos: `src/core/lib/role-score.ts` (+ self-check `.test.ts`), `scripts/collect-matches.mjs`, `scripts/analyze-roles.mjs`, `.gitignore`.
+
+## 2026-08-01 — Retos (challenges) verificados en vivo + cliente de escritorio
+
+Sistema de retos de LoL ("juega X campeón teniendo Y maestría", rol, cola), verificable por dos caminos complementarios: el cliente de escritorio nuevo (`desktop-client/`, Tauri) lee la Live Client Data API local mientras juegas y reporta campeón/rol al backend, y `POST /api/challenges/sync` cierra post-partida los retos derivables del historial (match-v5) aunque el cliente no haya estado abierto. El cliente **no lleva la key de Riot**: es solo un sensor, la maestría la resuelve el backend con su propia key.
+
+Detalles que condicionaron el diseño: la Live Client Data API da el **nombre** del campeón (no el id) y no expone `queueId` ni `gameId` — por eso las condiciones usan nombre de campeón (el id se resuelve contra Data Dragon solo para champion-mastery-v4), los retos por cola solo los cierra el sync, y el cliente genera un id de partida propio para deduplicar sus reportes. Auth: `requireAuthedRequestFlexible` acepta Bearer token de Supabase además de cookie (el cliente no tiene cookies de navegador); `requireAuthedRequest` quedó intacta. El cliente arranca con Windows y pide confirmación al cerrar.
+
+Migración `028_challenges.sql` creada pero **sin aplicar todavía** (hace falta el token `sbp_` de la Management API, ver memoria del proyecto).
+
+Archivos: `supabase/migrations/028_challenges.sql`, `src/core/lib/challenge-conditions.ts` (+ self-check `.test.ts`, se corre con `node`), `src/core/lib/challenge-verify.ts`, `src/core/lib/require-auth.ts`, `src/app/api/challenges/{active,report,sync,admin,admin/assign}/route.ts`, `desktop-client/`.
+
+## 2026-08-01 — Ocultar temporalmente Dota 2/CS2/Clash Royale, solo LoL activo
+
+Se agregó `src/core/config/games.ts` (`ACTIVE_GAMES = ["League of Legends"]`) y se filtró con esa constante todo lo que ve el usuario final: dropdown de juego al crear/editar torneo, listas públicas de torneos (`/tournaments`, `/past-events`), y las secciones de Dota 2/Clash Royale en el perfil (`Dota2StatsPanel`, bloques de `LinkedAccounts`). No se tocó la base de datos (no hay CHECK constraint sobre `game`) ni el panel admin `GameManager` (sigue gestionando todos los juegos). Mismo patrón que ya usaba `vault/page.tsx` para ocultar temporalmente una feature sin borrarla — reactivar un juego es agregar su nombre a `ACTIVE_GAMES`, sin migración.
+
+Archivos: `src/core/config/games.ts`, `src/app/[locale]/admin/create-tournament/page.tsx`, `src/app/[locale]/admin/edit-tournament/[id]/page.tsx`, `src/app/[locale]/tournaments/page.tsx`, `src/app/[locale]/past-events/page.tsx`, `src/app/[locale]/profile/[username]/page.tsx`, `src/modules/profile/components/LinkedAccounts.tsx`.
+
 ## 2026-07-19 — Marcador de fútbol: fijar el reloj manualmente
 
 Se agregó un input "Fijar reloj" (MM:SS o minutos sueltos) en `/admin/scoreboard` para poner el cronómetro en cualquier valor cuando el operador quiera. Nueva acción `setFootballClock` que congela el reloj (lo deja pausado) en el valor dado; luego se presiona Iniciar para reanudar desde ahí.

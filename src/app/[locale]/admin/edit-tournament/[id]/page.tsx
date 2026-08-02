@@ -1,6 +1,7 @@
 import { createClient } from "@/core/supabase/server";
 import { redirect } from "next/navigation";
 import { EditTournamentWizard } from "@/modules/admin/components/EditTournamentWizard";
+import { ACTIVE_GAMES } from "@/core/config/games";
 
 export default async function EditTournamentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -30,6 +31,12 @@ export default async function EditTournamentPage({ params }: { params: Promise<{
     .select("*")
     .order("name");
 
+  // Mantiene visible el juego actual del torneo aunque no esté activo,
+  // para no romper un registro ya guardado (ver src/core/config/games.ts).
+  const activeGames = (games || []).filter(
+    (g) => (ACTIVE_GAMES as readonly string[]).includes(g.name) || g.name === tournament.game
+  );
+
   // Vault items the picker can offer: those available + the ones already on this tournament.
   const { data: vaultRows } = await supabase
     .from("vault_items")
@@ -45,7 +52,7 @@ export default async function EditTournamentPage({ params }: { params: Promise<{
     <div className="mx-auto max-w-3xl px-4 py-8">
       <EditTournamentWizard
         tournament={tournament}
-        games={games || []}
+        games={activeGames}
         vaultItems={vaultItems}
         assignedPrizeIds={assignedIds}
       />

@@ -9,6 +9,10 @@ import { ProfileDisambiguation } from "@/modules/profile/components/ProfileDisam
 import { getProfileDuosAndTeams } from "@/modules/profile/actions";
 import { resolveProfileSlug } from "@/modules/profile/lookup";
 import { withResolvedClashRoyaleName } from "@/core/lib/clash-royale";
+import { ACTIVE_GAMES } from "@/core/config/games";
+
+// ponytail: solo LoL activo por ahora — ver src/core/config/games.ts.
+const showDota2 = (ACTIVE_GAMES as readonly string[]).includes("Dota 2");
 
 async function getSteamPersonaName(accountId: number): Promise<string | null> {
   const key = process.env.STEAM_API_KEY;
@@ -83,10 +87,10 @@ export default async function ProfilePage({
 
         {/* Right content */}
         <div className="space-y-6">
-          {profile.dota2_account_id && (
+          {showDota2 && profile.dota2_account_id && (
             <Dota2StatsPanel accountId={profile.dota2_account_id} />
           )}
-          {!profile.dota2_account_id && (
+          {(!showDota2 || !profile.dota2_account_id) && (
             <div className="rounded-2xl border border-gray-800/50 bg-[#121620] p-8 text-center">
               <p className="text-[10px] font-bold text-gray-600">
                 Tournament history coming soon
