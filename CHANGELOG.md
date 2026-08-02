@@ -2,6 +2,18 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-08-02 — El resultado de la partida pasa a pesar: +30 / −20 y castigo por balance
+
+Calibrado contra dos simulaciones con jugadores reales (192 partidas en total). Con la escala inicial de +20 al ganar y 0 al perder, **la clasificación no cambiaba ni un puesto**: el resultado era decorativo. Se sube a +30 / −20, con lo que el porcentaje de victorias empieza a decidir entre jugadores parejos.
+
+Pero eso solo no bastaba: un 3-7 con muchos retos seguía colándose en el podio por delante de varios 6-4. Se añade un **castigo de 25 puntos por cada derrota que exceda a las victorias**, aplicado al total del torneo y no partida a partida. Solo afecta a quien pierde más de lo que gana; con récord positivo o empatado es cero. Con eso el podio queda reservado a récords positivos.
+
+La clasificación avisa del castigo bajo la puntuación cuando existe, para que no parezca un error de cálculo.
+
+Dos hallazgos de las simulaciones que conviene conservar: la correlación entre liga del jugador y puntuación es **−0,06**, es decir que el sistema es ciego al rango y se pueden mezclar niveles en un mismo torneo sin injusticia. Y con −20 por derrota apareció una partida negativa de 94 (−0,5 puntos), un caso raro pero posible que queda pendiente de decidir si se le pone suelo.
+
+Archivos: `src/app/api/lol/trials/sync/route.ts`, `src/modules/tournaments/components/SummonerTrialsLeaderboard.tsx`.
+
 ## 2026-08-02 — Summoner Trials pasa a puntuar por percentil de rol y retos
 
 El sync ya no puntúa valores crudos por pesos: `computeMatchScore` se sustituye por la fórmula calibrada — 10 de participación + rendimiento 0-100 (`roleScore()`, el percentil medio dentro del rol) + 20 por victoria + puntos de los 20 retos. Nadie saca cero. Los pesos configurables del torneo se siguen respetando: se mapean a las claves de los baselines (`damage` → `damage_per_min`, etc.) y `objectives` se ignora porque no hay percentil medido para eso.

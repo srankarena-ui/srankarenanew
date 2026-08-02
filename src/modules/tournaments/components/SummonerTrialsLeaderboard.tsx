@@ -25,6 +25,8 @@ interface StatsSnapshot {
   victory_points?: number;
   feat_points?: number;
   feats_earned?: Array<{ name: string; count: number; points: number }>;
+  deficit?: number;
+  deficit_penalty?: number;
 }
 
 const ROLE_ES: Record<string, string> = {
@@ -197,6 +199,15 @@ export function SummonerTrialsLeaderboard({
                     <td className="px-4 py-3 text-right">
                       <span className="text-sm text-white">{enrollment.score.toFixed(0)}</span>
                       <span className="ml-0.5 text-[9px] text-gray-600"> {t("pointsShort")}</span>
+                      {/* Balance negativo: se avisa para que no parezca un error */}
+                      {(snap?.deficit_penalty ?? 0) > 0 && (
+                        <span
+                          className="block text-[9px] text-red-400"
+                          title={`${snap!.deficit} derrotas mas que victorias`}
+                        >
+                          −{snap!.deficit_penalty} balance
+                        </span>
+                      )}
                     </td>
 
                     {/* Rendimiento: percentil medio dentro de su rol */}
@@ -301,14 +312,19 @@ function ScoringWeightsInfo({ config }: { config: TrialsConfig }) {
       example: `percentil de tu rol · pesos: KDA ×${w.kda}, participación ×${w.kill_participation}, visión ×${w.vision_score}, daño ×${w.damage}, CS ×${w.cs_per_min}`,
     },
     {
-      label: "Victoria",
-      formula: "+20",
-      example: "solo si ganas",
+      label: "Resultado",
+      formula: "+30 / −20",
+      example: "ganar suma, perder resta",
     },
     {
       label: "Retos",
       formula: "3 – 100 cada uno",
       example: "20 retos por partida: 18 iguales para todos y 2 propios de tu rol. Cuanto más raro, más paga",
+    },
+    {
+      label: "Balance",
+      formula: "−25",
+      example: "por cada derrota que exceda a tus victorias, al final del torneo",
     },
   ];
 
