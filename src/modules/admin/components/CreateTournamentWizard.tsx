@@ -103,10 +103,6 @@ export function CreateTournamentWizard({ games, vaultItems = [] }: Props) {
   const [matchesToTrack, setMatchesToTrack] = useState("10");
   const [trialEndDate, setTrialEndDate] = useState("");
   const [rewardDistribution, setRewardDistribution] = useState("100,75,50,25,10");
-  const [weights, setWeights] = useState({
-    kda: 10, kill_participation: 1, vision_score: 1, cs_per_min: 2,
-    damage: 0.001, wards_placed: 0.5, objectives: 3,
-  });
 
   const selectedGame = useMemo(() => games.find((g) => g.name === gameName), [games, gameName]);
   const isLoL = gameName === "League of Legends";
@@ -159,7 +155,6 @@ export function CreateTournamentWizard({ games, vaultItems = [] }: Props) {
         matches_to_track: parseInt(matchesToTrack) || 10,
         ...(trialEndDate ? { end_date: trialEndDate } : {}),
         match_type: trialMatchType,
-        scoring_weights: weights,
         point_distribution: rewardDistribution.split(",").map(n => parseInt(n.trim())).filter(n => !isNaN(n)),
       }));
     }
@@ -501,40 +496,10 @@ export function CreateTournamentWizard({ games, vaultItems = [] }: Props) {
               </p>
             )}
 
-            <div>
-              <label className="mb-2 block text-[9px] font-bold uppercase tracking-[0.2em] text-gray-500">
-                Scoring Weights
-              </label>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {(
-                  [
-                    ["kda", "KDA"],
-                    ["kill_participation", "Kill Part. (÷10)"],
-                    ["vision_score", "Vision Score (÷10)"],
-                    ["cs_per_min", "CS/min"],
-                    ["damage", "Damage (÷10k)"],
-                    ["wards_placed", "Wards Placed"],
-                    ["objectives", "Objectives"],
-                  ] as [keyof typeof weights, string][]
-                ).map(([key, label]) => (
-                  <div key={key}>
-                    <label className="mb-1 block text-[8px] font-bold text-gray-600">
-                      {label}
-                    </label>
-                    <input
-                      type="number"
-                      step="0.001"
-                      min={0}
-                      value={weights[key]}
-                      onChange={(e) =>
-                        setWeights((prev) => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))
-                      }
-                      className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-3 py-2 text-sm font-bold text-gray-200 outline-hidden transition-colors focus:border-[var(--color-accent)]"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Los pesos de puntuación no se configuran por torneo: están
+                calibrados contra partidas reales y viven en SCORING_WEIGHTS
+                (src/core/lib/role-score.ts). Dejar que cada organizador los
+                retocara rompería la comparación entre eventos. */}
 
             <Input
               label="Point Distribution (comma-separated, 1st→2nd→3rd…)"

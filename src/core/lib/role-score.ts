@@ -23,6 +23,24 @@ export interface RoleBaselines {
   roles: Record<string, { n: number; stats: Record<string, StatBaseline> }>;
 }
 
+/**
+ * Pesos de la puntuación, iguales para todos los torneos y todos los roles.
+ *
+ * No son configurables a propósito: la escala está calibrada contra 1.002
+ * partidas reales y dejar que cada organizador la retoque rompería la
+ * comparabilidad entre torneos. `cs_per_min` y `assists` ocupan el mismo hueco
+ * —"la estadística que define tu rol"— y solo se pasa la que aplica.
+ */
+export const SCORING_WEIGHTS: Record<string, number> = {
+  kda: 2,
+  kill_participation: 2,
+  damage_per_min: 2,
+  vision_score: 1.5,
+  cs_per_min: 1.5,
+  assists: 1.5,
+  wards_placed: 1,
+};
+
 // Morir menos es mejor; todo lo demás suma hacia arriba.
 const LOWER_IS_BETTER = new Set(["deaths"]);
 

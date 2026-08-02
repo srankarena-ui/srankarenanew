@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/core/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import type { TrialsConfig } from "@/core/types";
-import { roleScore, type RoleBaselines } from "@/core/lib/role-score";
+import { roleScore, SCORING_WEIGHTS, type RoleBaselines } from "@/core/lib/role-score";
 import { evaluateFeats, featPoints, type EarnedFeat } from "@/core/lib/tournament-feats";
 import baselines from "@/core/config/role-baselines.json";
 
@@ -84,32 +84,15 @@ const DEFEAT_POINTS = -20;
 // total del torneo y no partida a partida. Un 3-7 tiene déficit 4 → −100.
 const DEFICIT_PENALTY_PER_LOSS = 25;
 
-// Los pesos configurables del torneo se traducen a las claves de los baselines.
-// `objectives` se queda fuera: no hay percentil medido para eso.
-const WEIGHT_MAP: Record<string, string> = {
-  kda: "kda",
-  kill_participation: "kill_participation",
-  vision_score: "vision_score",
-  damage: "damage_per_min",
-  cs_per_min: "cs_per_min",
-  wards_placed: "wards_placed",
-};
-
-function scoreWeights(w: TrialsConfig["scoring_weights"]): Record<string, number> {
-  const out: Record<string, number> = {};
-  for (const [configKey, baselineKey] of Object.entries(WEIGHT_MAP)) {
-    const value = (w as unknown as Record<string, number>)[configKey];
-    if (typeof value === "number" && value > 0) out[baselineKey] = value;
-  }
-  // El soporte no farmea: su hueco de rol son las asistencias, con el mismo peso.
-  if (out.cs_per_min) out.assists = out.cs_per_min;
-  return out;
-}
+// Los pesos ya no salen de trials_config: son fijos (SCORING_WEIGHTS) para que
+// todos los torneos usen la misma escala calibrada y las puntuaciones sean
+// comparables entre eventos. Los valores que quedan guardados en torneos
+// antiguos se ignoran.
 
 function extractStats(
   player: Participant,
-  matchInfo: Record<string, unknown>,
-  weights: Record<string, number>
+  matchInfo: Record<string, unknown>
+
 ): MatchStats {
   const teams = matchInfo.teams as Team[];
   const team = teams.find((t) => t.teamId === (player.teamId as number));
@@ -136,7 +119,7 @@ function extractStats(
   if (role === "UTILITY") perfStats.assists = assists;
   else if (gameMins > 0) perfStats.cs_per_min = cs / gameMins;
 
-  const performance = roleScore(role, perfStats, weights, baselines as RoleBaselines) ?? 0;
+  const performance = roleScore(role, perfStats, SCORING_WEIGHTS, baselines as RoleBaselines) ?? 0;
 
   // Los retos leen el bloque `challenges` de Riot más los campos sueltos del
   // participante (pentas, primera sangre) que viven fuera de él.
@@ -258,8 +241,8 @@ export async function POST(request: NextRequest) {
   }
 
   const config = tournament.trials_config as TrialsConfig;
-  const { matches_to_track, scoring_weights, match_type } = config;
-  const weights = scoreWeights(scoring_weights);
+  const { matches_to_track, match_type } = config;
+
 
   // Determine allowed queue IDs based on match_type
   // solo/duo → Ranked Solo/Duo (420)
@@ -345,7 +328,7 @@ export async function POST(request: NextRequest) {
         );
         if (!participant) continue;
 
-        const stats = extractStats(participant, match.info as Record<string, unknown>, weights);
+        const stats = extractStats(participant, match.info as Record<string, unknown>);
         const matchScore = stats.points.total;
 
         const { error: insertErr } = await admin

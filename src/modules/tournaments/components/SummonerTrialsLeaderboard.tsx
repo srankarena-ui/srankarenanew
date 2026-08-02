@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useToast } from "@/core/ui/Toast";
 import type { TrialsEnrollmentWithProfile, TrialsConfig } from "@/core/types";
+import { SCORING_WEIGHTS } from "@/core/lib/role-score";
 
 interface StatsSnapshot {
   avg_kda: number;
@@ -295,7 +296,9 @@ export function SummonerTrialsLeaderboard({
 function ScoringWeightsInfo({ config }: { config: TrialsConfig }) {
   const t = useTranslations("tournaments");
   const [open, setOpen] = useState(false);
-  const w = config.scoring_weights;
+  // Los pesos son fijos del sistema, no del torneo: los de trials_config solo
+  // sobreviven en eventos antiguos y ya no se usan para puntuar.
+  const w = SCORING_WEIGHTS;
 
   // Cada partida suma cuatro cosas. El rendimiento no puntúa valores crudos:
   // mide en qué percentil de TU ROL caes, así una partida de soporte y una de

@@ -56,7 +56,7 @@ export interface TrialsConfig {
   matches_to_track: number;
   end_date?: string; // ISO date string, e.g. "2026-05-01"
   match_type: "solo" | "duo" | "flex" | "draft";
-  scoring_weights: {
+  scoring_weights?: {
     kda: number;
     kill_participation: number;
     vision_score: number;
