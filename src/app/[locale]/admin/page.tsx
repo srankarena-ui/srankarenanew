@@ -17,29 +17,34 @@ export default async function AdminPage() {
 
   if (profile?.role !== "admin") redirect("/");
 
-  const { data: tournaments } = await supabase
-    .from("tournaments")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  const { data: users } = await supabase
-    .from("profiles")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  const { data: games } = await supabase
-    .from("games")
-    .select("*")
-    .order("name");
-
-  const footerConfig = await getAdminFooterConfig();
-  const aboutConfig = await getAboutConfig();
-  const productionConfig = await getProductionConfig();
-  const contactConfig = await getContactConfig();
-  const pastEventsConfig = await getPastEventsConfig();
-  const featuredEventsConfig = await getFeaturedEventsConfig();
-  const helpConfig = await getHelpConfig();
-  const verificationConfig = await getVerificationConfig();
+  // Estas once consultas no dependen unas de otras. En serie eran ~180 ms cada
+  // una contra Supabase, casi 2 s solo de esperas encadenadas; en paralelo la
+  // página tarda lo que la más lenta.
+  const [
+    { data: tournaments },
+    { data: users },
+    { data: games },
+    footerConfig,
+    aboutConfig,
+    productionConfig,
+    contactConfig,
+    pastEventsConfig,
+    featuredEventsConfig,
+    helpConfig,
+    verificationConfig,
+  ] = await Promise.all([
+    supabase.from("tournaments").select("*").order("created_at", { ascending: false }),
+    supabase.from("profiles").select("*").order("created_at", { ascending: false }),
+    supabase.from("games").select("*").order("name"),
+    getAdminFooterConfig(),
+    getAboutConfig(),
+    getProductionConfig(),
+    getContactConfig(),
+    getPastEventsConfig(),
+    getFeaturedEventsConfig(),
+    getHelpConfig(),
+    getVerificationConfig(),
+  ]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">

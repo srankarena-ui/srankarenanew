@@ -10,38 +10,34 @@ export default async function SettingsPage() {
 
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  // Los tres retos de verificación y la config no dependen entre sí: se piden
+  // a la vez en vez de encadenar cinco esperas contra Supabase.
+  const ahora = new Date().toISOString();
+  const pendiente = (tabla: string) =>
+    supabase
+      .from(tabla)
+      .select("*")
+      .eq("user_id", user.id)
+      .is("verified_at", null)
+      .gt("expires_at", ahora)
+      .maybeSingle();
 
-  const { data: riotVerificationChallenge } = await supabase
-    .from("riot_verification_challenges")
-    .select("*")
-    .eq("user_id", user.id)
-    .is("verified_at", null)
-    .gt("expires_at", new Date().toISOString())
-    .maybeSingle();
+  const [
+    { data: profile },
+    { data: riotVerificationChallenge },
+    verificationConfig,
+    { data: steamVerificationChallenge },
+    { data: discordLinkChallenge },
+  ] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", user.id).single(),
+    pendiente("riot_verification_challenges"),
+    getVerificationConfig(),
+    pendiente("steam_verification_challenges"),
+    pendiente("discord_link_challenges"),
+  ]);
 
-  const verificationConfig = await getVerificationConfig();
+  // Este sí depende del perfil, así que va después.
   const resolvedProfile = profile ? await withResolvedClashRoyaleName(profile) : profile;
-
-  const { data: steamVerificationChallenge } = await supabase
-    .from("steam_verification_challenges")
-    .select("*")
-    .eq("user_id", user.id)
-    .is("verified_at", null)
-    .gt("expires_at", new Date().toISOString())
-    .maybeSingle();
-
-  const { data: discordLinkChallenge } = await supabase
-    .from("discord_link_challenges")
-    .select("*")
-    .eq("user_id", user.id)
-    .is("verified_at", null)
-    .gt("expires_at", new Date().toISOString())
-    .maybeSingle();
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">

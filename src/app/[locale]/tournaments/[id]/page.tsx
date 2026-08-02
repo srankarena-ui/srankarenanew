@@ -67,26 +67,32 @@ export default async function TournamentDetailPage({
 
   if (!tournament) notFound();
 
-  const { data: participants } = await supabase
-    .from("tournament_participants")
-    .select("*, profile:profiles(*)")
-    .eq("tournament_id", id) as unknown as { data: ParticipantWithProfile[] | null };
+  // Nada de esto depende de lo anterior: en serie eran cuatro esperas
+  // encadenadas contra Supabase.
+  const [participantsRes, matchesRes, userRes, prizeRes] = await Promise.all([
+    supabase
+      .from("tournament_participants")
+      .select("*, profile:profiles(*)")
+      .eq("tournament_id", id),
+    supabase
+      .from("tournament_matches")
+      .select("*, player1:profiles!tournament_matches_player1_id_fkey(*), player2:profiles!tournament_matches_player2_id_fkey(*)")
+      .eq("tournament_id", id)
+      .order("round_number")
+      .order("match_number"),
+    supabase.auth.getUser(),
+    // Objetos del vault asignados como premio de este torneo.
+    supabase
+      .from("vault_items")
+      .select("asset_id, name, icon_url, rarity, price_cents")
+      .eq("tournament_id", id)
+      .order("price_cents", { ascending: false, nullsFirst: false }),
+  ]);
 
-  const { data: matches } = await supabase
-    .from("tournament_matches")
-    .select("*, player1:profiles!tournament_matches_player1_id_fkey(*), player2:profiles!tournament_matches_player2_id_fkey(*)")
-    .eq("tournament_id", id)
-    .order("round_number")
-    .order("match_number") as unknown as { data: MatchWithPlayers[] | null };
-
-  const { data: { user } } = await supabase.auth.getUser();
-
-  // Vault items assigned as prizes for this tournament.
-  const { data: prizeItems } = await supabase
-    .from("vault_items")
-    .select("asset_id, name, icon_url, rarity, price_cents")
-    .eq("tournament_id", id)
-    .order("price_cents", { ascending: false, nullsFirst: false });
+  const participants = participantsRes.data as unknown as ParticipantWithProfile[] | null;
+  const matches = matchesRes.data as unknown as MatchWithPlayers[] | null;
+  const user = userRes.data.user;
+  const prizeItems = prizeRes.data;
 
   const isRegistered = user
     ? (participants || []).some((p) => p.user_id === user.id)
