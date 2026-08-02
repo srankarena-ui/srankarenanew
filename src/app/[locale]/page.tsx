@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { pageMetadata } from "@/core/lib/seo";
+import { SITE_NAME, SITE_URL } from "@/core/config/site";
 import { createClient } from "@/core/supabase/server";
 import { HeroSection } from "@/modules/landing/components/HeroSection";
 import { ServicesGrid } from "@/modules/landing/components/ServicesGrid";
@@ -44,8 +45,35 @@ export default async function LandingPage() {
     featuredTournaments = featuredConfig.tournament_ids.map((id) => byId[id]).filter(Boolean);
   }
 
+  // Google saca el nombre que muestra encima de la URL en los resultados
+  // ("S-Rank Arena" en vez de "srankarena.com") de estos datos estructurados,
+  // no del <title>. Tienen que estar en la home y ser consistentes con
+  // og:site_name, que ya emite pageMetadata().
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: SITE_NAME,
+      alternateName: ["SRank Arena", "S Rank Arena"],
+      url: SITE_URL,
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: SITE_NAME,
+      url: SITE_URL,
+      logo: `${SITE_URL}/s-rank-mark.png`,
+    },
+  ];
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
       <HeroSection />
       <FeaturedEventsCarousel tournaments={featuredTournaments as never} />
       <ServicesGrid />
