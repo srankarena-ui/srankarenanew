@@ -160,6 +160,10 @@ function extractStats(
       performance: round(performance),
       victory: win ? VICTORY_POINTS : DEFEAT_POINTS,
       feats: featTotal,
+      // Sin suelo a propósito: una partida puede salir negativa y restar del
+      // total del torneo. Ocurre cuando pierdes, rindes en el 5% peor de tu rol
+      // y no consigues ningún reto — 1 de cada 94 partidas en la simulación.
+      // Es una decisión de producto, no un descuido: NO añadir Math.max(0, …).
       total: round(
         PARTICIPATION_POINTS + performance + (win ? VICTORY_POINTS : DEFEAT_POINTS) + featTotal
       ),

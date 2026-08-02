@@ -121,11 +121,25 @@ en los datos de la partida.
 ## Puntuación de partida (decidido y validado)
 
 ```
-puntos = 10 (participación) + rendimiento (0-100) + 20 si ganó + puntos de retos
+por partida: 10 (participación) + rendimiento (0-100) + 30 si ganó / −20 si perdió + retos
+por torneo:  suma de partidas − 25 × (derrotas que exceden a las victorias)
 ```
 
-Sin techo: un partidazo pasa de 125. **Nadie saca cero** — el suelo de 10 por
-terminar la partida es deliberado.
+Sin techo ni suelo. Calibrado contra dos simulaciones con jugadores reales (192
+partidas): con +20/0 la clasificación **no cambiaba ni un puesto**, el resultado
+era decorativo. Con +30/−20 el porcentaje de victorias decide entre jugadores
+parejos, y el castigo por balance impide que un 3-7 con muchos retos se cuele en
+el podio por delante de varios 6-4.
+
+**Una partida puede salir negativa, y es intencionado.** Ocurre al perder
+rindiendo en el 5% peor del rol y sin conseguir ningún reto: 1 de cada 94 en la
+simulación. Se decidió expresamente no ponerle suelo — si lo hiciste
+verdaderamente mal, resta. No añadir `Math.max(0, …)` "arreglándolo".
+
+**El sistema es ciego al rango.** La correlación entre la liga del jugador y su
+puntuación es −0,06, así que se pueden mezclar niveles en un mismo torneo sin
+injusticia. Si algún día se quiere premiar el nivel absoluto, hay que añadirlo a
+propósito.
 
 El **rendimiento** sale de `roleScore()` (`src/core/lib/role-score.ts`): el
 percentil medio del jugador dentro de su rol, sobre cinco aspectos con pesos
