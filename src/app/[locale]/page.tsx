@@ -20,11 +20,11 @@ export async function generateMetadata({
     // La marca va explícita: Next no aplica el title.template del layout a la
     // página del mismo segmento, y la home es la que se busca por nombre.
     title: es
-      ? "S-Rank Arena — Torneos de League of Legends en español"
-      : "S-Rank Arena — League of Legends Tournaments",
+      ? "S-Rank Arena | Torneos automáticos con desafíos"
+      : "S-Rank Arena | Automated tournaments with challenges",
     description: es
-      ? "Compite en torneos de LoL con brackets en vivo, seguimiento de partidas, estadísticas por rol y premios. Inscríbete gratis en S-Rank Arena."
-      : "Compete in LoL tournaments with live brackets, match tracking, role-based stats and prizes. Sign up free on S-Rank Arena.",
+      ? "Torneos de League of Legends que se gestionan solos: brackets en vivo, resultados verificados desde la partida y desafíos por campeón y rol. Inscríbete gratis."
+      : "League of Legends tournaments that run themselves: live brackets, results verified from the game, and challenges by champion and role. Free to join.",
   });
 }
 

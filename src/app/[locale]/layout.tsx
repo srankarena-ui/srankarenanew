@@ -43,13 +43,13 @@ export async function generateMetadata({
     metadataBase: new URL(SITE_URL),
     title: {
       default: es
-        ? "S-Rank Arena — Torneos de League of Legends"
-        : "S-Rank Arena — League of Legends Tournaments",
+        ? "S-Rank Arena | Torneos automáticos con desafíos"
+        : "S-Rank Arena | Automated tournaments with challenges",
       template: `%s | ${SITE_NAME}`,
     },
     description: es
-      ? "Organiza y compite en torneos de League of Legends. Brackets en vivo, estadísticas por rol, retos verificados y premios para la comunidad hispanohablante."
-      : "Host and compete in League of Legends tournaments. Live brackets, role-based stats, verified challenges and prizes.",
+      ? "Torneos de League of Legends que se gestionan solos: brackets en vivo, resultados verificados desde la partida y desafíos por campeón y rol."
+      : "League of Legends tournaments that run themselves: live brackets, results verified from the game, and challenges by champion and role.",
     applicationName: SITE_NAME,
     formatDetection: { telephone: false },
   };
