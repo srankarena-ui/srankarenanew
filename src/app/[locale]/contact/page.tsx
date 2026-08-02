@@ -1,5 +1,24 @@
 import { getContactConfig } from "@/modules/admin/actions";
+import { pageMetadata } from "@/core/lib/seo";
 import type { LocalizedString } from "@/core/types/site-content";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<import("next").Metadata> {
+  const { locale } = await params;
+  const es = locale === "es";
+
+  return pageMetadata({
+    locale,
+    path: "/contact",
+    title: es ? "Contacto" : "Contact",
+    description: es
+      ? "Habla con el equipo de S-Rank Arena: dudas sobre torneos, colaboraciones, patrocinios o soporte."
+      : "Get in touch with the S-Rank Arena team: tournament questions, partnerships, sponsorships or support.",
+  });
+}
 
 export default async function ContactPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;

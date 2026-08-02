@@ -1,10 +1,55 @@
+import type { Metadata } from "next";
 import { createClient } from "@/core/supabase/server";
 import { notFound } from "next/navigation";
 import { TournamentDetail } from "@/modules/tournaments/components/TournamentDetail";
+import { pageMetadata } from "@/core/lib/seo";
 import type { TournamentParticipant, TournamentMatch, Profile, TrialsEnrollmentWithProfile } from "@/core/types";
 
 type ParticipantWithProfile = TournamentParticipant & { profile: Profile };
 type MatchWithPlayers = TournamentMatch & { player1: Profile | null; player2: Profile | null };
+
+// Cada torneo con su propio título y descripción: son las páginas con más
+// posibilidades de posicionar, y hasta ahora todas compartían el título del sitio.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string; locale: string }>;
+}): Promise<Metadata> {
+  const { id, locale } = await params;
+  const supabase = await createClient();
+  const { data: tournament } = await supabase
+    .from("tournaments")
+    .select("title, game, mode, prizes, start_date, max_participants")
+    .eq("id", id)
+    .single();
+
+  if (!tournament) return {};
+
+  const es = locale === "es";
+  const date = tournament.start_date
+    ? new Date(tournament.start_date).toLocaleDateString(es ? "es-ES" : "en-US", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : null;
+
+  const parts = [
+    tournament.game,
+    tournament.mode,
+    date && (es ? `Comienza el ${date}` : `Starts ${date}`),
+    tournament.max_participants && (es ? `${tournament.max_participants} plazas` : `${tournament.max_participants} slots`),
+  ].filter(Boolean);
+
+  return pageMetadata({
+    locale,
+    path: `/tournaments/${id}`,
+    title: tournament.title,
+    description: es
+      ? `${parts.join(" · ")}. Inscripción, bracket en vivo y resultados en S-Rank Arena.`
+      : `${parts.join(" · ")}. Registration, live bracket and results on S-Rank Arena.`,
+  });
+}
 
 export default async function TournamentDetailPage({
   params,

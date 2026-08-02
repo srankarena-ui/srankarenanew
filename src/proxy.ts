@@ -103,5 +103,10 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next|api|auth|overlay|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
+  // robots.txt y sitemap.xml quedan fuera a propósito: si pasan por el
+  // middleware de i18n acaban redirigidos a /es/robots.txt y los buscadores
+  // no los encuentran nunca.
+  matcher: [
+    "/((?!_next|api|auth|overlay|robots.txt|sitemap.xml|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+  ],
 };

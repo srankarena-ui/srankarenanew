@@ -1,5 +1,24 @@
 import { getAboutConfig } from "@/modules/admin/actions";
+import { pageMetadata } from "@/core/lib/seo";
 import type { LocalizedString } from "@/core/types/site-content";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<import("next").Metadata> {
+  const { locale } = await params;
+  const es = locale === "es";
+
+  return pageMetadata({
+    locale,
+    path: "/about-us",
+    title: es ? "Quiénes somos" : "About Us",
+    description: es
+      ? "Qué es S-Rank Arena, quién está detrás y por qué organizamos torneos de League of Legends para la comunidad."
+      : "What S-Rank Arena is, who is behind it and why we host League of Legends tournaments for the community.",
+  });
+}
 
 export default async function AboutUsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;

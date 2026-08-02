@@ -2,6 +2,19 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-08-02 — SEO: sitemap, robots, metadata por página y arreglo de layouts duplicados
+
+El sitio no aparecía en Google. Dos bugs de fondo, además de la falta de metadatos:
+
+1. **`app/layout.tsx` y `[locale]/layout.tsx` renderizaban ambos `<html>` y `<body>`**, así que cada página salía con las etiquetas duplicadas y **sin `lang`**. Se eliminó `app/layout.tsx`: al no haber layout raíz, `[locale]/` y `overlay/` pasan a ser cada uno su propia raíz (patrón documentado de multiple root layouts). `[locale]` ahora pone `lang={locale}` y ambos importan `globals.css`.
+2. **`/robots.txt` y `/sitemap.xml` los interceptaba el middleware de i18n** y los redirigía a `/es/robots.txt` — inalcanzables para cualquier buscador. Se excluyeron del matcher en `proxy.ts`.
+
+Añadido: `sitemap.ts` (páginas estáticas × idioma + torneos publicados reales, con hreflang), `robots.ts`, `metadataBase` + OpenGraph/Twitter, y metadata propia por página vía el helper `pageMetadata()` — antes todas compartían el título "S-Rank Arena" y Google las veía como duplicados. El canonical se pone por página, nunca en el layout (si no, todas dirían ser la home). `help` y `lol` son client components, por eso su metadata va en un `layout.tsx` propio.
+
+Pendiente y no automatizable: registrar el dominio en Google Search Console y enviar el sitemap. Sin eso Google no descubre el sitio por mucho metadato que tenga.
+
+Archivos: `src/app/layout.tsx` (eliminado), `src/app/overlay/layout.tsx`, `src/app/[locale]/layout.tsx`, `src/app/{sitemap,robots}.ts`, `src/core/config/site.ts`, `src/core/lib/seo.ts`, `src/proxy.ts`, y `generateMetadata` en las páginas públicas.
+
 ## 2026-08-01 — Puntuación por rol: normalización por percentiles + dataset propio
 
 Base para que los puntos sean comparables entre roles. En vez de mantener 5 juegos de pesos sobre valores crudos (que castigan al support en CS y al jungla en visión), se puntúa **en qué percentil de tu rol caes**: un support en el p90 de visión suma lo mismo que un mid en el p90 de CS. Los pesos siguen diciendo qué se valora (un solo juego); la tabla de baselines dice qué es normal en cada rol y se regenera por parche.

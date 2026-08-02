@@ -1,7 +1,27 @@
+import type { Metadata } from "next";
+import { pageMetadata } from "@/core/lib/seo";
 import { createClient } from "@/core/supabase/server";
 import { getPastEventsConfig } from "@/modules/admin/actions";
 import { ImageCarousel } from "@/modules/landing/components/ImageCarousel";
 import { ACTIVE_GAMES } from "@/core/config/games";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const es = locale === "es";
+
+  return pageMetadata({
+    locale,
+    path: "/past-events",
+    title: es ? "Torneos anteriores" : "Past Tournaments",
+    description: es
+      ? "Historial de torneos de League of Legends organizados en S-Rank Arena: ganadores, formatos y resultados."
+      : "History of League of Legends tournaments hosted on S-Rank Arena: winners, formats and results.",
+  });
+}
 
 const STATUS_LABEL_ES: Record<string, string> = {
   completed: "Completado",

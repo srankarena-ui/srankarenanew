@@ -1,7 +1,10 @@
+import "../globals.css";
+import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { notFound } from "next/navigation";
 import { locales } from "@/core/i18n/config";
+import { SITE_NAME, SITE_URL } from "@/core/config/site";
 import { AuthProvider } from "@/modules/auth/components/AuthProvider";
 import { ToastProvider } from "@/core/ui/Toast";
 import { ThemeProvider } from "@/core/ui/ThemeProvider";
@@ -23,6 +26,34 @@ const jetbrainsMono = JetBrains_Mono({
   weight: ["400", "500", "700"],
   variable: "--font-jetbrains-mono",
 });
+
+// Solo lo común a todo el sitio. El canonical y los hreflang los pone cada
+// página con pageMetadata() (src/core/lib/seo.ts).
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const es = locale === "es";
+
+  return {
+    // Sin esto las URLs de OpenGraph y los canonical se resuelven relativos y
+    // las previsualizaciones al compartir enlaces salen rotas.
+    metadataBase: new URL(SITE_URL),
+    title: {
+      default: es
+        ? "S-Rank Arena — Torneos de League of Legends"
+        : "S-Rank Arena — League of Legends Tournaments",
+      template: `%s | ${SITE_NAME}`,
+    },
+    description: es
+      ? "Organiza y compite en torneos de League of Legends. Brackets en vivo, estadísticas por rol, retos verificados y premios para la comunidad hispanohablante."
+      : "Host and compete in League of Legends tournaments. Live brackets, role-based stats, verified challenges and prizes.",
+    applicationName: SITE_NAME,
+    formatDetection: { telephone: false },
+  };
+}
 
 export default async function LocaleLayout({
   children,
@@ -64,7 +95,7 @@ export default async function LocaleLayout({
   ]);
 
   return (
-    <html className={`${plusJakartaSans.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+    <html lang={locale} className={`${plusJakartaSans.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <head>
         {/* Prevent accent flash: read from localStorage before React hydrates */}
         <script
