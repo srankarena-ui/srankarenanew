@@ -210,6 +210,31 @@ fn current_email(state: State<'_, AppState>) -> Option<String> {
     state.session.lock().unwrap().as_ref().map(|s| s.email.clone())
 }
 
+#[derive(Serialize)]
+struct WebviewSession {
+    access_token: String,
+    email: String,
+    supabase_url: &'static str,
+    supabase_anon_key: &'static str,
+    api_base: &'static str,
+}
+
+/// La ventana necesita consultar datos por su cuenta (torneos, perfil,
+/// clasificaciones): son demasiadas llamadas para envolver cada una en un
+/// comando. Se le entrega el token ya renovado y las URLs.
+#[tauri::command]
+async fn webview_session(app: AppHandle) -> Option<WebviewSession> {
+    let token = valid_token(&app).await?;
+    let email = app.state::<AppState>().session.lock().unwrap().as_ref()?.email.clone();
+    Some(WebviewSession {
+        access_token: token,
+        email,
+        supabase_url: supabase_url(),
+        supabase_anon_key: supabase_anon_key(),
+        api_base: api_base(),
+    })
+}
+
 #[tauri::command]
 fn autostart_enabled(app: AppHandle) -> bool {
     app.autolaunch().is_enabled().unwrap_or(false)

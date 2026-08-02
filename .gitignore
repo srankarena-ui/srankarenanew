@@ -42,3 +42,6 @@ next-env.d.ts
 
 # datasets bajados con scripts/collect-matches.mjs
 /data
+
+# artefactos de compilacion del cliente Tauri
+/desktop-client/src-tauri/target

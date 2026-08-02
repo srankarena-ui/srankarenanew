@@ -16,7 +16,20 @@ interface StatsSnapshot {
   avg_objectives: number;
   wins: number;
   losses: number;
+  // Desglose de la puntuación por rol. Opcionales: las inscripciones
+  // sincronizadas antes del cambio de fórmula no los tienen.
+  role?: string;
+  avg_performance?: number;
+  performance_points?: number;
+  participation_points?: number;
+  victory_points?: number;
+  feat_points?: number;
+  feats_earned?: Array<{ name: string; count: number; points: number }>;
 }
+
+const ROLE_ES: Record<string, string> = {
+  TOP: "Superior", JUNGLE: "Jungla", MIDDLE: "Central", BOTTOM: "Tirador", UTILITY: "Soporte",
+};
 
 interface Props {
   tournamentId: string;
@@ -114,7 +127,10 @@ export function SummonerTrialsLeaderboard({
               <tr className="bg-[#0d1017] text-[9px] font-bold uppercase tracking-[0.2em] text-gray-500">
                 <th className="px-4 py-3 text-left w-10">#</th>
                 <th className="px-4 py-3 text-left">{t("playerColumn")}</th>
+                <th className="px-4 py-3 text-left">Rol</th>
                 <th className="px-4 py-3 text-right">{t("score")}</th>
+                <th className="px-4 py-3 text-right">Rendim.</th>
+                <th className="px-4 py-3 text-right">Retos</th>
                 <th className="px-4 py-3 text-center">{t("matchesColumn")}</th>
                 <th className="px-4 py-3 text-right">{t("avgKda")}</th>
                 <th className="px-4 py-3 text-right">KP%</th>
@@ -169,10 +185,44 @@ export function SummonerTrialsLeaderboard({
                       </div>
                     </td>
 
+                    {/* Rol: la puntuación se calcula comparando contra este rol,
+                        así que sin verlo el número no se puede interpretar. */}
+                    <td className="px-4 py-3">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                        {snap?.role ? ROLE_ES[snap.role] ?? snap.role : "—"}
+                      </span>
+                    </td>
+
                     {/* Score */}
                     <td className="px-4 py-3 text-right">
                       <span className="text-sm text-white">{enrollment.score.toFixed(0)}</span>
                       <span className="ml-0.5 text-[9px] text-gray-600"> {t("pointsShort")}</span>
+                    </td>
+
+                    {/* Rendimiento: percentil medio dentro de su rol */}
+                    <td className="px-4 py-3 text-right text-xs text-gray-300">
+                      {snap?.avg_performance != null ? snap.avg_performance.toFixed(0) : "—"}
+                    </td>
+
+                    {/* Retos conseguidos */}
+                    <td className="px-4 py-3 text-right">
+                      {snap?.feat_points != null ? (
+                        <span
+                          className="text-xs text-gray-300"
+                          title={(snap.feats_earned ?? [])
+                            .map((f) => `${f.name}${f.count > 1 ? ` ×${f.count}` : ""} +${f.points}`)
+                            .join("\n")}
+                        >
+                          {snap.feat_points}
+                          {(snap.feats_earned?.length ?? 0) > 0 && (
+                            <span className="ml-1 text-[9px] text-gray-600">
+                              ({snap.feats_earned!.length})
+                            </span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-600">—</span>
+                      )}
                     </td>
 
                     {/* Matches progress */}
@@ -236,14 +286,30 @@ function ScoringWeightsInfo({ config }: { config: TrialsConfig }) {
   const [open, setOpen] = useState(false);
   const w = config.scoring_weights;
 
+  // Cada partida suma cuatro cosas. El rendimiento no puntúa valores crudos:
+  // mide en qué percentil de TU ROL caes, así una partida de soporte y una de
+  // tirador valen lo mismo aunque sus números no se parezcan en nada.
   const entries = [
-    { label: "KDA", formula: `×${w.kda}`, example: `3.0 KDA → ${(3.0 * w.kda).toFixed(1)} pts` },
-    { label: "Kill Participation", formula: `×${w.kill_participation} (÷10)`, example: `60% → ${(60 / 10 * w.kill_participation).toFixed(1)} pts` },
-    { label: "Vision Score", formula: `×${w.vision_score} (÷10)`, example: `45 → ${(45 / 10 * w.vision_score).toFixed(1)} pts` },
-    { label: "CS/min", formula: `×${w.cs_per_min}`, example: `7cs/m → ${(7 * w.cs_per_min).toFixed(1)} pts` },
-    { label: "Damage Dealt", formula: `×${w.damage} (÷10k)`, example: `25k → ${(25000 / 10000 * w.damage).toFixed(1)} pts` },
-    { label: "Wards Placed", formula: `×${w.wards_placed}`, example: `8 → ${(8 * w.wards_placed).toFixed(1)} pts` },
-    { label: "Team Objectives", formula: `×${w.objectives}`, example: `4 objs → ${(4 * w.objectives).toFixed(1)} pts` },
+    {
+      label: "Participación",
+      formula: "+10",
+      example: "por terminar la partida",
+    },
+    {
+      label: "Rendimiento",
+      formula: "0 – 100",
+      example: `percentil de tu rol · pesos: KDA ×${w.kda}, participación ×${w.kill_participation}, visión ×${w.vision_score}, daño ×${w.damage}, CS ×${w.cs_per_min}`,
+    },
+    {
+      label: "Victoria",
+      formula: "+20",
+      example: "solo si ganas",
+    },
+    {
+      label: "Retos",
+      formula: "3 – 100 cada uno",
+      example: "20 retos por partida: 18 iguales para todos y 2 propios de tu rol. Cuanto más raro, más paga",
+    },
   ];
 
   return (

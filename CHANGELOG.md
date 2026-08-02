@@ -2,6 +2,18 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-08-02 — Summoner Trials pasa a puntuar por percentil de rol y retos
+
+El sync ya no puntúa valores crudos por pesos: `computeMatchScore` se sustituye por la fórmula calibrada — 10 de participación + rendimiento 0-100 (`roleScore()`, el percentil medio dentro del rol) + 20 por victoria + puntos de los 20 retos. Nadie saca cero. Los pesos configurables del torneo se siguen respetando: se mapean a las claves de los baselines (`damage` → `damage_per_min`, etc.) y `objectives` se ignora porque no hay percentil medido para eso.
+
+Los 20 retos viven ahora en `src/core/lib/tournament-feats.ts` con su tasa real de consecución. Cada rol tiene exactamente 20: los 18 del fondo común más 2 de firma a 5 puntos, verificado en el self-check. Las métricas de umbral (una diferencia, una cobertura, una bandera) pagan una vez en vez de multiplicar por su valor, que era lo que daba puntos fraccionarios absurdos.
+
+La clasificación muestra rol, rendimiento y puntos de retos por separado — sin el rol, la puntuación no se puede interpretar, porque se compara contra ese rol. El explicador de la fórmula estaba describiendo el sistema viejo y se reescribió.
+
+Validado con los 10 jugadores de una partida real: los cuatro del equipo ganador arriba, un jugador que ganó sin aportar (14% de participación, 0 retos) cae al octavo puesto por debajo de tres rivales, y el peor de la partida saca 43 en vez de cero.
+
+Archivos: `src/core/lib/tournament-feats.ts` (+ self-check), `src/app/api/lol/trials/sync/route.ts`, `src/modules/tournaments/components/SummonerTrialsLeaderboard.tsx`, `src/app/api/me/inbox/route.ts` (nuevo, agregador de avisos para el futuro cliente).
+
 ## 2026-08-02 — Puntuación de partida y retos de torneo, calibrados con datos reales
 
 Se cerró el diseño del sistema de puntos y los 20 retos de torneo, todo medido contra la API en vez de estimado. Está documentado en `docs/retos-verificacion.md`; aquí solo lo que cambió en código.

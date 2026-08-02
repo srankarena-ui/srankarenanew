@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/core/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import type { TrialsConfig } from "@/core/types";
+import { roleScore, type RoleBaselines } from "@/core/lib/role-score";
+import { evaluateFeats, featPoints, type EarnedFeat } from "@/core/lib/tournament-feats";
+import baselines from "@/core/config/role-baselines.json";
 
 function getCluster(platform: string): string {
   const p = platform.toLowerCase();
@@ -53,9 +56,51 @@ interface MatchStats {
   quadraKills: number;
   tripleKills: number;
   firstBloodKill: boolean;
+  // ── Puntuación nueva: percentil dentro del rol + retos ────────────────────
+  role: string;
+  /** 0-100: el percentil medio del jugador dentro de su rol. */
+  performance: number;
+  feats: EarnedFeat[];
+  points: {
+    participation: number;
+    performance: number;
+    victory: number;
+    feats: number;
+    total: number;
+  };
 }
 
-function extractStats(player: Participant, matchInfo: Record<string, unknown>): MatchStats {
+// Puntos fijos de la fórmula. Ver docs/retos-verificacion.md.
+const PARTICIPATION_POINTS = 10;
+const VICTORY_POINTS = 20;
+
+// Los pesos configurables del torneo se traducen a las claves de los baselines.
+// `objectives` se queda fuera: no hay percentil medido para eso.
+const WEIGHT_MAP: Record<string, string> = {
+  kda: "kda",
+  kill_participation: "kill_participation",
+  vision_score: "vision_score",
+  damage: "damage_per_min",
+  cs_per_min: "cs_per_min",
+  wards_placed: "wards_placed",
+};
+
+function scoreWeights(w: TrialsConfig["scoring_weights"]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const [configKey, baselineKey] of Object.entries(WEIGHT_MAP)) {
+    const value = (w as unknown as Record<string, number>)[configKey];
+    if (typeof value === "number" && value > 0) out[baselineKey] = value;
+  }
+  // El soporte no farmea: su hueco de rol son las asistencias, con el mismo peso.
+  if (out.cs_per_min) out.assists = out.cs_per_min;
+  return out;
+}
+
+function extractStats(
+  player: Participant,
+  matchInfo: Record<string, unknown>,
+  weights: Record<string, number>
+): MatchStats {
   const teams = matchInfo.teams as Team[];
   const team = teams.find((t) => t.teamId === (player.teamId as number));
   const gameSecs = (matchInfo.gameDuration as number) || 1;
@@ -66,7 +111,47 @@ function extractStats(player: Participant, matchInfo: Record<string, unknown>): 
   const assists = (player.assists as number) ?? 0;
   const kda = deaths === 0 ? kills + assists : (kills + assists) / deaths;
 
+  const role = (player.teamPosition as string) || (player.individualPosition as string) || "";
+  const win = player.win as boolean;
+
+  // Rendimiento: percentil dentro del rol, no valores crudos. Así una partida
+  // de soporte y una de tirador se puntúan con la misma vara.
+  const perfStats: Record<string, number> = {
+    kda,
+    kill_participation: (player.challenges?.killParticipation as number) ?? 0,
+    vision_score: (player.visionScore as number) ?? 0,
+    damage_per_min: gameMins > 0 ? ((player.totalDamageDealtToChampions as number) ?? 0) / gameMins : 0,
+    wards_placed: (player.wardsPlaced as number) ?? 0,
+  };
+  if (role === "UTILITY") perfStats.assists = assists;
+  else if (gameMins > 0) perfStats.cs_per_min = cs / gameMins;
+
+  const performance = roleScore(role, perfStats, weights, baselines as RoleBaselines) ?? 0;
+
+  // Los retos leen el bloque `challenges` de Riot más los campos sueltos del
+  // participante (pentas, primera sangre) que viven fuera de él.
+  const feats = evaluateFeats(role, {
+    ...(player.challenges ?? {}),
+    pentaKills: player.pentaKills,
+    quadraKills: player.quadraKills,
+    tripleKills: player.tripleKills,
+    firstBloodKill: player.firstBloodKill,
+  } as Record<string, unknown>);
+
+  const featTotal = featPoints(feats);
+  const round = (n: number) => parseFloat(n.toFixed(2));
+
   return {
+    role,
+    performance: round(performance),
+    feats,
+    points: {
+      participation: PARTICIPATION_POINTS,
+      performance: round(performance),
+      victory: win ? VICTORY_POINTS : 0,
+      feats: featTotal,
+      total: round(PARTICIPATION_POINTS + performance + (win ? VICTORY_POINTS : 0) + featTotal),
+    },
     champion: player.championName as string,
     win: player.win as boolean,
     gameDuration: gameSecs,
@@ -99,17 +184,23 @@ function extractStats(player: Participant, matchInfo: Record<string, unknown>): 
   };
 }
 
-function computeMatchScore(stats: MatchStats, w: TrialsConfig["scoring_weights"]): number {
-  const objectives = stats.teamBaronKills + stats.teamDragonKills + stats.teamHeraldKills + stats.teamGrubKills;
-  return (
-    w.kda * stats.kda +
-    w.kill_participation * (stats.killParticipation / 10) +
-    w.vision_score * (stats.visionScore / 10) +
-    w.cs_per_min * stats.csPerMin +
-    w.damage * (stats.totalDamageDealtToChampions / 10000) +
-    w.wards_placed * stats.wardsPlaced +
-    w.objectives * objectives
-  );
+/** El rol en el que más ha jugado: es contra el que se le compara. */
+function mostPlayedRole(all: MatchStats[]): string {
+  const counts: Record<string, number> = {};
+  for (const s of all) if (s.role) counts[s.role] = (counts[s.role] ?? 0) + 1;
+  return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "";
+}
+
+/** Cuántas veces ha conseguido cada reto en todo el torneo. */
+function countFeats(all: MatchStats[]): Array<{ name: string; count: number; points: number }> {
+  const acc = new Map<string, { name: string; count: number; points: number }>();
+  for (const s of all) {
+    for (const f of s.feats ?? []) {
+      const prev = acc.get(f.key) ?? { name: f.name, count: 0, points: 0 };
+      acc.set(f.key, { name: f.name, count: prev.count + f.count, points: prev.points + f.points });
+    }
+  }
+  return [...acc.values()].sort((a, b) => b.points - a.points);
 }
 
 export async function POST(request: NextRequest) {
@@ -152,6 +243,7 @@ export async function POST(request: NextRequest) {
 
   const config = tournament.trials_config as TrialsConfig;
   const { matches_to_track, scoring_weights, match_type } = config;
+  const weights = scoreWeights(scoring_weights);
 
   // Determine allowed queue IDs based on match_type
   // solo/duo → Ranked Solo/Duo (420)
@@ -237,8 +329,8 @@ export async function POST(request: NextRequest) {
         );
         if (!participant) continue;
 
-        const stats = extractStats(participant, match.info as Record<string, unknown>);
-        const matchScore = parseFloat(computeMatchScore(stats, scoring_weights).toFixed(2));
+        const stats = extractStats(participant, match.info as Record<string, unknown>, weights);
+        const matchScore = stats.points.total;
 
         const { error: insertErr } = await admin
           .from("summoner_trials_matches")
@@ -281,6 +373,18 @@ export async function POST(request: NextRequest) {
           ),
           wins: allStats.filter((s) => s.win).length,
           losses: allStats.filter((s) => !s.win).length,
+
+          // Desglose de la puntuación nueva, para poder explicarla en la tabla
+          // sin recalcular nada al pintarla.
+          role: mostPlayedRole(allStats),
+          avg_performance: avg((s) => s.performance ?? 0),
+          feat_points: allStats.reduce((a, s) => a + (s.points?.feats ?? 0), 0),
+          participation_points: allStats.reduce((a, s) => a + (s.points?.participation ?? 0), 0),
+          victory_points: allStats.reduce((a, s) => a + (s.points?.victory ?? 0), 0),
+          performance_points: parseFloat(
+            allStats.reduce((a, s) => a + (s.points?.performance ?? 0), 0).toFixed(2)
+          ),
+          feats_earned: countFeats(allStats),
         };
 
         // Average over matches_to_track so players with fewer games are penalized
