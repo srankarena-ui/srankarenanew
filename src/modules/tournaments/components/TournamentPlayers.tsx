@@ -90,6 +90,14 @@ export function TournamentPlayers({
                     </span>
                   )}
                 </p>
+                {/* La región sale de la cuenta de Riot vinculada: un torneo
+                    puede mezclar regiones sin problema, cada jugador se
+                    consulta en su propio clúster. */}
+                {p.profile?.lol_region && (
+                  <p className="text-[9px] uppercase tracking-wider text-gray-600">
+                    {p.profile.lol_region}
+                  </p>
+                )}
               </div>
             </div>
             <span className="w-24 text-right text-[10px] text-gray-600">
