@@ -492,7 +492,8 @@ export function CreateTournamentWizard({ games, vaultItems = [] }: Props) {
             </div>
             {trialEndDate && (
               <p className="-mt-2 text-[9px] text-[var(--color-accent)]/80">
-                When the event ends, players with fewer than {matchesToTrack || 10} games will have missing games counted as 0 — scores are averaged over the full {matchesToTrack || 10} games.
+                Al terminar el evento cuentan las partidas jugadas hasta ese momento.
+                Quien juegue menos de {matchesToTrack || 10} simplemente acumula menos puntos.
               </p>
             )}
 

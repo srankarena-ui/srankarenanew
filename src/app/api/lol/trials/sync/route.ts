@@ -390,8 +390,10 @@ export async function POST(request: NextRequest) {
             * DEFICIT_PENALTY_PER_LOSS,
         };
 
-        // Average over matches_to_track so players with fewer games are penalized
-        // (missing games count as 0, denominator is always matches_to_track)
+        // La puntuación es la suma de lo ganado, sin promediar. Antes se dividía
+        // entre matches_to_track "para penalizar a quien juega menos", pero
+        // dividir entre una constante igual para todos no cambia el orden: quien
+        // juega menos ya suma menos. El número ahora significa puntos ganados.
         const sumScore = (allMatches ?? []).reduce((a, m) => a + Number(m.match_score), 0);
 
         // Castigo por balance negativo, encima del que ya lleva cada derrota.
@@ -402,7 +404,7 @@ export async function POST(request: NextRequest) {
         const deficit = Math.max(0, allStats.length - wins - wins);
         const deficitPenalty = deficit * DEFICIT_PENALTY_PER_LOSS;
 
-        const totalScore = parseFloat(((sumScore - deficitPenalty) / matches_to_track).toFixed(2));
+        const totalScore = parseFloat((sumScore - deficitPenalty).toFixed(2));
 
         await admin
           .from("summoner_trials_enrollments")
