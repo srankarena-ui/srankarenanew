@@ -53,14 +53,18 @@ export async function createTournament(formData: FormData) {
 
   if (error) return { error: error.message };
 
-  // Link selected vault items as prizes for this tournament.
-  const prizeIds = raw.prize_item_ids
-    ? (JSON.parse(raw.prize_item_ids as string) as string[])
+  // Objetos del vault asignados como premio. Cada uno puede llevar el puesto
+  // que lo gana; sin puesto es premio del torneo sin posición concreta.
+  const prizes = raw.prize_item_ids
+    ? (JSON.parse(raw.prize_item_ids as string) as Array<string | { asset_id: string; placement?: number | null }>)
     : [];
-  if (prizeIds.length) {
+
+  for (const prize of prizes) {
+    const assetId = typeof prize === "string" ? prize : prize.asset_id;
+    const placement = typeof prize === "string" ? null : prize.placement ?? null;
     await supabase.from("vault_items")
-      .update({ tournament_id: created.id, status: "assigned" })
-      .in("asset_id", prizeIds);
+      .update({ tournament_id: created.id, status: "assigned", prize_placement: placement })
+      .eq("asset_id", assetId);
   }
 
   revalidatePath("/admin");

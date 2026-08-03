@@ -153,6 +153,7 @@ export type Database = {
           tournament_id: string | null;
           donor_profile_id: string | null;
           status: string;
+          prize_placement: number | null;
           synced_at: string;
         };
         Insert: {
@@ -169,6 +170,7 @@ export type Database = {
           tournament_id?: string | null;
           donor_profile_id?: string | null;
           status?: string;
+          prize_placement?: number | null;
           synced_at?: string;
         };
         Update: {
@@ -185,6 +187,7 @@ export type Database = {
           tournament_id?: string | null;
           donor_profile_id?: string | null;
           status?: string;
+          prize_placement?: number | null;
           synced_at?: string;
         };
         Relationships: [

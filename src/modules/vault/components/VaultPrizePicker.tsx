@@ -6,6 +6,8 @@ export type PickableItem = {
   icon_url: string
   rarity: string | null
   price_cents: number | null
+  /** Puesto que gana este objeto. Nulo = premio del torneo sin posición. */
+  prize_placement?: number | null
 }
 
 const RARITY_COLORS: Record<string, string> = {
@@ -20,15 +22,17 @@ function fmtPrice(cents: number | null) {
 }
 
 export function VaultPrizePicker({
-  items, selected, onToggle,
+  items, selected, onToggle, placements, onPlacement,
 }: {
   items: PickableItem[]
   selected: Set<string>
   onToggle: (assetId: string) => void
+  /** Puesto asignado a cada objeto seleccionado. Sin entrada = sin puesto. */
+  placements?: Record<string, number>
+  onPlacement?: (assetId: string, placement: number | null) => void
 }) {
-  const totalCents = items
-    .filter(i => selected.has(i.asset_id))
-    .reduce((s, i) => s + (i.price_cents ?? 0), 0)
+  const chosen = items.filter(i => selected.has(i.asset_id))
+  const totalCents = chosen.reduce((s, i) => s + (i.price_cents ?? 0), 0)
 
   if (!items.length) return (
     <p className="text-[11px] text-gray-500">
@@ -48,6 +52,30 @@ export function VaultPrizePicker({
           </p>
         )}
       </div>
+
+      {/* Puesto de cada premio elegido. Vacío = premio del torneo sin posición. */}
+      {onPlacement && chosen.length > 0 && (
+        <div className="space-y-1.5 rounded-lg border border-gray-800 bg-[#0f1117] p-2.5">
+          <p className="text-[10px] text-gray-500">¿Qué puesto gana cada premio?</p>
+          {chosen.map(item => (
+            <div key={item.asset_id} className="flex items-center gap-2">
+              <span className="flex-1 truncate text-[11px] text-gray-300">{item.name}</span>
+              <input
+                type="number"
+                min={1}
+                placeholder="—"
+                value={placements?.[item.asset_id] ?? ""}
+                onChange={e => {
+                  const n = parseInt(e.target.value)
+                  onPlacement(item.asset_id, Number.isFinite(n) && n > 0 ? n : null)
+                }}
+                aria-label={`Puesto para ${item.name}`}
+                className="w-14 rounded border border-gray-800 bg-[#0b0e14] px-2 py-1 text-center text-[11px] text-gray-200 outline-hidden focus:border-[var(--color-accent)]"
+              />
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-72 overflow-y-auto pr-1">
         {items.map(item => {

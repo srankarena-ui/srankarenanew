@@ -84,7 +84,7 @@ export default async function TournamentDetailPage({
     // Objetos del vault asignados como premio de este torneo.
     supabase
       .from("vault_items")
-      .select("asset_id, name, icon_url, rarity, price_cents")
+      .select("asset_id, name, icon_url, rarity, price_cents, prize_placement")
       .eq("tournament_id", id)
       .order("price_cents", { ascending: false, nullsFirst: false }),
   ]);

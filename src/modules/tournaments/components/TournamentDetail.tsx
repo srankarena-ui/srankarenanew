@@ -275,15 +275,40 @@ export function TournamentDetail({
           )}
         </div>
 
-        {/* Reward */}
-        {tournament.reward_points > 0 && (
+        {/* Premios: los objetos asignados mandan sobre el EXP genérico, que
+            antes se mostraba solo y contradecía al reparto por puesto. */}
+        {(prizeItems.length > 0 || tournament.reward_points > 0) && (
           <div className="mt-4 rounded-2xl border border-gray-800/60 bg-[#121620] p-5">
-            <h3 className="mb-2 text-[10px] text-gray-400">
-              Reward
-            </h3>
-            <p className="text-lg text-[var(--color-accent)]">
-              +{tournament.reward_points} EXP
-            </p>
+            <h3 className="mb-3 text-[10px] text-gray-400">Premios</h3>
+
+            {prizeItems.length > 0 && (
+              <ul className="mb-3 space-y-2">
+                {[...prizeItems]
+                  .sort((a, b) => (a.prize_placement ?? 99) - (b.prize_placement ?? 99))
+                  .map((item) => (
+                    <li key={item.asset_id} className="flex items-center gap-2.5">
+                      <span className="w-7 shrink-0 text-[10px] font-bold text-[var(--color-accent)]">
+                        {item.prize_placement ? `${item.prize_placement}º` : "—"}
+                      </span>
+                      {/* ponytail: imagen del CDN de Steam, sin next/image */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={`https://community.cloudflare.steamstatic.com/economy/image/${item.icon_url}/64x64`}
+                        alt=""
+                        className="h-7 w-7 rounded"
+                      />
+                      <span className="text-xs text-white">{item.name}</span>
+                    </li>
+                  ))}
+              </ul>
+            )}
+
+            {tournament.reward_points > 0 && (
+              <p className="text-xs text-gray-400">
+                <span className="text-[var(--color-accent)]">+{tournament.reward_points} EXP</span>
+                {" "}por participar
+              </p>
+            )}
           </div>
         )}
 

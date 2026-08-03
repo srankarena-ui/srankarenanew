@@ -87,6 +87,8 @@ export function CreateTournamentWizard({ games, vaultItems = [] }: Props) {
   const [rules, setRules] = useState("");
   const [prizes, setPrizes] = useState("");
   const [prizeItemIds, setPrizeItemIds] = useState<Set<string>>(new Set());
+  // Puesto que gana cada premio; sin entrada = premio sin posicion concreta.
+  const [prizePlacements, setPrizePlacements] = useState<Record<string, number>>({});
 
   // Step 3 — Settings
   const [seriesFormat, setSeriesFormat] = useState("bo1");
@@ -106,7 +108,6 @@ export function CreateTournamentWizard({ games, vaultItems = [] }: Props) {
 
   const selectedGame = useMemo(() => games.find((g) => g.name === gameName), [games, gameName]);
   const isLoL = gameName === "League of Legends";
-  const isDota = gameName === "Dota 2";
   const isSummonerTrials = isLoL && tournamentFormat === "summoner_trials";
 
   function goTo(step: number) {
@@ -143,8 +144,10 @@ export function CreateTournamentWizard({ games, vaultItems = [] }: Props) {
     formData.set("banner_url", bannerUrl);
     formData.set("contact_method", contactLink ? `${contactMethod}: ${contactLink}` : contactMethod);
     formData.set("reward_points", rewardPoints);
-    if (isDota && prizeItemIds.size) {
-      formData.set("prize_item_ids", JSON.stringify([...prizeItemIds]));
+    if (prizeItemIds.size) {
+      formData.set("prize_item_ids", JSON.stringify(
+        [...prizeItemIds].map((asset_id) => ({ asset_id, placement: prizePlacements[asset_id] ?? null }))
+      ));
     }
     if (!isSummonerTrials) {
       formData.set("team_size", String(teamSize));
@@ -360,16 +363,30 @@ export function CreateTournamentWizard({ games, vaultItems = [] }: Props) {
           />
         </div>
 
-        {/* Dota 2: pick real items from the vault as prizes */}
-        {isDota && (
+        {/* Premios del vault. No se limita a Dota: los objetos son de ese
+            juego, pero cualquier torneo puede repartirlos. */}
+        {vaultItems.length > 0 && (
           <div className="rounded-xl border border-gray-800 bg-[#0b0e14] p-4">
             <label className="mb-1 block text-[9px] font-bold uppercase tracking-[0.2em] text-gray-500">
-              🎁 Premios del Vault (Dota 2)
+              🎁 Premios del Vault
             </label>
             <p className="mb-3 text-[10px] text-gray-600">
               Selecciona items donados para asignarlos como premios de este torneo.
             </p>
-            <VaultPrizePicker items={vaultItems} selected={prizeItemIds} onToggle={togglePrize} />
+            <VaultPrizePicker
+              items={vaultItems}
+              selected={prizeItemIds}
+              onToggle={togglePrize}
+              placements={prizePlacements}
+              onPlacement={(assetId, placement) =>
+                setPrizePlacements((prev) => {
+                  const next = { ...prev };
+                  if (placement == null) delete next[assetId];
+                  else next[assetId] = placement;
+                  return next;
+                })
+              }
+            />
           </div>
         )}
       </div>
