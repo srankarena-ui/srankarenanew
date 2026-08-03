@@ -9,7 +9,10 @@ import { useToast } from "@/core/ui/Toast";
 import { RichTextEditor } from "@/core/ui/RichTextEditor";
 import { updateTournament, setTournamentPrizes } from "@/modules/admin/actions";
 import { VaultPrizePicker, type PickableItem } from "@/modules/vault/components/VaultPrizePicker";
+import { PrizeTableEditor } from "@/modules/admin/components/PrizeTableEditor";
+import { parsePrizeTable, type PrizeRow } from "@/core/lib/prize-table";
 import type { Game, Tournament } from "@/core/types";
+import type { Database } from "@/core/types/database";
 
 interface Props {
   tournament: Tournament;
@@ -61,7 +64,7 @@ export function EditTournamentWizard({ tournament, games, vaultItems = [], assig
     initialMax >= 128 ? "unlimited" : "limited"
   );
   const [maxParticipants, setMaxParticipants] = useState(String(initialMax));
-  const [rewardPoints, setRewardPoints] = useState(String(tournament.reward_points));
+  const [prizeRows, setPrizeRows] = useState<PrizeRow[]>(() => parsePrizeTable(tournament.prize_table));
 
   const isLoL = gameName === "League of Legends";
   const isDota = gameName === "Dota 2";
@@ -100,7 +103,7 @@ export function EditTournamentWizard({ tournament, games, vaultItems = [], assig
       map: isLoL ? map || null : null,
       banner_url: bannerUrl || null,
       contact_method: contactLink ? `${contactMethod}: ${contactLink}` : contactMethod,
-      reward_points: Number(rewardPoints) || 0,
+      prize_table: parsePrizeTable(prizeRows) as unknown as Database["public"]["Tables"]["tournaments"]["Update"]["prize_table"],
     });
 
     if (result.error) {
@@ -369,14 +372,16 @@ export function EditTournamentWizard({ tournament, games, vaultItems = [], assig
               max={128}
             />
           )}
+        </div>
 
-          <Input
-            label="Reward Points"
-            type="number"
-            value={rewardPoints}
-            onChange={(e) => setRewardPoints(e.target.value)}
-            min={0}
-          />
+        <div className="rounded-xl border border-gray-800 bg-[#0b0e14] p-4">
+          <label className="mb-1 block text-[9px] font-bold uppercase tracking-[0.2em] text-gray-500">
+            🏆 Premios por puesto
+          </label>
+          <p className="mb-3 text-[10px] text-gray-600">
+            Texto libre: dinero, RP, objetos, lo que sea. Solo se muestra.
+          </p>
+          <PrizeTableEditor rows={prizeRows} onChange={setPrizeRows} />
         </div>
       </div>
     );
