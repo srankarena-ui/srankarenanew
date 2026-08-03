@@ -432,6 +432,7 @@ export type Database = {
           mode: string | null;
           status: string;
           reward_points: number;
+          prize_table: Json;
           created_by: string;
           max_participants: number;
           series_format: string;
@@ -460,6 +461,7 @@ export type Database = {
           mode?: string | null;
           status?: string;
           reward_points?: number;
+          prize_table?: Json;
           created_by: string;
           max_participants?: number;
           series_format?: string;
@@ -488,6 +490,7 @@ export type Database = {
           mode?: string | null;
           status?: string;
           reward_points?: number;
+          prize_table?: Json;
           created_by?: string;
           max_participants?: number;
           series_format?: string;

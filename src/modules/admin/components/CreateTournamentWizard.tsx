@@ -9,6 +9,8 @@ import { useToast } from "@/core/ui/Toast";
 import { RichTextEditor } from "@/core/ui/RichTextEditor";
 import { createTournament } from "@/modules/admin/actions";
 import { VaultPrizePicker, type PickableItem } from "@/modules/vault/components/VaultPrizePicker";
+import { PrizeTableEditor } from "@/modules/admin/components/PrizeTableEditor";
+import { parsePrizeTable, type PrizeRow } from "@/core/lib/prize-table";
 import type { Game } from "@/core/types";
 
 interface Props {
@@ -86,6 +88,7 @@ export function CreateTournamentWizard({ games, vaultItems = [] }: Props) {
   const [contactLink, setContactLink] = useState("");
   const [rules, setRules] = useState("");
   const [prizes, setPrizes] = useState("");
+  const [prizeRows, setPrizeRows] = useState<PrizeRow[]>([]);
   const [prizeItemIds, setPrizeItemIds] = useState<Set<string>>(new Set());
   // Puesto que gana cada premio; sin entrada = premio sin posicion concreta.
   const [prizePlacements, setPrizePlacements] = useState<Record<string, number>>({});
@@ -144,6 +147,7 @@ export function CreateTournamentWizard({ games, vaultItems = [] }: Props) {
     formData.set("banner_url", bannerUrl);
     formData.set("contact_method", contactLink ? `${contactMethod}: ${contactLink}` : contactMethod);
     formData.set("reward_points", rewardPoints);
+    formData.set("prize_table", JSON.stringify(parsePrizeTable(prizeRows)));
     if (prizeItemIds.size) {
       formData.set("prize_item_ids", JSON.stringify(
         [...prizeItemIds].map((asset_id) => ({ asset_id, placement: prizePlacements[asset_id] ?? null }))
@@ -365,6 +369,18 @@ export function CreateTournamentWizard({ games, vaultItems = [] }: Props) {
 
         {/* Premios del vault. No se limita a Dota: los objetos son de ese
             juego, pero cualquier torneo puede repartirlos. */}
+        {/* Premios por puesto. Rangos porque segun el formato hay
+            posiciones que empatan: 3o-4o los semifinalistas, 5o-8o cuartos. */}
+        <div className="rounded-xl border border-gray-800 bg-[#0b0e14] p-4">
+          <label className="mb-1 block text-[9px] font-bold uppercase tracking-[0.2em] text-gray-500">
+            🏆 Premios por puesto
+          </label>
+          <p className="mb-3 text-[10px] text-gray-600">
+            Texto libre: dinero, RP, objetos, lo que sea. Solo se muestra.
+          </p>
+          <PrizeTableEditor rows={prizeRows} onChange={setPrizeRows} />
+        </div>
+
         {vaultItems.length > 0 && (
           <div className="rounded-xl border border-gray-800 bg-[#0b0e14] p-4">
             <label className="mb-1 block text-[9px] font-bold uppercase tracking-[0.2em] text-gray-500">
