@@ -2,6 +2,30 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-08-03 — Requisitos de inscripción y vault oculto mientras solo haya LoL
+
+**Vault fuera de la vista.** El picker "Premios del Vault" salía en el paso 2 de creación en cualquier torneo, ofreciendo 108 cosméticos de Dota 2 a un evento de LoL — el editor, en cambio, ya lo escondía (`isDota`), así que los dos asistentes se contradecían. Se corta en las **consultas**, no en los componentes: `VAULT_ENABLED` (derivado de que Dota 2 esté en `ACTIVE_GAMES`) apaga las cuatro queries y los componentes reciben listas vacías, con lo que dejan de pintarse solos — incluido el distintivo de donante, porque `donorTier(0)` ya devolvía `null`. La página `/vault` sigue siendo admin-only como estaba y no había ningún enlace visible que quitar.
+
+**Cuenta de Riot obligatoria en todo torneo de LoL.** La comprobación de `riot_puuid` vivía dentro de la rama de `summoner_trials`; un bracket normal caía al `else` e inscribía sin mirar nada. Ahora se valida antes de bifurcar, para cualquier torneo cuyo juego sea League of Legends.
+
+**Flex exige 5 miembros aceptados.** Antes inscribía el equipo que hubiera, fueran 2 o 7, dejando el torneo con equipos que no pueden jugar una cola de 5. El umbral (`TEAM_MIN_MEMBERS`) vive en `core/config/tournaments.ts` porque `actions.ts` es "use server" y no puede exportar constantes; lo comparten el filtro de la UI y la validación del servidor.
+
+**Alerta con botón en vez de error al pulsar.** `RegistrationRequirement` sustituye al botón de inscripción cuando falta el requisito y lleva al perfil, que es donde se resuelven los tres casos (vincular cuenta, crear dúo, completar equipo). Distingue "no tienes equipo" de "tu equipo está incompleto", que antes eran el mismo mensaje.
+
+Sin verificar en vivo: la tabla `tournaments` está vacía, así que el flujo de inscripción no se pudo ejercitar con datos reales — solo `tsc` limpio y las páginas sirviendo 200.
+
+Archivos: `src/core/config/games.ts`, `src/core/config/tournaments.ts` (nuevo), `src/modules/tournaments/actions.ts`, `src/modules/tournaments/components/RegistrationRequirement.tsx` (nuevo), `TeamRegisterButton.tsx`, `TournamentDetail.tsx`, y las páginas de crear/editar torneo, ficha de torneo y perfil.
+
+## 2026-08-03 — Iconos de verificación, tabla de premios en el editor y foco perdido
+
+**Iconos que no cargaban.** `SettingsView` fijaba Data Dragon a `14.10.1`: cualquier icono posterior a ese parche devolvía 403 y el `<img>` quedaba roto. Se pasa a CommunityDragon `/latest`, que sigue el parche actual sin pinear nada. (`src/app/[locale]/lol/page.tsx` mantiene el mismo pin — mismo bug latente, no tocado por ser fuera de alcance.)
+
+**Tabla de premios también al editar.** El editor de `prize_table` por puesto/rango solo estaba en el asistente de creación; el de edición seguía con el campo viejo "Reward Points", así que el premio no se podía cambiar después de crear el torneo.
+
+**Foco que se perdía al escribir.** En `EditTournamentWizard` los pasos se renderizaban como `<StepSettings />`: al ser funciones redefinidas en cada render, React los trataba como componentes distintos y desmontaba el subárbol en cada tecla, sacando el cursor del input. Se invocan como funciones (`StepSettings()`), que es lo que ya hacía el asistente de creación.
+
+Archivos: `src/modules/settings/components/SettingsView.tsx`, `src/modules/admin/components/EditTournamentWizard.tsx`.
+
 ## 2026-08-02 — El resultado de la partida pasa a pesar: +30 / −20 y castigo por balance
 
 Calibrado contra dos simulaciones con jugadores reales (192 partidas en total). Con la escala inicial de +20 al ganar y 0 al perder, **la clasificación no cambiaba ni un puesto**: el resultado era decorativo. Se sube a +30 / −20, con lo que el porcentaje de victorias empieza a decidir entre jugadores parejos.

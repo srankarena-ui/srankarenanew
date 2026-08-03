@@ -9,7 +9,7 @@ import { ProfileDisambiguation } from "@/modules/profile/components/ProfileDisam
 import { getProfileDuosAndTeams } from "@/modules/profile/actions";
 import { resolveProfileSlug } from "@/modules/profile/lookup";
 import { withResolvedClashRoyaleName } from "@/core/lib/clash-royale";
-import { ACTIVE_GAMES } from "@/core/config/games";
+import { ACTIVE_GAMES, VAULT_ENABLED } from "@/core/config/games";
 
 // ponytail: solo LoL activo por ahora — ver src/core/config/games.ts.
 const showDota2 = (ACTIVE_GAMES as readonly string[]).includes("Dota 2");
@@ -59,10 +59,12 @@ export default async function ProfilePage({
     : null;
 
   // Total value this user has donated to the vault, for the donor badge tier.
-  const { data: donatedItems } = await supabase
-    .from("vault_items")
-    .select("price_cents")
-    .eq("donor_profile_id", profile.id);
+  const { data: donatedItems } = VAULT_ENABLED
+    ? await supabase
+        .from("vault_items")
+        .select("price_cents")
+        .eq("donor_profile_id", profile.id)
+    : { data: null };
   const donationTotalCents = (donatedItems ?? []).reduce((sum, i) => sum + (i.price_cents ?? 0), 0);
 
   return (

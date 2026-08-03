@@ -1,7 +1,7 @@
 import { createClient } from "@/core/supabase/server";
 import { redirect } from "next/navigation";
 import { EditTournamentWizard } from "@/modules/admin/components/EditTournamentWizard";
-import { ACTIVE_GAMES } from "@/core/config/games";
+import { ACTIVE_GAMES, VAULT_ENABLED } from "@/core/config/games";
 
 export default async function EditTournamentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -38,11 +38,13 @@ export default async function EditTournamentPage({ params }: { params: Promise<{
   );
 
   // Vault items the picker can offer: those available + the ones already on this tournament.
-  const { data: vaultRows } = await supabase
-    .from("vault_items")
-    .select("asset_id, name, icon_url, rarity, price_cents, status, tournament_id")
-    .or(`status.eq.available,tournament_id.eq.${id}`)
-    .order("price_cents", { ascending: false, nullsFirst: false });
+  const { data: vaultRows } = VAULT_ENABLED
+    ? await supabase
+        .from("vault_items")
+        .select("asset_id, name, icon_url, rarity, price_cents, status, tournament_id")
+        .or(`status.eq.available,tournament_id.eq.${id}`)
+        .order("price_cents", { ascending: false, nullsFirst: false })
+    : { data: null };
 
   const vaultItems = (vaultRows ?? []).map(({ asset_id, name, icon_url, rarity, price_cents }) =>
     ({ asset_id, name, icon_url, rarity, price_cents }));

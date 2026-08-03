@@ -12,12 +12,15 @@ import {
   unregisterTeamFromTournament,
 } from "@/modules/tournaments/actions";
 import type { UserDuoOption, UserTeamOption } from "@/modules/tournaments/actions";
+import { TEAM_MIN_MEMBERS } from "@/core/config/tournaments";
+import { RegistrationRequirement } from "./RegistrationRequirement";
 
 interface TeamRegisterButtonProps {
   tournamentId: string;
   queueType: "duo" | "flex";
   registrationOpen: boolean;
   currentUserId: string;
+  profileHref?: string;
 }
 
 export function TeamRegisterButton({
@@ -25,6 +28,7 @@ export function TeamRegisterButton({
   queueType,
   registrationOpen,
   currentUserId,
+  profileHref = "",
 }: TeamRegisterButtonProps) {
   const t = useTranslations("tournaments");
   const router = useRouter();
@@ -89,12 +93,20 @@ export function TeamRegisterButton({
     }
   }
 
-  const options = queueType === "duo" ? duos : teams;
+  // Flex es cola de 5: los equipos incompletos ni se ofrecen, porque el
+  // servidor los rechazaría igual al confirmar.
+  const eligibleTeams = teams.filter((tm) => tm.member_count >= TEAM_MIN_MEMBERS);
+  const options = queueType === "duo" ? duos : eligibleTeams;
   const label = queueType === "duo" ? t("duoLabel") : t("teamLabel");
+
+  // Un equipo a medias no es lo mismo que no tener equipo: el aviso dice cuál
+  // de los dos es, para que se sepa si hay que crearlo o completarlo.
   const emptyMsg =
     queueType === "duo"
-      ? t("noActiveDuos")
-      : t("noActiveTeams");
+      ? "Necesitas un dúo activo para inscribirte. Puedes crearlo desde tu perfil."
+      : teams.length > 0
+        ? `Tu equipo necesita ${TEAM_MIN_MEMBERS} miembros aceptados para entrar en Flex. Invita a los que falten desde tu perfil.`
+        : `Necesitas un equipo de ${TEAM_MIN_MEMBERS} miembros para inscribirte. Puedes crearlo desde tu perfil.`;
 
   if (isRegistered) {
     return (
@@ -141,9 +153,11 @@ export function TeamRegisterButton({
         <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={queueType === "duo" ? t("registerDuo") : t("registerTeam")} className="max-w-sm">
 
             {options.length === 0 ? (
-              <div className="rounded-xl border border-gray-800 bg-[#0b0e14] p-4">
-                <p className="text-xs text-gray-500">{emptyMsg}</p>
-              </div>
+              <RegistrationRequirement
+                message={emptyMsg}
+                href={profileHref}
+                cta={queueType === "duo" ? "Ir a mi perfil" : "Gestionar mi equipo"}
+              />
             ) : (
               <div className="space-y-2">
                 <p className="text-[10px] font-bold text-gray-500">

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { createCs2Match, type Cs2MatchPlayer } from "@/core/lib/dathost";
 import type { TrialsConfig } from "@/core/types";
+import { TEAM_MIN_MEMBERS } from "@/core/config/tournaments";
 
 // ─── Types for team-based registration ────────────────────────────────────────
 
@@ -228,14 +229,21 @@ export async function registerTeamForTournament(
 
     if (!membership) return { error: "You are not an accepted member of this team" };
 
-    if (isSummonerTrials) {
-      // Get all accepted members and enroll each
-      const { data: members } = await supabase
-        .from("team_members")
-        .select("user_id")
-        .eq("team_id", opts.teamId)
-        .eq("status", "accepted") as { data: { user_id: string }[] | null };
+    // Get all accepted members and enroll each
+    const { data: members } = await supabase
+      .from("team_members")
+      .select("user_id")
+      .eq("team_id", opts.teamId)
+      .eq("status", "accepted") as { data: { user_id: string }[] | null };
 
+    // Flex es cola de 5: un equipo incompleto no puede jugarla, así que se
+    // rechaza al inscribir en vez de dejar el torneo con equipos inviables.
+    const acceptedCount = members?.length ?? 0;
+    if (acceptedCount < TEAM_MIN_MEMBERS) {
+      return { error: `Tu equipo necesita ${TEAM_MIN_MEMBERS} miembros aceptados para inscribirse (tiene ${acceptedCount}).` };
+    }
+
+    if (isSummonerTrials) {
       for (const m of members ?? []) {
         const { data: profile } = await supabase
           .from("profiles")
@@ -392,24 +400,31 @@ export async function registerForTournament(tournamentId: string) {
 
   if (!user) return { error: "Not authenticated" };
 
-  // Check if Summoner Trials format
   const { data: tournament } = await supabase
     .from("tournaments")
-    .select("tournament_format")
+    .select("tournament_format, game")
     .eq("id", tournamentId)
     .single();
 
-  if (tournament?.tournament_format === "summoner_trials") {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("riot_puuid, lol_region")
-      .eq("id", user.id)
-      .single();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("riot_puuid, lol_region")
+    .eq("id", user.id)
+    .single();
 
-    if (!profile?.riot_puuid) {
-      return { error: "You need a linked Riot account to join Summoner Trials. Go to Settings → Link Riot ID." };
-    }
+  // Todo torneo de LoL exige cuenta verificada, no solo Summoner Trials: sin
+  // puuid no hay forma de leer sus partidas ni de identificarlo en la API.
+  // La UI ya lo impide antes de llegar aquí; esto es el cinturón de seguridad.
+  const isSummonerTrials = tournament?.tournament_format === "summoner_trials";
+  const riotPuuid = profile?.riot_puuid;
 
+  if ((tournament?.game === "League of Legends" || isSummonerTrials) && !riotPuuid) {
+    return { error: "Necesitas una cuenta de League of Legends vinculada para inscribirte." };
+  }
+
+  // El `&& riotPuuid` es redundante —arriba ya se descartó— pero estrecha el
+  // tipo para el enrolamiento sin recurrir a una aserción.
+  if (isSummonerTrials && riotPuuid) {
     const { error: partError } = await supabase
       .from("tournament_participants")
       .insert({ tournament_id: tournamentId, user_id: user.id });
@@ -420,8 +435,8 @@ export async function registerForTournament(tournamentId: string) {
       .insert({
         tournament_id: tournamentId,
         user_id: user.id,
-        puuid: profile.riot_puuid,
-        region: profile.lol_region ?? "na1",
+        puuid: riotPuuid,
+        region: profile?.lol_region ?? "na1",
       });
 
     if (enrollError && !enrollError.message.includes("duplicate")) {

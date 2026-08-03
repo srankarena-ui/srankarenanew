@@ -20,6 +20,7 @@ import { SummonerTrialsLeaderboard } from "./SummonerTrialsLeaderboard";
 import type { Tournament, TournamentParticipant, Profile, MatchWithPlayers, TrialsEnrollmentWithProfile, TrialsConfig } from "@/core/types";
 import type { PickableItem as PrizeItem } from "@/modules/vault/components/VaultPrizePicker";
 import { parsePrizeTable, placementLabel, medalFor } from "@/core/lib/prize-table";
+import { RegistrationRequirement } from "./RegistrationRequirement";
 
 interface TournamentDetailProps {
   tournament: Tournament;
@@ -31,6 +32,8 @@ interface TournamentDetailProps {
   trialsEnrollments?: TrialsEnrollmentWithProfile[];
   teamRegistrationCount?: number;
   prizeItems?: PrizeItem[];
+  hasRiotAccount?: boolean;
+  profileHref?: string;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -66,6 +69,8 @@ export function TournamentDetail({
   trialsEnrollments,
   teamRegistrationCount = 0,
   prizeItems = [],
+  hasRiotAccount = false,
+  profileHref = "",
 }: TournamentDetailProps) {
   const t = useTranslations("tournaments");
   const locale = useLocale();
@@ -227,6 +232,19 @@ export function TournamentDetail({
                 !isSummonerTrials &&
                 (tournament.team_size === 2 || tournament.team_size === 5);
 
+              // Sin cuenta de LoL no hay inscripción posible en ningún formato,
+              // así que el aviso sustituye al botón en vez de dejar que falle
+              // al pulsarlo.
+              if (tournament.game === "League of Legends" && !hasRiotAccount && !isRegistered) {
+                return (
+                  <RegistrationRequirement
+                    message="Necesitas una cuenta de League of Legends vinculada para inscribirte en este torneo."
+                    href={profileHref}
+                    cta="Vincular cuenta"
+                  />
+                );
+              }
+
               if (isTrialsTeamBased) {
                 return (
                   <TeamRegisterButton
@@ -234,6 +252,7 @@ export function TournamentDetail({
                     queueType={trialsConfig!.match_type as "duo" | "flex"}
                     registrationOpen={!!tournament.registration_open}
                     currentUserId={currentUserId}
+                    profileHref={profileHref}
                   />
                 );
               }
@@ -245,6 +264,7 @@ export function TournamentDetail({
                     queueType={tournament.team_size === 2 ? "duo" : "flex"}
                     registrationOpen={!!tournament.registration_open}
                     currentUserId={currentUserId}
+                    profileHref={profileHref}
                   />
                 );
               }

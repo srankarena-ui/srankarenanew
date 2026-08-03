@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { TournamentDetail } from "@/modules/tournaments/components/TournamentDetail";
 import { pageMetadata } from "@/core/lib/seo";
 import type { TournamentParticipant, TournamentMatch, Profile, TrialsEnrollmentWithProfile } from "@/core/types";
+import { VAULT_ENABLED } from "@/core/config/games";
+import { formatProfileSlug } from "@/core/lib/tag";
 
 type ParticipantWithProfile = TournamentParticipant & { profile: Profile };
 type MatchWithPlayers = TournamentMatch & { player1: Profile | null; player2: Profile | null };
@@ -54,9 +56,9 @@ export async function generateMetadata({
 export default async function TournamentDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string; locale: string }>;
 }) {
-  const { id } = await params;
+  const { id, locale } = await params;
   const supabase = await createClient();
 
   const { data: tournament } = await supabase
@@ -82,11 +84,13 @@ export default async function TournamentDetailPage({
       .order("match_number"),
     supabase.auth.getUser(),
     // Objetos del vault asignados como premio de este torneo.
-    supabase
-      .from("vault_items")
-      .select("asset_id, name, icon_url, rarity, price_cents, prize_placement")
-      .eq("tournament_id", id)
-      .order("price_cents", { ascending: false, nullsFirst: false }),
+    VAULT_ENABLED
+      ? supabase
+          .from("vault_items")
+          .select("asset_id, name, icon_url, rarity, price_cents, prize_placement")
+          .eq("tournament_id", id)
+          .order("price_cents", { ascending: false, nullsFirst: false })
+      : Promise.resolve({ data: null }),
   ]);
 
   const participants = participantsRes.data as unknown as ParticipantWithProfile[] | null;
@@ -144,6 +148,12 @@ export default async function TournamentDetailPage({
         trialsEnrollments={trialsEnrollments}
         teamRegistrationCount={teamRegistrationCount}
         prizeItems={prizeItems || []}
+        hasRiotAccount={!!userProfile?.riot_puuid}
+        profileHref={
+          userProfile
+            ? `/${locale}/profile/${encodeURIComponent(formatProfileSlug(userProfile.username, userProfile.discriminator))}`
+            : `/${locale}/settings`
+        }
       />
     </div>
   );

@@ -399,12 +399,12 @@ export function EditTournamentWizard({ tournament, games, vaultItems = [], assig
         </p>
       </div>
 
-      <StepIndicator />
+      {StepIndicator()}
 
       <div className="rounded-2xl border border-gray-800/50 bg-[#121620] p-6 md:p-8">
-        {currentStep === 0 && <StepBasics />}
-        {currentStep === 1 && <StepInfo />}
-        {currentStep === 2 && <StepSettings />}
+        {currentStep === 0 && StepBasics()}
+        {currentStep === 1 && StepInfo()}
+        {currentStep === 2 && StepSettings()}
 
         {/* Navigation */}
         <div className="mt-8 flex items-center justify-between border-t border-gray-800/50 pt-6">
