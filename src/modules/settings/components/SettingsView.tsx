@@ -39,8 +39,6 @@ interface SettingsViewProps {
   discordLinkChallenge: DiscordLinkChallenge | null;
 }
 
-const PROFILE_ICON_CDN_VERSION = "14.10.1";
-
 const LOL_REGIONS = [
   "br1",
   "eun1",
@@ -60,8 +58,10 @@ const LOL_REGIONS = [
   "vn2",
 ] as const;
 
+// CommunityDragon's "latest" path tracks the current patch, so icons never
+// go missing because of a pinned Data Dragon version falling out of date.
 function getProfileIconUrl(iconId: number) {
-  return `https://ddragon.leagueoflegends.com/cdn/${PROFILE_ICON_CDN_VERSION}/img/profileicon/${iconId}.png`;
+  return `https://raw.communitydragon.org/latest/game/assets/ux/summonericons/profileicon${iconId}.png`;
 }
 
 function ProfileIconPreview({ iconId, label }: { iconId: number; label: string }) {
