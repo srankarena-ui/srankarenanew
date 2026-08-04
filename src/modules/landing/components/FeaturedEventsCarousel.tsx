@@ -85,9 +85,6 @@ function TournamentCard({
                   <> · {new Date(tournament.start_date).toLocaleDateString(locale === "es" ? "es-CL" : "en-US", { month: "short", day: "numeric", year: "numeric" })}</>
                 )}
               </p>
-              {tournament.reward_points > 0 && (
-                <p className="mt-1 text-xs font-bold text-[var(--color-accent)]">+{tournament.reward_points} EXP</p>
-              )}
             </div>
             <Link
               href={`/${locale}/tournaments/${tournament.id}`}

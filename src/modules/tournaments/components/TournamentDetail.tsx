@@ -20,6 +20,8 @@ import { SummonerTrialsLeaderboard } from "./SummonerTrialsLeaderboard";
 import type { Tournament, TournamentParticipant, Profile, MatchWithPlayers, TrialsEnrollmentWithProfile, TrialsConfig } from "@/core/types";
 import type { PickableItem as PrizeItem } from "@/modules/vault/components/VaultPrizePicker";
 import { parsePrizeTable, placementLabel, medalFor } from "@/core/lib/prize-table";
+import { GLOBAL_REGION } from "@/core/lib/riot-regions";
+import { parseXpTable } from "@/core/lib/xp-table";
 import { RegistrationRequirement } from "./RegistrationRequirement";
 
 interface TournamentDetailProps {
@@ -33,6 +35,7 @@ interface TournamentDetailProps {
   teamRegistrationCount?: number;
   prizeItems?: PrizeItem[];
   hasRiotAccount?: boolean;
+  userRegion?: string | null;
   profileHref?: string;
 }
 
@@ -70,6 +73,7 @@ export function TournamentDetail({
   teamRegistrationCount = 0,
   prizeItems = [],
   hasRiotAccount = false,
+  userRegion = null,
   profileHref = "",
 }: TournamentDetailProps) {
   const t = useTranslations("tournaments");
@@ -183,6 +187,7 @@ export function TournamentDetail({
             tournamentId={tournament.id}
             enrollments={trialsEnrollments ?? []}
             config={tournament.trials_config as unknown as TrialsConfig}
+            xpTable={parseXpTable(tournament.xp_table)}
             isAdmin={isAdmin}
             currentUserId={currentUserId}
           />
@@ -245,6 +250,23 @@ export function TournamentDetail({
                 );
               }
 
+              // Región fijada distinta de "global": la del jugador tiene que
+              // coincidir. El servidor revalida igual; esto evita el clic en vano.
+              const regionMismatch =
+                tournament.game === "League of Legends" &&
+                tournament.region &&
+                tournament.region !== GLOBAL_REGION &&
+                userRegion !== tournament.region;
+              if (regionMismatch && !isRegistered) {
+                return (
+                  <RegistrationRequirement
+                    message={`Este torneo es solo para la región ${tournament.region!.toUpperCase()}; tu cuenta está vinculada a ${userRegion?.toUpperCase() ?? "otra región"}.`}
+                    href={profileHref}
+                    cta="Cambiar cuenta vinculada"
+                  />
+                );
+              }
+
               if (isTrialsTeamBased) {
                 return (
                   <TeamRegisterButton
@@ -298,9 +320,7 @@ export function TournamentDetail({
           )}
         </div>
 
-        {/* Premios: los objetos asignados mandan sobre el EXP genérico, que
-            antes se mostraba solo y contradecía al reparto por puesto. */}
-        {(prizeRows.length > 0 || prizeItems.length > 0 || tournament.reward_points > 0) && (
+        {(prizeRows.length > 0 || prizeItems.length > 0) && (
           <div className="mt-4 rounded-2xl border border-gray-800/60 bg-[#121620] p-5">
             <h3 className="mb-3 text-[10px] text-gray-400">Premios</h3>
 
@@ -344,12 +364,6 @@ export function TournamentDetail({
               </ul>
             )}
 
-            {tournament.reward_points > 0 && (
-              <p className="text-xs text-gray-400">
-                <span className="text-[var(--color-accent)]">+{tournament.reward_points} EXP</span>
-                {" "}por participar
-              </p>
-            )}
           </div>
         )}
 

@@ -109,15 +109,6 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
             <span className="text-gray-500">
               {tournament.region || "—"}
             </span>
-            {tournament.reward_points > 0 && (
-              <span className="flex items-center gap-1 font-bold text-[var(--color-accent)]">
-                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path d="M12 15l-2 5h4l-2-5z" />
-                  <circle cx="12" cy="9" r="5" />
-                </svg>
-                +{tournament.reward_points} EXP
-              </span>
-            )}
           </div>
 
           {/* Divider */}

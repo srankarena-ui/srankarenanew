@@ -6,6 +6,40 @@ import { headers } from "next/headers";
 import { createCs2Match, type Cs2MatchPlayer } from "@/core/lib/dathost";
 import type { TrialsConfig } from "@/core/types";
 import { TEAM_MIN_MEMBERS } from "@/core/config/tournaments";
+import { GLOBAL_REGION } from "@/core/lib/riot-regions";
+
+// ─── LoL eligibility (cuenta vinculada + región) ───────────────────────────────
+
+// Todo torneo de LoL exige cuenta verificada y, si el torneo fija una región
+// concreta (no "global"), que coincida con la del jugador — sin puuid no hay
+// forma de leer sus partidas ni de identificarlo en la API. Se centraliza
+// aquí porque los tres caminos de inscripción (solo, dúo, equipo) repetían
+// el mismo fetch+chequeo por separado.
+async function assertLolEligible(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  tournament: { game: string; region: string | null },
+  userId: string,
+): Promise<{ error?: string; riotPuuid?: string; lolRegion?: string | null }> {
+  if (tournament.game !== "League of Legends") return {};
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("riot_puuid, lol_region")
+    .eq("id", userId)
+    .single();
+
+  if (!profile?.riot_puuid) {
+    return { error: "Necesitas una cuenta de League of Legends vinculada para inscribirte." };
+  }
+
+  if (tournament.region && tournament.region !== GLOBAL_REGION && profile.lol_region !== tournament.region) {
+    return {
+      error: `Este torneo es solo para la región ${tournament.region.toUpperCase()}; tu cuenta está vinculada a ${profile.lol_region?.toUpperCase() ?? "otra región"}.`,
+    };
+  }
+
+  return { riotPuuid: profile.riot_puuid, lolRegion: profile.lol_region };
+}
 
 // ─── Types for team-based registration ────────────────────────────────────────
 
@@ -131,9 +165,14 @@ export async function registerTeamForTournament(
   // Fetch tournament config
   const { data: tournament } = await supabase
     .from("tournaments")
-    .select("max_participants, trials_config, tournament_format, status, team_size")
+    .select("max_participants, trials_config, tournament_format, status, team_size, game, region")
     .eq("id", tournamentId)
-    .single() as { data: { max_participants: number; trials_config: unknown; tournament_format: string; status: string; team_size: number | null } | null };
+    .single() as {
+      data: {
+        max_participants: number; trials_config: unknown; tournament_format: string; status: string;
+        team_size: number | null; game: string; region: string | null;
+      } | null
+    };
 
   if (!tournament) return { error: "Tournament not found" };
 
@@ -172,20 +211,19 @@ export async function registerTeamForTournament(
     if (!duo) return { error: "Duo not found or not active" };
     if (duo.requester_id !== user.id && duo.partner_id !== user.id) return { error: "You are not in this duo" };
 
+    // Cuenta vinculada + región correcta para los dos, sea o no Trials —
+    // igual que la inscripción individual.
+    const playerIds = [duo.requester_id, duo.partner_id];
+    const duoElig: Record<string, { riotPuuid?: string; lolRegion?: string | null }> = {};
+    for (const playerId of playerIds) {
+      const elig = await assertLolEligible(supabase, tournament, playerId);
+      if (elig.error) return { error: elig.error };
+      duoElig[playerId] = elig;
+    }
+
     if (isSummonerTrials) {
       // Add both players as individual tournament_participants + summoner_trials_enrollments
-      const playerIds = [duo.requester_id, duo.partner_id];
       for (const playerId of playerIds) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("riot_puuid, lol_region")
-          .eq("id", playerId)
-          .single();
-
-        if (!profile?.riot_puuid) {
-          return { error: `One or both duo members don't have a linked Riot account` };
-        }
-
         await supabase
           .from("tournament_participants")
           .upsert({ tournament_id: tournamentId, user_id: playerId });
@@ -195,8 +233,8 @@ export async function registerTeamForTournament(
           .upsert({
             tournament_id: tournamentId,
             user_id: playerId,
-            puuid: profile.riot_puuid,
-            region: profile.lol_region ?? "na1",
+            puuid: duoElig[playerId].riotPuuid!,
+            region: duoElig[playerId].lolRegion ?? "na1",
           });
       }
     } else {
@@ -243,18 +281,16 @@ export async function registerTeamForTournament(
       return { error: `Tu equipo necesita ${TEAM_MIN_MEMBERS} miembros aceptados para inscribirse (tiene ${acceptedCount}).` };
     }
 
+    // Cuenta vinculada + región correcta para todo el equipo, sea o no Trials.
+    const teamElig: Record<string, { riotPuuid?: string; lolRegion?: string | null }> = {};
+    for (const m of members ?? []) {
+      const elig = await assertLolEligible(supabase, tournament, m.user_id);
+      if (elig.error) return { error: elig.error };
+      teamElig[m.user_id] = elig;
+    }
+
     if (isSummonerTrials) {
       for (const m of members ?? []) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("riot_puuid, lol_region")
-          .eq("id", m.user_id)
-          .single();
-
-        if (!profile?.riot_puuid) {
-          return { error: `One or more team members don't have a linked Riot account` };
-        }
-
         await supabase
           .from("tournament_participants")
           .upsert({ tournament_id: tournamentId, user_id: m.user_id });
@@ -264,8 +300,8 @@ export async function registerTeamForTournament(
           .upsert({
             tournament_id: tournamentId,
             user_id: m.user_id,
-            puuid: profile.riot_puuid,
-            region: profile.lol_region ?? "na1",
+            puuid: teamElig[m.user_id].riotPuuid!,
+            region: teamElig[m.user_id].lolRegion ?? "na1",
           });
       }
     } else {
@@ -402,29 +438,19 @@ export async function registerForTournament(tournamentId: string) {
 
   const { data: tournament } = await supabase
     .from("tournaments")
-    .select("tournament_format, game")
+    .select("tournament_format, game, region")
     .eq("id", tournamentId)
     .single();
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("riot_puuid, lol_region")
-    .eq("id", user.id)
-    .single();
+  if (!tournament) return { error: "Tournament not found" };
 
-  // Todo torneo de LoL exige cuenta verificada, no solo Summoner Trials: sin
-  // puuid no hay forma de leer sus partidas ni de identificarlo en la API.
-  // La UI ya lo impide antes de llegar aquí; esto es el cinturón de seguridad.
-  const isSummonerTrials = tournament?.tournament_format === "summoner_trials";
-  const riotPuuid = profile?.riot_puuid;
+  // La UI ya impide llegar aquí sin cumplir esto; es el cinturón de seguridad.
+  const elig = await assertLolEligible(supabase, tournament, user.id);
+  if (elig.error) return { error: elig.error };
 
-  if ((tournament?.game === "League of Legends" || isSummonerTrials) && !riotPuuid) {
-    return { error: "Necesitas una cuenta de League of Legends vinculada para inscribirte." };
-  }
+  const isSummonerTrials = tournament.tournament_format === "summoner_trials";
 
-  // El `&& riotPuuid` es redundante —arriba ya se descartó— pero estrecha el
-  // tipo para el enrolamiento sin recurrir a una aserción.
-  if (isSummonerTrials && riotPuuid) {
+  if (isSummonerTrials) {
     const { error: partError } = await supabase
       .from("tournament_participants")
       .insert({ tournament_id: tournamentId, user_id: user.id });
@@ -435,8 +461,8 @@ export async function registerForTournament(tournamentId: string) {
       .insert({
         tournament_id: tournamentId,
         user_id: user.id,
-        puuid: riotPuuid,
-        region: profile?.lol_region ?? "na1",
+        puuid: elig.riotPuuid!,
+        region: elig.lolRegion ?? "na1",
       });
 
     if (enrollError && !enrollError.message.includes("duplicate")) {

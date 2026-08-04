@@ -9,8 +9,10 @@ import { useToast } from "@/core/ui/Toast";
 import { RichTextEditor } from "@/core/ui/RichTextEditor";
 import { createTournament } from "@/modules/admin/actions";
 import { VaultPrizePicker, type PickableItem } from "@/modules/vault/components/VaultPrizePicker";
-import { PrizeTableEditor } from "@/modules/admin/components/PrizeTableEditor";
+import { PrizesEditor } from "@/modules/admin/components/PrizesEditor";
 import { parsePrizeTable, type PrizeRow } from "@/core/lib/prize-table";
+import { parseXpTable, type XpRow } from "@/core/lib/xp-table";
+import { GLOBAL_REGION, RIOT_REGIONS_WITH_GLOBAL } from "@/core/lib/riot-regions";
 import type { Game } from "@/core/types";
 
 interface Props {
@@ -24,25 +26,6 @@ type Step = (typeof STEPS)[number];
 const SERIES_FORMATS = ["bo1", "bo3", "bo5"];
 const CONTACT_METHODS = ["discord", "whatsapp", "telegram", "other"];
 const PLAYER_LIMITS = ["limited", "unlimited"];
-
-const RIOT_REGIONS: { value: string; label: string }[] = [
-  { value: "na1",  label: "North America" },
-  { value: "euw1", label: "Europe West" },
-  { value: "eun1", label: "Europe Nordic & East" },
-  { value: "kr",   label: "Korea" },
-  { value: "br1",  label: "Brazil" },
-  { value: "la1",  label: "Latin America North" },
-  { value: "la2",  label: "Latin America South" },
-  { value: "jp1",  label: "Japan" },
-  { value: "tr1",  label: "Turkey" },
-  { value: "ru",   label: "Russia" },
-  { value: "oc1",  label: "Oceania" },
-  { value: "ph2",  label: "Philippines" },
-  { value: "sg2",  label: "Singapore" },
-  { value: "th2",  label: "Thailand" },
-  { value: "tw2",  label: "Taiwan" },
-  { value: "vn2",  label: "Vietnam" },
-];
 
 const TRIAL_MATCH_TYPES = [
   {
@@ -89,6 +72,7 @@ export function CreateTournamentWizard({ games, vaultItems = [] }: Props) {
   const [rules, setRules] = useState("");
   const [prizes, setPrizes] = useState("");
   const [prizeRows, setPrizeRows] = useState<PrizeRow[]>([]);
+  const [xpRows, setXpRows] = useState<XpRow[]>([]);
   const [prizeItemIds, setPrizeItemIds] = useState<Set<string>>(new Set());
   // Puesto que gana cada premio; sin entrada = premio sin posicion concreta.
   const [prizePlacements, setPrizePlacements] = useState<Record<string, number>>({});
@@ -96,10 +80,9 @@ export function CreateTournamentWizard({ games, vaultItems = [] }: Props) {
   // Step 3 — Settings
   const [seriesFormat, setSeriesFormat] = useState("bo1");
   const [map, setMap] = useState("");
-  const [region, setRegion] = useState("");
+  const [region, setRegion] = useState<string>(GLOBAL_REGION);
   const [playerLimitType, setPlayerLimitType] = useState("limited");
   const [maxParticipants, setMaxParticipants] = useState("16");
-  const [rewardPoints, setRewardPoints] = useState("100");
 
   // Summoner Trials
   const [teamSize, setTeamSize] = useState<1 | 2 | 5>(1);
@@ -107,7 +90,6 @@ export function CreateTournamentWizard({ games, vaultItems = [] }: Props) {
   const [trialMatchType, setTrialMatchType] = useState<"solo" | "duo" | "flex" | "draft">("solo");
   const [matchesToTrack, setMatchesToTrack] = useState("10");
   const [trialEndDate, setTrialEndDate] = useState("");
-  const [rewardDistribution, setRewardDistribution] = useState("100,75,50,25,10");
 
   const selectedGame = useMemo(() => games.find((g) => g.name === gameName), [games, gameName]);
   const isLoL = gameName === "League of Legends";
@@ -146,8 +128,8 @@ export function CreateTournamentWizard({ games, vaultItems = [] }: Props) {
     formData.set("map", isLoL ? map : "");
     formData.set("banner_url", bannerUrl);
     formData.set("contact_method", contactLink ? `${contactMethod}: ${contactLink}` : contactMethod);
-    formData.set("reward_points", rewardPoints);
     formData.set("prize_table", JSON.stringify(parsePrizeTable(prizeRows)));
+    formData.set("xp_table", JSON.stringify(parseXpTable(xpRows)));
     if (prizeItemIds.size) {
       formData.set("prize_item_ids", JSON.stringify(
         [...prizeItemIds].map((asset_id) => ({ asset_id, placement: prizePlacements[asset_id] ?? null }))
@@ -162,7 +144,6 @@ export function CreateTournamentWizard({ games, vaultItems = [] }: Props) {
         matches_to_track: parseInt(matchesToTrack) || 10,
         ...(trialEndDate ? { end_date: trialEndDate } : {}),
         match_type: trialMatchType,
-        point_distribution: rewardDistribution.split(",").map(n => parseInt(n.trim())).filter(n => !isNaN(n)),
       }));
     }
 
@@ -369,17 +350,15 @@ export function CreateTournamentWizard({ games, vaultItems = [] }: Props) {
 
         {/* Premios del vault. No se limita a Dota: los objetos son de ese
             juego, pero cualquier torneo puede repartirlos. */}
-        {/* Premios por puesto. Rangos porque segun el formato hay
-            posiciones que empatan: 3o-4o los semifinalistas, 5o-8o cuartos. */}
-        <div className="rounded-xl border border-gray-800 bg-[#0b0e14] p-4">
-          <label className="mb-1 block text-[9px] font-bold uppercase tracking-[0.2em] text-gray-500">
-            🏆 Premios por puesto
-          </label>
-          <p className="mb-3 text-[10px] text-gray-600">
-            Texto libre: dinero, RP, objetos, lo que sea. Solo se muestra.
-          </p>
-          <PrizeTableEditor rows={prizeRows} onChange={setPrizeRows} />
-        </div>
+        {/* Premios por puesto: Prize Pool (texto libre) y XP Prizes (numérico)
+            en la misma ventana, porque son la misma mecánica de puesto/rango
+            aplicada a dos tipos de premio distintos. */}
+        <PrizesEditor
+          prizeRows={prizeRows}
+          onPrizeRowsChange={setPrizeRows}
+          xpRows={xpRows}
+          onXpRowsChange={setXpRows}
+        />
 
         {vaultItems.length > 0 && (
           <div className="rounded-xl border border-gray-800 bg-[#0b0e14] p-4">
@@ -429,8 +408,7 @@ export function CreateTournamentWizard({ games, vaultItems = [] }: Props) {
                 onChange={(e) => setRegion(e.target.value)}
                 className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm font-bold text-gray-200 outline-hidden transition-colors focus:border-[var(--color-accent)]"
               >
-                <option value="">Select region…</option>
-                {RIOT_REGIONS.map((r) => (
+                {RIOT_REGIONS_WITH_GLOBAL.map((r) => (
                   <option key={r.value} value={r.value}>{r.label}</option>
                 ))}
               </select>
@@ -490,14 +468,6 @@ export function CreateTournamentWizard({ games, vaultItems = [] }: Props) {
                 max={128}
               />
             )}
-
-            <Input
-              label="Reward Points"
-              type="number"
-              value={rewardPoints}
-              onChange={(e) => setRewardPoints(e.target.value)}
-              min={0}
-            />
           </div>
 
           {/* Summoner Trials config */}
@@ -533,14 +503,8 @@ export function CreateTournamentWizard({ games, vaultItems = [] }: Props) {
             {/* Los pesos de puntuación no se configuran por torneo: están
                 calibrados contra partidas reales y viven en SCORING_WEIGHTS
                 (src/core/lib/role-score.ts). Dejar que cada organizador los
-                retocara rompería la comparación entre eventos. */}
-
-            <Input
-              label="Point Distribution (comma-separated, 1st→2nd→3rd…)"
-              value={rewardDistribution}
-              onChange={(e) => setRewardDistribution(e.target.value)}
-              placeholder="100,75,50,25,10"
-            />
+                retocara rompería la comparación entre eventos. La XP por
+                puesto se define en el paso 2, pestaña "XP Prizes". */}
           </div>
         </div>
       );
@@ -584,12 +548,20 @@ export function CreateTournamentWizard({ games, vaultItems = [] }: Props) {
 
           {/* Region — only for LoL */}
           {isLoL && (
-            <Input
-              label="Region"
-              value={region}
-              onChange={(e) => setRegion(e.target.value)}
-              placeholder="North America"
-            />
+            <div>
+              <label className="mb-1.5 block text-[9px] font-bold uppercase tracking-[0.2em] text-gray-500">
+                Region
+              </label>
+              <select
+                value={region}
+                onChange={(e) => setRegion(e.target.value)}
+                className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm font-bold text-gray-200 outline-hidden transition-colors focus:border-[var(--color-accent)]"
+              >
+                {RIOT_REGIONS_WITH_GLOBAL.map((r) => (
+                  <option key={r.value} value={r.value}>{r.label}</option>
+                ))}
+              </select>
+            </div>
           )}
         </div>
 
@@ -623,14 +595,6 @@ export function CreateTournamentWizard({ games, vaultItems = [] }: Props) {
               max={128}
             />
           )}
-
-          <Input
-            label="Reward Points"
-            type="number"
-            value={rewardPoints}
-            onChange={(e) => setRewardPoints(e.target.value)}
-            min={0}
-          />
         </div>
 
         {/* Team size — for LoL */}

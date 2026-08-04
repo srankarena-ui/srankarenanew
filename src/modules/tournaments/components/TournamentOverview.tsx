@@ -97,7 +97,6 @@ function DetailsTab({ tournament }: { tournament: Tournament }) {
         <QuickStat label={t("quickStatus")} value={tournament.status.toUpperCase()} />
         <QuickStat label={t("quickFormat")} value={getOverviewFormatLabel(tournament)} />
         <QuickStat label={t("quickMaxPlayers")} value={String(tournament.max_participants)} />
-        <QuickStat label={t("quickExpReward")} value={tournament.reward_points > 0 ? `+${tournament.reward_points}` : "—"} />
       </div>
     </div>
   );
@@ -183,16 +182,6 @@ function PrizesTab({ tournament, prizeItems }: { tournament: Tournament; prizeIt
         <p className="text-sm text-gray-600 italic">{t("noPrizeInfo")}</p>
       ) : null}
 
-      {tournament.reward_points > 0 && (
-        <div className="mt-6 rounded-xl border border-purple-800/30 bg-purple-900/10 p-4">
-          <p className="text-[10px] text-[var(--color-accent)]">
-            {t("arenaReward")}
-          </p>
-          <p className="mt-1 text-2xl text-purple-300">
-            +{tournament.reward_points} EXP
-          </p>
-        </div>
-      )}
     </div>
   );
 }

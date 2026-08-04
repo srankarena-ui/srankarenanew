@@ -7,6 +7,7 @@ import type { Database } from "@/core/types/database";
 import type { FooterConfig } from "@/core/types/footer";
 import { DEFAULT_FOOTER_CONFIG } from "@/core/config/footer-defaults";
 import { parsePrizeTable } from "@/core/lib/prize-table";
+import { parseXpTable } from "@/core/lib/xp-table";
 import type { AboutConfig, ProductionConfig, ContactConfig, PastEventsConfig, FeaturedEventsConfig, HelpConfig, VerificationConfig } from "@/core/types/site-content";
 
 // Confirms the current session belongs to an admin. Server actions can be
@@ -43,12 +44,14 @@ export async function createTournament(formData: FormData) {
     map: (raw.map as string) || null,
     banner_url: (raw.banner_url as string) || null,
     contact_method: (raw.contact_method as string) || null,
-    reward_points: Number(raw.reward_points) || 0,
     // Se revalida en servidor: el formulario ya limpia, pero una acción puede
     // llamarse directamente con lo que sea.
     prize_table: (raw.prize_table
       ? parsePrizeTable(JSON.parse(raw.prize_table as string))
       : []) as unknown as Database["public"]["Tables"]["tournaments"]["Insert"]["prize_table"],
+    xp_table: (raw.xp_table
+      ? parseXpTable(JSON.parse(raw.xp_table as string))
+      : []) as unknown as Database["public"]["Tables"]["tournaments"]["Insert"]["xp_table"],
     tournament_format: (raw.tournament_format as string) || "single_elimination",
     team_size: Number(raw.team_size) || 1,
     ...(raw.trials_config

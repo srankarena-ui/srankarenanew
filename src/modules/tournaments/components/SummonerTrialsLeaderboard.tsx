@@ -6,6 +6,8 @@ import { useTranslations } from "next-intl";
 import { useToast } from "@/core/ui/Toast";
 import type { TrialsEnrollmentWithProfile, TrialsConfig } from "@/core/types";
 import { SCORING_WEIGHTS } from "@/core/lib/role-score";
+import { placementLabel, medalFor } from "@/core/lib/prize-table";
+import type { XpRow } from "@/core/lib/xp-table";
 
 interface StatsSnapshot {
   avg_kda: number;
@@ -38,6 +40,7 @@ interface Props {
   tournamentId: string;
   enrollments: TrialsEnrollmentWithProfile[];
   config: TrialsConfig;
+  xpTable: XpRow[];
   isAdmin: boolean;
   currentUserId: string | null;
 }
@@ -52,6 +55,7 @@ export function SummonerTrialsLeaderboard({
   tournamentId,
   enrollments,
   config,
+  xpTable,
   isAdmin,
   currentUserId,
 }: Props) {
@@ -94,13 +98,13 @@ export function SummonerTrialsLeaderboard({
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Point distribution badge */}
-          {config.point_distribution.length > 0 && (
+          {/* XP por puesto — respeta rangos (3º-4º), no asume posiciones sueltas. */}
+          {xpTable.length > 0 && (
             <div className="flex items-center gap-1 rounded-lg border border-purple-800/40 bg-purple-900/20 px-3 py-1.5">
               <span className="text-[9px] font-bold text-[var(--color-accent)] mr-1">{t("rewards")}</span>
-              {config.point_distribution.slice(0, 5).map((pts, i) => (
-                <span key={i} className="text-[10px] font-bold text-white px-1">
-                  {MEDAL[i + 1] ?? `#${i + 1}`} {pts}
+              {xpTable.slice(0, 5).map((row) => (
+                <span key={`${row.from}-${row.to}`} className="text-[10px] font-bold text-white px-1">
+                  {medalFor(row) ?? placementLabel(row)} {row.xp}
                 </span>
               ))}
               <span className="text-[9px] text-gray-500 ml-1">EXP</span>

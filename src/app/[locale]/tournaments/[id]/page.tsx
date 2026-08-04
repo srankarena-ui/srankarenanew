@@ -149,6 +149,7 @@ export default async function TournamentDetailPage({
         teamRegistrationCount={teamRegistrationCount}
         prizeItems={prizeItems || []}
         hasRiotAccount={!!userProfile?.riot_puuid}
+        userRegion={userProfile?.lol_region ?? null}
         profileHref={
           userProfile
             ? `/${locale}/profile/${encodeURIComponent(formatProfileSlug(userProfile.username, userProfile.discriminator))}`
