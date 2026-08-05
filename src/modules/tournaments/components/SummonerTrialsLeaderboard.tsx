@@ -19,6 +19,9 @@ interface StatsSnapshot {
   // Desglose de la puntuación por rol. Opcionales: las inscripciones
   // sincronizadas antes del cambio de fórmula no los tienen.
   role?: string;
+  rank_tier?: string | null;
+  rank_division?: string | null;
+  rank_lp?: number | null;
   avg_performance?: number;
   performance_points?: number;
   participation_points?: number;
@@ -29,9 +32,46 @@ interface StatsSnapshot {
   deficit_penalty?: number;
 }
 
-const ROLE_ES: Record<string, string> = {
-  TOP: "Superior", JUNGLE: "Jungla", MIDDLE: "Central", BOTTOM: "Tirador", UTILITY: "Soporte",
+const TIER_ES: Record<string, string> = {
+  IRON: "Hierro", BRONZE: "Bronce", SILVER: "Plata", GOLD: "Oro", PLATINUM: "Platino",
+  EMERALD: "Esmeralda", DIAMOND: "Diamante", MASTER: "Maestro",
+  GRANDMASTER: "Gran maestro", CHALLENGER: "Retador",
 };
+
+/** Maestro y por encima son ligas únicas: Riot manda "I" pero no se muestra. */
+const APEX_TIERS = new Set(["MASTER", "GRANDMASTER", "CHALLENGER"]);
+
+/**
+ * Emblema del rango. Data Dragon no sirve los emblemas de liga — solo iconos de
+ * invocador y campeones —, así que salen de CommunityDragon, que los extrae del
+ * cliente. `latest` sigue el parche vivo sin que haya que fijar versión.
+ */
+function rankCrest(tier: string): string {
+  return `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${tier.toLowerCase()}.svg`;
+}
+
+function RankCell({ snap }: { snap: StatsSnapshot | null }) {
+  const tier = snap?.rank_tier;
+  if (!tier) {
+    return <span className="text-[10px] text-gray-600">Sin clasificar</span>;
+  }
+  const division = APEX_TIERS.has(tier) ? "" : (snap?.rank_division ?? "");
+  return (
+    <div className="flex items-center gap-2">
+      {/* ponytail: emblema del CDN, sin next/image ni dominio que configurar */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={rankCrest(tier)} alt="" className="h-6 w-6 shrink-0" loading="lazy" />
+      <div className="leading-tight">
+        <p className="text-[11px] font-bold text-white">
+          {TIER_ES[tier] ?? tier} {division}
+        </p>
+        {snap?.rank_lp != null && (
+          <p className="text-[9px] text-gray-600">{snap.rank_lp} LP</p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 interface Props {
   tournamentId: string;
@@ -118,7 +158,7 @@ export function SummonerTrialsLeaderboard({
               <tr className="bg-[#0d1017] text-[9px] font-bold uppercase tracking-[0.2em] text-gray-500">
                 <th className="px-4 py-3 text-left w-10">#</th>
                 <th className="px-4 py-3 text-left">{t("playerColumn")}</th>
-                <th className="px-4 py-3 text-left">Rol</th>
+                <th className="px-4 py-3 text-left">Rango</th>
                 <th className="px-4 py-3 text-right">{t("score")}</th>
                 <th className="px-4 py-3 text-right">Rendim.</th>
                 <th className="px-4 py-3 text-right">Retos</th>
@@ -176,12 +216,11 @@ export function SummonerTrialsLeaderboard({
                       </div>
                     </td>
 
-                    {/* Rol: la puntuación se calcula comparando contra este rol,
-                        así que sin verlo el número no se puede interpretar. */}
+                    {/* Rango de solo/dúo. Antes iba el rol, pero en diez
+                        partidas alguien puede jugar tres posiciones y el dato
+                        no dice nada; el rango sí sitúa al jugador. */}
                     <td className="px-4 py-3">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                        {snap?.role ? ROLE_ES[snap.role] ?? snap.role : "—"}
-                      </span>
+                      <RankCell snap={snap} />
                     </td>
 
                     {/* Score */}

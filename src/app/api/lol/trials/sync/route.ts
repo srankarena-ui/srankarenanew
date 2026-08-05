@@ -190,6 +190,39 @@ function mostPlayedRole(all: MatchStats[]): string {
   return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "";
 }
 
+/**
+ * Rango de solo/dúo del jugador. Se guarda en el snapshot en vez del rol: en
+ * unas pocas partidas alguien puede jugar tres posiciones distintas y "su rol"
+ * no significa nada, mientras que el rango sí sitúa al jugador.
+ *
+ * Solo se pide cuando el jugador tiene partidas nuevas — que es justo cuando su
+ * rango puede haber cambiado, así que un sync en vacío no cuesta peticiones.
+ */
+async function fetchRank(
+  region: string,
+  puuid: string,
+  apiKey: string
+): Promise<{ tier: string; division: string; lp: number } | null> {
+  try {
+    const res = await fetch(
+      `https://${region}.api.riotgames.com/lol/league/v4/entries/by-puuid/${puuid}`,
+      { headers: { "X-Riot-Token": apiKey } }
+    );
+    if (!res.ok) return null;
+    const entries = (await res.json()) as Array<Record<string, unknown>>;
+    const solo = entries.find((e) => e.queueType === "RANKED_SOLO_5x5");
+    if (!solo?.tier) return null;
+    return {
+      tier: String(solo.tier),
+      // Maestro y por encima no tienen división; Riot manda "I" igualmente.
+      division: String(solo.rank ?? ""),
+      lp: Number(solo.leaguePoints ?? 0),
+    };
+  } catch {
+    return null; // El rango es decorativo: si falla, la fila se pinta igual.
+  }
+}
+
 /** Cuántas veces ha conseguido cada reto en todo el torneo. */
 function countFeats(all: MatchStats[]): Array<{ name: string; count: number; points: number }> {
   const acc = new Map<string, { name: string; count: number; points: number }>();
@@ -360,6 +393,8 @@ export async function POST(request: NextRequest) {
         const avg = (fn: (s: MatchStats) => number) =>
           n > 0 ? parseFloat((allStats.reduce((a, s) => a + fn(s), 0) / n).toFixed(2)) : 0;
 
+        const rank = await fetchRank(enrollment.region, enrollment.puuid, apiKey);
+
         const statsSnapshot = {
           avg_kda: avg((s) => s.kda),
           avg_kill_participation: avg((s) => s.killParticipation),
@@ -376,6 +411,9 @@ export async function POST(request: NextRequest) {
           // Desglose de la puntuación nueva, para poder explicarla en la tabla
           // sin recalcular nada al pintarla.
           role: mostPlayedRole(allStats),
+          rank_tier: rank?.tier ?? null,
+          rank_division: rank?.division ?? null,
+          rank_lp: rank?.lp ?? null,
           avg_performance: avg((s) => s.performance ?? 0),
           feat_points: allStats.reduce((a, s) => a + (s.points?.feats ?? 0), 0),
           participation_points: allStats.reduce((a, s) => a + (s.points?.participation ?? 0), 0),

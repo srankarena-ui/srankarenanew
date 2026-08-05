@@ -52,7 +52,9 @@ export const FEATS: Feat[] = [
 
   // ── Firma de rol: 5 puntos fijos, iguales en los cinco ────────────────────
   { key: "teleportTakedowns", name: "Llegada oportuna", how: "Participar en una muerte justo después de aparecer con Teleport.", scope: "TOP", points: 5, rate: 5.23 },
-  { key: "tookLargeDamageSurvived", name: "Muro de carne", how: "Encajar un golpe enorme —buena parte de tu vida máxima— y sobrevivir.", scope: "TOP", points: 5, rate: 5.39 },
+  // El umbral de "mucho daño" no lo publica Riot; sabemos que salta en el 5,4%
+  // de las actuaciones y que premia a los campeones que aguantan.
+  { key: "tookLargeDamageSurvived", name: "Muro de carne", how: "Entrar a la pelea, comerte encima todo el combo del rival y salir vivo. Aguantar una ráfaga brutal de daño en pocos segundos sin morir.", scope: "TOP", points: 5, rate: 5.39 },
   { key: "quickSoloKills", name: "Multikill relámpago", how: "Matar a un enemigo tú solo, sin ayuda de nadie, en cuestión de segundos.", scope: "JUNGLE", points: 5, rate: 5.52 },
   { key: "riftHeraldTakedowns", name: "Heraldo", how: "Estar presente en la muerte del Heraldo de la Grieta.", scope: "JUNGLE", points: 5, rate: 18.57 },
   { key: "multiKillOneSpell", name: "Multikill de un golpe", how: "Matar a dos o más enemigos con un solo hechizo.", scope: "MIDDLE", points: 5, rate: 5.10 },

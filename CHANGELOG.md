@@ -2,6 +2,14 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-08-04 — El rango de liga sustituye al rol en la clasificación
+
+En diez partidas un jugador puede pasar por tres posiciones, así que "su rol" no concluía nada. La columna pasa a ser el rango de solo/dúo con emblema, división y LP. El sync pide `league/v4/entries/by-puuid` **solo cuando el jugador tiene partidas nuevas** — que es justo cuando su rango puede haber cambiado, así que un sync en vacío no gasta peticiones — y lo guarda en `stats_snapshot` (jsonb, sin migración). Si la llamada falla, `fetchRank` devuelve `null` y la fila se pinta como "Sin clasificar".
+
+Los emblemas salen de **CommunityDragon**, no de Data Dragon: DDragon solo sirve campeones e iconos de invocador, no emblemas de liga. Formato `.svg` porque el `.png` de Esmeralda no existe (los otros diez sí). El rol se sigue guardando en el snapshot: es contra lo que se compara el rendimiento.
+
+Archivos: `api/lol/trials/sync/route.ts`, `SummonerTrialsLeaderboard.tsx`.
+
 ## 2026-08-04 — La tarjeta de premios pasa a tener pestañas
 
 **Premios / Premios EXP / Puntos en un solo cuadro.** El catálogo de retos estaba en un desplegable al final de la clasificación, donde nadie llegaba a leerlo, y la XP por puesto se repetía en una insignia del encabezado de la tabla. Ahora los tres viven en la tarjeta lateral con pestañas: `TournamentRewardsPanel` (nuevo, `src/modules/tournaments/components/`). Las pestañas se muestran solo si tienen contenido — con una sola, la tarjeta se ve igual que antes, con su título y sin pestañas.
