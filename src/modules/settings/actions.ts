@@ -168,6 +168,25 @@ async function ensureCRAccountAvailable(userId: string, tag: string) {
   return {};
 }
 
+// Solo-lectura: confirma que el Riot ID existe y muestra su icono real antes
+// de que el jugador le dé a verificar/vincular. No crea reto ni escribe nada.
+export async function previewRiotAccount(gameName: string, tagline: string, region: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const lookup = await fetchRiotIdentity(gameName, tagline, region);
+  if (lookup.error || !lookup.data) return { error: lookup.error ?? "Verification failed" };
+
+  return {
+    data: {
+      gameName: lookup.data.gameName,
+      tagLine: lookup.data.tagLine,
+      profileIconId: lookup.data.profileIconId,
+    },
+  };
+}
+
 export async function startRiotIconVerification(gameName: string, tagline: string, region: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

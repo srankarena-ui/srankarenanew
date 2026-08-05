@@ -4,6 +4,18 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { getRiotRegionTranslationKey } from "@/core/lib/riot-regions";
+
+// "PlayerName#TAG" pegado tal cual del cliente o de un buscador como op.gg.
+// Se parte por el ÚLTIMO "#" porque el nombre no puede contenerlo (regla de
+// Riot), así que cualquier "#" de más es parte del nombre, no un separador.
+function parseRiotId(input: string): { gameName: string; tagline: string } | null {
+  const hashIndex = input.lastIndexOf("#");
+  if (hashIndex === -1) return null;
+  const gameName = input.slice(0, hashIndex).trim();
+  const tagline = input.slice(hashIndex + 1).trim();
+  if (!gameName || !tagline) return null;
+  return { gameName, tagline };
+}
 import { getRiotVerificationTargetIconId } from "@/core/lib/riot-verification";
 import { ACTIVE_GAMES } from "@/core/config/games";
 import { Card } from "@/core/ui/Card";
@@ -12,6 +24,7 @@ import { Input } from "@/core/ui/Input";
 import { Badge } from "@/core/ui/Badge";
 import { useToast } from "@/core/ui/Toast";
 import {
+  previewRiotAccount,
   startRiotIconVerification,
   completeRiotIconVerification,
   cancelRiotIconVerification,
@@ -106,10 +119,44 @@ export function SettingsView({ profile, riotVerificationChallenge, verificationC
     : null;
 
   // Riot state
-  const [gameName, setGameName] = useState("");
-  const [tagline, setTagline] = useState("");
+  const [riotIdInput, setRiotIdInput] = useState("");
   const [region, setRegion] = useState("na1");
   const [riotLoading, setRiotLoading] = useState(false);
+  const parsedRiotId = parseRiotId(riotIdInput);
+
+  // Confirmación en vivo: no es autocompletado (Riot no lo permite, exige
+  // Nombre#TAG exacto) — en cuanto el Riot ID queda completo, se busca sola
+  // y se muestra el icono real para confirmar que es la cuenta correcta
+  // antes de darle a verificar.
+  const [preview, setPreview] = useState<{ gameName: string; tagLine: string; profileIconId: number } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  // Mensaje real de la API, no un booleano genérico: "cuenta no encontrada"
+  // y "la API falló" (clave inválida, red, etc.) son cosas muy distintas y
+  // colapsarlas en un solo "no encontrado" llevó a un diagnóstico falso.
+  const [previewError, setPreviewError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPreview(null);
+    setPreviewError(null);
+    if (!parsedRiotId) return;
+
+    setPreviewLoading(true);
+    const timer = setTimeout(async () => {
+      const result = await previewRiotAccount(parsedRiotId.gameName, parsedRiotId.tagline, region);
+      if ("data" in result && result.data) {
+        setPreview(result.data);
+      } else {
+        setPreviewError(("error" in result && result.error) || t("riotIdNotFound"));
+      }
+      setPreviewLoading(false);
+    }, 500);
+
+    return () => {
+      clearTimeout(timer);
+      setPreviewLoading(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [parsedRiotId?.gameName, parsedRiotId?.tagline, region]);
 
   // CR state
   const [crTag, setCrTag] = useState("");
@@ -128,10 +175,11 @@ export function SettingsView({ profile, riotVerificationChallenge, verificationC
   const [discordLoading, setDiscordLoading] = useState(false);
 
   async function handleStartRiotVerification() {
+    if (!parsedRiotId) return;
     setRiotLoading(true);
     const result = requireRiotVerification
-      ? await startRiotIconVerification(gameName, tagline, region)
-      : await linkRiotAccountDirect(gameName, tagline, region);
+      ? await startRiotIconVerification(parsedRiotId.gameName, parsedRiotId.tagline, region)
+      : await linkRiotAccountDirect(parsedRiotId.gameName, parsedRiotId.tagline, region);
     if ("error" in result && result.error) {
       toast(result.error, "error");
     } else {
@@ -322,37 +370,56 @@ export function SettingsView({ profile, riotVerificationChallenge, verificationC
                 {t("riotVerificationDisabledNotice")}
               </div>
             )}
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                value={gameName}
-                onChange={(e) => setGameName(e.target.value)}
-                label={t("gameName")}
-                placeholder="PlayerName"
-              />
-              <Input
-                value={tagline}
-                onChange={(e) => setTagline(e.target.value)}
-                label={t("tagline")}
-                placeholder="NA1"
-              />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-[9px] font-bold uppercase tracking-[0.2em] text-gray-500">
-                {t("region")}
-              </label>
+            {/* Una sola barra: región pegada a la izquierda, Riot ID a la
+                derecha. No es autocompletado — Riot no lo permite — pero en
+                cuanto el Riot ID queda completo se confirma solo con el
+                icono real, sin tener que darle a Verificar primero. */}
+            <div className="flex overflow-hidden rounded-xl border border-gray-800 bg-[#0b0e14] focus-within:border-[var(--color-accent)]">
               <select
                 value={region}
                 onChange={(e) => setRegion(e.target.value)}
-                className="w-full rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-3 text-sm text-gray-200 outline-hidden focus:border-[var(--color-accent)]"
+                className="shrink-0 border-r border-gray-800 bg-transparent px-3 py-3 text-sm text-gray-200 outline-hidden"
               >
                 {LOL_REGIONS.map((regionCode) => (
-                  <option key={regionCode} value={regionCode}>
+                  <option key={regionCode} value={regionCode} className="bg-[#0b0e14]">
                     {t(`region_${regionCode}` as Parameters<typeof t>[0])}
                   </option>
                 ))}
               </select>
+              <input
+                value={riotIdInput}
+                onChange={(e) => setRiotIdInput(e.target.value)}
+                placeholder="PlayerName#TAG"
+                aria-label={t("riotId")}
+                className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-gray-200 outline-hidden placeholder:text-gray-600"
+              />
             </div>
-            <Button onClick={handleStartRiotVerification} isLoading={riotLoading} disabled={!gameName || !tagline}>
+
+            {riotIdInput && !parsedRiotId && (
+              <p className="text-[10px] text-red-400">{t("riotIdMissingTag")}</p>
+            )}
+
+            {previewLoading && (
+              <p className="text-[10px] text-gray-500">{t("riotIdSearching")}</p>
+            )}
+            {!previewLoading && previewError && (
+              <p className="text-[10px] text-red-400">{previewError}</p>
+            )}
+            {!previewLoading && preview && (
+              <div className="flex items-center gap-3 rounded-xl border border-green-700/30 bg-green-900/10 px-4 py-3">
+                <img
+                  src={getProfileIconUrl(preview.profileIconId)}
+                  alt=""
+                  className="h-10 w-10 rounded-lg border border-gray-800"
+                />
+                <p className="text-sm text-white">
+                  {preview.gameName}
+                  <span className="text-gray-500">#{preview.tagLine}</span>
+                </p>
+              </div>
+            )}
+
+            <Button onClick={handleStartRiotVerification} isLoading={riotLoading} disabled={!preview}>
               {requireRiotVerification ? t("startVerification") : t("link")}
             </Button>
           </div>

@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useToast } from "@/core/ui/Toast";
 import type { TrialsEnrollmentWithProfile, TrialsConfig } from "@/core/types";
 import { SCORING_WEIGHTS } from "@/core/lib/role-score";
+import { FEATS } from "@/core/lib/tournament-feats";
 import { placementLabel, medalFor } from "@/core/lib/prize-table";
 import type { XpRow } from "@/core/lib/xp-table";
 
@@ -335,6 +336,14 @@ function ScoringWeightsInfo({ config }: { config: TrialsConfig }) {
     },
   ];
 
+  // Catálogo de retos: qué da puntos en general, no lo que ganó un jugador en
+  // una partida concreta. Los de equipo/individual son iguales para los cinco
+  // roles; los de firma solo aplican al rol indicado.
+  const sharedFeats = [...FEATS]
+    .filter((f) => f.scope === "equipo" || f.scope === "individual")
+    .sort((a, b) => b.points - a.points);
+  const roleFeats = FEATS.filter((f) => f.scope !== "equipo" && f.scope !== "individual");
+
   return (
     <div className="rounded-xl border border-gray-800/60 bg-[#121620]">
       <button
@@ -358,6 +367,34 @@ function ScoringWeightsInfo({ config }: { config: TrialsConfig }) {
               </div>
             ))}
           </div>
+
+          {/* Catálogo de retos: de dónde salen los puntos, no lo que ganó
+              nadie en una partida puntual. */}
+          <p className="mt-5 mb-2 text-[9px] font-bold uppercase tracking-wider text-gray-500">
+            Retos comunes (los cinco roles)
+          </p>
+          <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
+            {sharedFeats.map((f) => (
+              <li key={f.key} className="flex items-center justify-between rounded-lg bg-[#0b0e14] px-2.5 py-1.5 text-[10px]">
+                <span className="text-gray-300">{f.name}</span>
+                <span className="ml-2 shrink-0 font-mono text-[var(--color-accent)]">+{f.points}</span>
+              </li>
+            ))}
+          </ul>
+
+          <p className="mt-4 mb-2 text-[9px] font-bold uppercase tracking-wider text-gray-500">
+            Retos de firma por rol (+5 cada uno)
+          </p>
+          <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+            {roleFeats.map((f) => (
+              <li key={f.key} className="flex items-center justify-between rounded-lg bg-[#0b0e14] px-2.5 py-1.5 text-[10px]">
+                <span className="text-gray-300">
+                  <span className="text-gray-500">{ROLE_ES[f.scope] ?? f.scope}</span> — {f.name}
+                </span>
+                <span className="ml-2 shrink-0 font-mono text-[var(--color-accent)]">+{f.points}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>

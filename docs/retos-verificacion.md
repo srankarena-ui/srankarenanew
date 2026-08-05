@@ -209,6 +209,64 @@ métricas, **47 son comunes** (varias por partida: no sirven como logro) y solo
 central, robar buffs 77% jungla, misión de soporte 100%). Conviene agruparlas
 por rol en el perfil, o la mayoría las verá siempre en gris.
 
+## Catálogo de retos entre participantes (analizados, sin implementar)
+
+Estos son los que un jugador le lanza a otro, distintos de los 20 automáticos de
+torneo. **Ninguno está construido todavía**: en código solo existe el evaluador
+genérico con tres condiciones (`champion_mastery`, `role_played`, `queue_played`
+y su composición `and`/`or`) en `src/core/lib/challenge-conditions.ts`.
+
+La columna «vía» dice qué hace falta para comprobarlo: **API** = solo match-v5,
+funciona para cualquiera; **historial** = API más el pasado del jugador, para
+saber qué es lo «habitual» en él; **cliente** = requiere el cliente de escritorio
+leyendo su PC.
+
+### Los nueve de la competencia
+
+| Reto | Vía | Notas |
+|---|---|---|
+| Sin Flash | API | El mejor de la lista: trivial de comprobar, imposible de falsear y molesta de verdad |
+| Sin botas | API | Compras en la cronología. Cuidado con los IDs duplicados de Arena (223xxx) y otros modos (77xxxx) |
+| Campeón aleatorio | API | Sortear **solo entre campeones con maestría > 0**, o se puede asignar uno que no posee y el reto es imposible |
+| Sin objetos completos hasta el min 15 | API | Definir «completo» con el árbol de construcción de Data Dragon. Decidir si las botas cuentan |
+| Sin tus tres campeones más jugados | historial | Top 3 por puntos de maestría: una petición, cacheable. Congelar al asignar |
+| Autofill | historial | **El autofill real no se puede detectar**: la API nunca ve qué roles pidió en la cola. La versión honesta es «juega fuera de tu rol habitual» |
+| Hechizos cambiados | cliente | Diseño anti-trampas completo más abajo. Necesita línea base recogida cuando no había reto |
+| Sensibilidad ×2 | cliente | Mismo patrón que el anterior, leyendo la configuración del ratón |
+| Runas predeterminadas | — | **Descartado**: no hay endpoint público que dé la página recomendada, así que no hay contra qué comparar. La alternativa verificable es imponer una piedra angular concreta |
+
+### Propuestos, todos vía API
+
+**De compra** (cronología de match-v5): sin guardianes de control en toda la
+partida · sin pociones ni consumibles · ningún objeto que cueste más de 1600 de
+oro · vender el primer legendario antes del minuto 20 · terminar con más de 2000
+de oro sin gastar.
+
+**De hechizos y habilidades**: sin Prender · usar el ultimate como mucho 3 veces
+· usar el hechizo de invocador secundario al menos 6 veces · jugar con una
+piedra angular impuesta.
+
+**De campeón** (cruzando con maestría): jugar uno con menos de 5000 puntos ·
+jugar uno que no haya tocado en sus últimas 20 partidas.
+
+**Y uno aparte**: no usar ni un solo ping en toda la partida. La API cuenta los
+trece tipos por separado, así que se verifica sumando y comprobando que da cero.
+Incomoda de una forma distinta a las demás y no perjudica mecánicamente a nadie.
+
+### Avisos de diseño
+
+**Evitar los de «solo en vivo» para retos sorteados.** Si el objetivo no tiene
+el cliente abierto no se le puede verificar, y eso se percibe como injusto o se
+explota cerrándolo. Los de vía **API** funcionan siempre.
+
+**«Sin objetos completos hasta el min 15» es el más agresivo de la lista.** En un
+torneo con premios, a quien le toque está condenando a cuatro compañeros.
+Reservarlo para amistosos o compensarlo en puntos.
+
+**Cuidado con los que rompen un rol.** «Sin Aplastar» para un jungla no es un
+reto, es no poder jugar. Conviene marcar cada reto con los roles a los que se le
+puede asignar, o el sorteo aleatorio saldrá injusto.
+
 ## Datos que NO se pueden obtener
 
 - **Aspectos o campeones que posee una cuenta.** No hay endpoint público. La LCU
