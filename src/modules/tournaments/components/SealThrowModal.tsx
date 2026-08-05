@@ -44,31 +44,37 @@ export function SealThrowModal({
     if (lanzado.current) return;
     lanzado.current = true;
 
-    let cancelled = false;
     const started = Date.now();
 
+    // Sin bandera de cancelación a propósito. La había, y el desmontaje falso
+    // de React la ponía a true antes de que llegara la respuesta: la petición
+    // sí salía, pero el resultado se descartaba y la ruleta giraba para
+    // siempre. Escribir estado tras desmontar es inocuo en React 18, y aquí el
+    // modal solo se desmonta al cerrarlo.
     fetch("/api/seals/throw", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tournamentId, targetUserId: target.userId }),
     })
       .then(async (res) => {
-        const body = await res.json();
-        if (cancelled) return;
+        const body = await res.json().catch(() => ({}));
         // Giro mínimo de 1,2 s aunque el servidor conteste al instante: sin él
         // la ruleta parpadea y no se ve.
         const espera = Math.max(0, 1200 - (Date.now() - started));
         setTimeout(() => {
-          if (cancelled) return;
           setGirando(false);
           if (!res.ok) setError(body.error ?? "No se pudo lanzar el sello");
           else { setFinal(body.castigo); onDone(); }
         }, espera);
       })
-      .catch(() => { if (!cancelled) { setGirando(false); setError("Fallo de red"); } });
-
-    return () => { cancelled = true; };
-  }, [tournamentId, target.userId, onDone]);
+      .catch(() => {
+        setGirando(false);
+        setError("Fallo de red");
+      });
+    // Solo debe correr al montar: el ref ya lo garantiza, y meter dependencias
+    // aquí no cambiaría nada salvo confundir.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div
