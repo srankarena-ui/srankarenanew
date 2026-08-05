@@ -112,6 +112,11 @@ export function SummonerTrialsLeaderboard({
       const data = await res.json() as { synced: number; errors?: string[]; error?: string };
       if (data.error) {
         toast(data.error, "error");
+      } else if (data.errors?.length) {
+        // El sync sigue adelante aunque falle una parte (p. ej. el rango). Sin
+        // esto, "no se ve el rango" no daba ninguna pista de por qué.
+        toast(`${data.synced} sincronizadas · ${data.errors[0]}`, "error");
+        router.refresh();
       } else {
         toast(t("syncedMatches", { count: data.synced }), "success");
         router.refresh();

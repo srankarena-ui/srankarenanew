@@ -198,28 +198,56 @@ function mostPlayedRole(all: MatchStats[]): string {
  * Solo se pide cuando el jugador tiene partidas nuevas — que es justo cuando su
  * rango puede haber cambiado, así que un sync en vacío no cuesta peticiones.
  */
+type RankInfo = { tier: string; division: string; lp: number } | null;
+
 async function fetchRank(
   region: string,
   puuid: string,
-  apiKey: string
-): Promise<{ tier: string; division: string; lp: number } | null> {
+  apiKey: string,
+  onError: (reason: string) => void
+): Promise<RankInfo> {
+  const get = async (url: string) => {
+    const res = await fetch(url, { headers: { "X-Riot-Token": apiKey } });
+    return res.ok ? await res.json() : { __status: res.status };
+  };
+
   try {
-    const res = await fetch(
-      `https://${region}.api.riotgames.com/lol/league/v4/entries/by-puuid/${puuid}`,
-      { headers: { "X-Riot-Token": apiKey } }
-    );
-    if (!res.ok) return null;
-    const entries = (await res.json()) as Array<Record<string, unknown>>;
-    const solo = entries.find((e) => e.queueType === "RANKED_SOLO_5x5");
-    if (!solo?.tier) return null;
+    const base = `https://${region}.api.riotgames.com`;
+
+    // by-puuid es lo nuevo y no todas las plataformas lo sirven todavía. Si
+    // falla se pasa por summoner-v4 para sacar el id y usar la ruta clásica —
+    // el mismo doble intento que lleva el overlay que ya funciona.
+    let entries = await get(`${base}/lol/league/v4/entries/by-puuid/${puuid}`);
+    if (entries.__status) {
+      const summ = await get(`${base}/lol/summoner/v4/summoners/by-puuid/${puuid}`);
+      if (summ.__status || !summ.id) {
+        onError(`rango: league by-puuid ${entries.__status}, summoner ${summ.__status ?? "sin id"}`);
+        return null;
+      }
+      entries = await get(`${base}/lol/league/v4/entries/by-summoner/${summ.id}`);
+      if (entries.__status) {
+        onError(`rango: league by-summoner ${entries.__status}`);
+        return null;
+      }
+    }
+
+    const list = entries as Array<Record<string, unknown>>;
+    // Sin solo/dúo se cae a flex antes que dar al jugador por no clasificado.
+    const queue =
+      list.find((e) => e.queueType === "RANKED_SOLO_5x5") ??
+      list.find((e) => e.queueType === "RANKED_FLEX_SR");
+    if (!queue?.tier) return null; // Sin clasificar de verdad, no es un fallo.
+
+    const tier = String(queue.tier).toUpperCase();
+    const apex = tier === "MASTER" || tier === "GRANDMASTER" || tier === "CHALLENGER";
     return {
-      tier: String(solo.tier),
-      // Maestro y por encima no tienen división; Riot manda "I" igualmente.
-      division: String(solo.rank ?? ""),
-      lp: Number(solo.leaguePoints ?? 0),
+      tier,
+      division: apex ? "" : String(queue.rank ?? ""),
+      lp: Number(queue.leaguePoints ?? 0),
     };
-  } catch {
-    return null; // El rango es decorativo: si falla, la fila se pinta igual.
+  } catch (err) {
+    onError(`rango: ${String(err)}`);
+    return null;
   }
 }
 
@@ -393,7 +421,9 @@ export async function POST(request: NextRequest) {
         const avg = (fn: (s: MatchStats) => number) =>
           n > 0 ? parseFloat((allStats.reduce((a, s) => a + fn(s), 0) / n).toFixed(2)) : 0;
 
-        const rank = await fetchRank(enrollment.region, enrollment.puuid, apiKey);
+        const rank = await fetchRank(enrollment.region, enrollment.puuid, apiKey, (r) =>
+          errors.push(`${enrollment.user_id}: ${r}`)
+        );
 
         const statsSnapshot = {
           avg_kda: avg((s) => s.kda),
