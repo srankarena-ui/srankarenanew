@@ -2,6 +2,16 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-08-04 — Arreglo: el rango no aparecía para casi nadie
+
+El rango se pedía **dentro** del bloque `if (addedCount > 0)`, que a su vez cuelga de `if (!newIds.length) continue`. O sea: solo se guardaba para quien tuviera partidas nuevas en ese sync concreto. Quien acababa de inscribirse, quien no había jugado desde el último sync, o quien ya había completado el torneo no llegaba nunca a tener rango — las cuatro inscripciones reales estaban así. La "optimización" de pedirlo solo cuando hay partidas nuevas era justo el fallo.
+
+Ahora se refresca para todas las inscripciones al principio del bucle, antes de mirar partidas, y se funde en `stats_snapshot` sin tocar el resto. Cuesta una petición por jugador y sync.
+
+De paso, `fetchRank` ya no se traga los fallos: caen en el array `errors` que el sync devolvía y que el botón de sincronizar ignoraba. Se añadió también el fallback a `by-summoner` copiando el overlay de `ropa proyecto`, aunque comprobado con clave válida `by-puuid` responde 200 en las cuatro regiones — el fallback es red de seguridad, no el arreglo.
+
+Comprobación: `node scripts/check-rank.mjs` falla si alguna inscripción se queda sin rango.
+
 ## 2026-08-04 — El rango de liga sustituye al rol en la clasificación
 
 En diez partidas un jugador puede pasar por tres posiciones, así que "su rol" no concluía nada. La columna pasa a ser el rango de solo/dúo con emblema, división y LP. El sync pide `league/v4/entries/by-puuid` **solo cuando el jugador tiene partidas nuevas** — que es justo cuando su rango puede haber cambiado, así que un sync en vacío no gasta peticiones — y lo guarda en `stats_snapshot` (jsonb, sin migración). Si la llamada falla, `fetchRank` devuelve `null` y la fila se pinta como "Sin clasificar".

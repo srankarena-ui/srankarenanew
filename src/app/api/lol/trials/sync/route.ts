@@ -333,6 +333,27 @@ export async function POST(request: NextRequest) {
   const errors: string[] = [];
 
   for (const enrollment of enrollments) {
+    // El rango se refresca para TODOS, antes de mirar si hay partidas nuevas.
+    // Atarlo a que hubiera partidas nuevas dejaba sin rango a quien acababa de
+    // inscribirse, a quien no había jugado desde el último sync y a quien ya
+    // había completado el torneo — o sea, a casi todo el mundo.
+    const rank = await fetchRank(enrollment.region, enrollment.puuid, apiKey, (r) =>
+      errors.push(`${enrollment.user_id}: ${r}`)
+    );
+    if (rank) {
+      await admin
+        .from("summoner_trials_enrollments")
+        .update({
+          stats_snapshot: {
+            ...((enrollment.stats_snapshot as Record<string, unknown>) ?? {}),
+            rank_tier: rank.tier,
+            rank_division: rank.division,
+            rank_lp: rank.lp,
+          },
+        })
+        .eq("id", enrollment.id);
+    }
+
     if (enrollment.matches_tracked >= matches_to_track) continue;
 
     try {
@@ -420,10 +441,6 @@ export async function POST(request: NextRequest) {
         const n = allStats.length;
         const avg = (fn: (s: MatchStats) => number) =>
           n > 0 ? parseFloat((allStats.reduce((a, s) => a + fn(s), 0) / n).toFixed(2)) : 0;
-
-        const rank = await fetchRank(enrollment.region, enrollment.puuid, apiKey, (r) =>
-          errors.push(`${enrollment.user_id}: ${r}`)
-        );
 
         const statsSnapshot = {
           avg_kda: avg((s) => s.kda),
