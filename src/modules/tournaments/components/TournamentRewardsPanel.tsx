@@ -136,6 +136,7 @@ export function TournamentRewardsPanel({
 
 function PointsTab() {
   const [role, setRole] = useState<Role>("TOP");
+  const [open, setOpen] = useState<string | null>(null);
 
   const common = FEATS.filter((f) => f.scope === "equipo" || f.scope === "individual");
   const signature = featsForRole(role).filter((f) => f.scope === role);
@@ -190,18 +191,43 @@ function PointsTab() {
           ))}
         </div>
 
+        {/* ponytail: se despliega uno a la vez y en su sitio, en vez de un
+            tooltip flotante — la tarjeta es estrecha y así funciona en móvil. */}
         <ul className="max-h-72 space-y-1 overflow-y-auto pr-1">
           {[...signature, ...common]
             .sort((a, b) => b.points - a.points)
             .map((feat) => (
-              <li key={feat.key} className="flex items-baseline justify-between gap-2 text-xs">
-                <span className="text-gray-300">
-                  {feat.name}
-                  {feat.scope === role && (
-                    <span className="ml-1 text-[9px] text-[var(--color-accent)]">tu rol</span>
-                  )}
-                </span>
-                <span className="shrink-0 font-bold text-[var(--color-accent)]">+{feat.points}</span>
+              <li key={feat.key}>
+                <div className="flex items-baseline justify-between gap-2 text-xs">
+                  <span className="text-gray-300">
+                    {feat.name}
+                    <button
+                      type="button"
+                      onClick={() => setOpen(open === feat.key ? null : feat.key)}
+                      aria-expanded={open === feat.key}
+                      aria-label={`Qué es ${feat.name}`}
+                      className={`ml-1.5 h-4 w-4 rounded-full border text-[9px] leading-none transition-colors ${
+                        open === feat.key
+                          ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white"
+                          : "border-gray-700 text-gray-500 hover:border-gray-500 hover:text-gray-300"
+                      }`}
+                    >
+                      ?
+                    </button>
+                    {feat.scope === role && (
+                      <span className="ml-1 text-[9px] text-[var(--color-accent)]">tu rol</span>
+                    )}
+                  </span>
+                  <span className="shrink-0 font-bold text-[var(--color-accent)]">+{feat.points}</span>
+                </div>
+                {open === feat.key && (
+                  <p className="mt-1 mb-1.5 rounded-lg bg-[#0b0e14] px-2.5 py-2 text-[10px] leading-relaxed text-gray-400">
+                    {feat.how}
+                    <span className="mt-1 block text-gray-600">
+                      Lo consigue el {feat.rate.toFixed(1)}% de las partidas.
+                    </span>
+                  </p>
+                )}
               </li>
             ))}
         </ul>
