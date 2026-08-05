@@ -2,6 +2,16 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-08-05 — Historial de partidas al pulsar un jugador del leaderboard
+
+Al pulsar una fila de la clasificación se despliega debajo su historial del torneo: campeón con icono, rol, duración, K/D/A y KDA, KP, CS y CS/min, daño, visión, rendimiento, los retos conseguidos en esa partida y los puntos que sumó o restó. Marco verde/rojo según el resultado.
+
+**Sin endpoint nuevo ni datos nuevos.** `match_data` ya guardaba todo esto por partida, y `summoner_trials_matches` tiene política `for select using (true)`, así que se lee desde el navegador con la clave anónima. Se pide al desplegar y no con la página: con 50 inscritos serían 500 filas de jsonb en el HTML inicial de una página que ya era lenta. Solo se abre uno a la vez.
+
+Los iconos de campeón salen de `cdn.communitydragon.org/latest/champion/<nombre>/square`, que no obliga a fijar versión de parche como sí hace Data Dragon.
+
+**Arreglada la raíz de un problema mío**: `collect-challenges.mjs` guardaba solo el bloque `challenges` más seis campos elegidos a mano, y `challenges` da `takedowns` (kills + asistencias) pero nunca los separa. Por eso no pude medir "22 kills" sobre ese fichero. Ahora guarda el participante entero (menos `perks`). Nada se perdió: `data/matches.csv` sí traía kills/deaths/assists del mismo crawl, y el nuevo `scripts/dataset.mjs` une los dos por (match_id, rol, victoria) — clave única, casa 10.020/10.020. Ejecutarlo directamente comprueba la unión y falla si no cuadra.
+
 ## 2026-08-05 — Sellos: la moneda para imponer castigos (mitad de ganarlos)
 
 El ítem se llama **sello**. Se descartó "castigo" porque choca con el hechizo de invocador — Smite es *Castigar* en el cliente en español.

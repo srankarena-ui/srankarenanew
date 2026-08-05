@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useRouter } from "next/navigation";
+import { PlayerMatchHistory } from "./PlayerMatchHistory";
 import { useTranslations } from "next-intl";
 import { useToast } from "@/core/ui/Toast";
 import type { TrialsEnrollmentWithProfile, TrialsConfig } from "@/core/types";
@@ -96,6 +97,9 @@ const num = (v: number | undefined, decimals: number) =>
 
 const MEDAL: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
+/** Columnas de la tabla — el desplegable las tiene que abarcar todas. */
+const COLUMNS = 13;
+
 export function SummonerTrialsLeaderboard({
   tournamentId,
   enrollments,
@@ -107,6 +111,8 @@ export function SummonerTrialsLeaderboard({
   const router = useRouter();
   const { toast } = useToast();
   const [syncing, setSyncing] = useState(false);
+  // Solo uno abierto a la vez: con varios, la tabla se vuelve ilegible.
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   const sorted = [...enrollments].sort((a, b) => b.score - a.score);
 
@@ -194,15 +200,20 @@ export function SummonerTrialsLeaderboard({
                 const total = config.matches_to_track;
                 const pct = total > 0 ? Math.round((progress / total) * 100) : 0;
 
+                const isOpen = expanded === enrollment.id;
+
                 return (
+                  <Fragment key={enrollment.id}>
                   <tr
-                    key={enrollment.id}
-                    className={`border-t border-gray-800/60 transition-colors ${
-                      isCurrentUser
-                        ? "bg-purple-900/10"
-                        : rank % 2 === 0
-                          ? "bg-[#0f1117]"
-                          : "bg-[#0b0e14]"
+                    onClick={() => setExpanded(isOpen ? null : enrollment.id)}
+                    className={`cursor-pointer border-t border-gray-800/60 transition-colors hover:bg-purple-900/20 ${
+                      isOpen
+                        ? "bg-purple-900/20"
+                        : isCurrentUser
+                          ? "bg-purple-900/10"
+                          : rank % 2 === 0
+                            ? "bg-[#0f1117]"
+                            : "bg-[#0b0e14]"
                     }`}
                   >
                     {/* Rank */}
@@ -222,10 +233,13 @@ export function SummonerTrialsLeaderboard({
                         </div>
                         <div className="leading-tight">
                           <p className={`text-xs font-bold ${isCurrentUser ? "text-purple-300" : "text-white"}`}>
+                            <span className={`mr-1 inline-block text-[9px] text-gray-500 transition-transform ${isOpen ? "rotate-90" : ""}`}>
+                              ▶
+                            </span>
                             {enrollment.profile.username ?? t("unknownPlayer")}
                             {isCurrentUser && <span className="ml-1 text-[9px] text-purple-500">({t("you")})</span>}
                           </p>
-                          <p className="text-[9px] text-gray-600">{enrollment.region.toUpperCase()}</p>
+                          <p className="pl-3.5 text-[9px] text-gray-600">{enrollment.region.toUpperCase()}</p>
                         </div>
                       </div>
                     </td>
@@ -323,6 +337,9 @@ export function SummonerTrialsLeaderboard({
                       ) : "—"}
                     </td>
                   </tr>
+
+                  {isOpen && <PlayerMatchHistory enrollmentId={enrollment.id} columns={COLUMNS} />}
+                  </Fragment>
                 );
               })}
             </tbody>

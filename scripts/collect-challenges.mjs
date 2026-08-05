@@ -1,13 +1,14 @@
 // Vuelve a pedir las partidas que ya están en data/matches.csv, esta vez
-// quedándose con el bloque `challenges` completo (las ~129 métricas que Riot
+// quedándose con el participante ENTERO: `challenges` (las ~129 métricas que Riot
 // calcula). Sirve para medir cada cuánto ocurre de verdad cada gesta y poner
 // precios a los logros con datos en vez de a ojo.
 //
 //   node scripts/collect-challenges.mjs
 //   node scripts/collect-challenges.mjs --in data/matches.csv --out data/challenges.jsonl
 //
-// Sale un JSONL disperso: una línea por actuación individual, con solo las
-// métricas distintas de cero. Ocupa poco y no pierde nada.
+// Sale un JSONL: una línea por actuación individual. `c` lleva las métricas
+// calculadas distintas de cero (dispersas, para que ocupe poco) y `raw` lleva el
+// participante tal cual, sin recortar.
 import { appendFileSync, existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
@@ -106,13 +107,24 @@ for (const [n, id] of pending.entries()) {
       if (typeof v === "number" && v !== 0) c[k] = v;
       else if (v === true) c[k] = 1;
     }
-    // Un par de campos del participante que también son gestas contables.
-    for (const k of ["pentaKills","quadraKills","tripleKills","doubleKills","objectivesStolen","firstBloodKill"]) {
-      const v = p[k];
-      if (v === true) c[k] = 1;
-      else if (typeof v === "number" && v > 0) c[k] = v;
-    }
-    return { m: id, t: tiers.get(id), r: p.teamPosition || p.individualPosition || "", w: p.win ? 1 : 0, c };
+    // El participante entero, no una selección. Guardar solo `challenges` más
+    // seis campos elegidos a mano costó tener que ir a otro fichero para
+    // responder "¿cuántos aciertan 22 kills?" — `challenges` da `takedowns`
+    // (kills + asistencias) pero nunca los separa. Un crawl cuesta horas contra
+    // el límite de 100 peticiones cada 2 minutos y `data/` está fuera de git,
+    // así que tirar campos para ahorrar disco es el peor cambio posible.
+    // `perks` fuera: son ~2 KB por fila de árboles de runas que no se analizan.
+    const { challenges: _c, perks: _p, ...raw } = p;
+    return {
+      m: id,
+      t: tiers.get(id),
+      r: p.teamPosition || p.individualPosition || "",
+      w: p.win ? 1 : 0,
+      gameDuration: m.info.gameDuration,
+      queueId: m.info.queueId,
+      c,
+      raw,
+    };
   });
 
   appendFileSync(args.out, rows.map((r) => JSON.stringify(r)).join("\n") + "\n");
