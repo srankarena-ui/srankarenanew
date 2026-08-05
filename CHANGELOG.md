@@ -2,6 +2,14 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-08-04 — La tarjeta de premios pasa a tener pestañas
+
+**Premios / Premios EXP / Puntos en un solo cuadro.** El catálogo de retos estaba en un desplegable al final de la clasificación, donde nadie llegaba a leerlo, y la XP por puesto se repetía en una insignia del encabezado de la tabla. Ahora los tres viven en la tarjeta lateral con pestañas: `TournamentRewardsPanel` (nuevo, `src/modules/tournaments/components/`). Las pestañas se muestran solo si tienen contenido — con una sola, la tarjeta se ve igual que antes, con su título y sin pestañas.
+
+**La pestaña Puntos tiene selector de rol.** 18 de los 20 retos son comunes y 2 dependen del rol, así que hay botones Top/Jungla/Mid/ADC/Support y la lista se reordena por puntos marcando cuáles son "tu rol". Solo aparece en formato `summoner_trials`; un bracket normal no puntúa por partida.
+
+Archivos: `TournamentRewardsPanel.tsx` (nuevo), `TournamentDetail.tsx`, `SummonerTrialsLeaderboard.tsx` (fuera `ScoringWeightsInfo` y el prop `xpTable`).
+
 ## 2026-08-03 — Requisitos de inscripción y vault oculto mientras solo haya LoL
 
 **Vault fuera de la vista.** El picker "Premios del Vault" salía en el paso 2 de creación en cualquier torneo, ofreciendo 108 cosméticos de Dota 2 a un evento de LoL — el editor, en cambio, ya lo escondía (`isDota`), así que los dos asistentes se contradecían. Se corta en las **consultas**, no en los componentes: `VAULT_ENABLED` (derivado de que Dota 2 esté en `ACTIVE_GAMES`) apaga las cuatro queries y los componentes reciben listas vacías, con lo que dejan de pintarse solos — incluido el distintivo de donante, porque `donorTier(0)` ya devolvía `null`. La página `/vault` sigue siendo admin-only como estaba y no había ningún enlace visible que quitar.

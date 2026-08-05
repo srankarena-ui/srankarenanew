@@ -5,10 +5,6 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useToast } from "@/core/ui/Toast";
 import type { TrialsEnrollmentWithProfile, TrialsConfig } from "@/core/types";
-import { SCORING_WEIGHTS } from "@/core/lib/role-score";
-import { FEATS } from "@/core/lib/tournament-feats";
-import { placementLabel, medalFor } from "@/core/lib/prize-table";
-import type { XpRow } from "@/core/lib/xp-table";
 
 interface StatsSnapshot {
   avg_kda: number;
@@ -41,7 +37,6 @@ interface Props {
   tournamentId: string;
   enrollments: TrialsEnrollmentWithProfile[];
   config: TrialsConfig;
-  xpTable: XpRow[];
   isAdmin: boolean;
   currentUserId: string | null;
 }
@@ -56,7 +51,6 @@ export function SummonerTrialsLeaderboard({
   tournamentId,
   enrollments,
   config,
-  xpTable,
   isAdmin,
   currentUserId,
 }: Props) {
@@ -99,19 +93,8 @@ export function SummonerTrialsLeaderboard({
         </div>
 
         <div className="flex items-center gap-3">
-          {/* XP por puesto — respeta rangos (3º-4º), no asume posiciones sueltas. */}
-          {xpTable.length > 0 && (
-            <div className="flex items-center gap-1 rounded-lg border border-purple-800/40 bg-purple-900/20 px-3 py-1.5">
-              <span className="text-[9px] font-bold text-[var(--color-accent)] mr-1">{t("rewards")}</span>
-              {xpTable.slice(0, 5).map((row) => (
-                <span key={`${row.from}-${row.to}`} className="text-[10px] font-bold text-white px-1">
-                  {medalFor(row) ?? placementLabel(row)} {row.xp}
-                </span>
-              ))}
-              <span className="text-[9px] text-gray-500 ml-1">EXP</span>
-            </div>
-          )}
-
+          {/* La XP por puesto y el catálogo de retos viven ahora en la tarjeta
+              lateral de premios, con pestañas. */}
           {isAdmin && (
             <button
               onClick={handleSync}
@@ -292,111 +275,6 @@ export function SummonerTrialsLeaderboard({
         </div>
       )}
 
-      {/* Scoring weights info (collapsible) */}
-      <ScoringWeightsInfo config={config} />
-    </div>
-  );
-}
-
-function ScoringWeightsInfo({ config }: { config: TrialsConfig }) {
-  const t = useTranslations("tournaments");
-  const [open, setOpen] = useState(false);
-  // Los pesos son fijos del sistema, no del torneo: los de trials_config solo
-  // sobreviven en eventos antiguos y ya no se usan para puntuar.
-  const w = SCORING_WEIGHTS;
-
-  // Cada partida suma cuatro cosas. El rendimiento no puntúa valores crudos:
-  // mide en qué percentil de TU ROL caes, así una partida de soporte y una de
-  // tirador valen lo mismo aunque sus números no se parezcan en nada.
-  const entries = [
-    {
-      label: "Participación",
-      formula: "+10",
-      example: "por terminar la partida",
-    },
-    {
-      label: "Rendimiento",
-      formula: "0 – 100",
-      example: `percentil de tu rol · pesos: KDA ×${w.kda}, participación ×${w.kill_participation}, visión ×${w.vision_score}, daño ×${w.damage}, CS ×${w.cs_per_min}`,
-    },
-    {
-      label: "Resultado",
-      formula: "+30 / −20",
-      example: "ganar suma, perder resta",
-    },
-    {
-      label: "Retos",
-      formula: "3 – 100 cada uno",
-      example: "20 retos por partida: 18 iguales para todos y 2 propios de tu rol. Cuanto más raro, más paga",
-    },
-    {
-      label: "Balance",
-      formula: "−25",
-      example: "por cada derrota que exceda a tus victorias, al final del torneo",
-    },
-  ];
-
-  // Catálogo de retos: qué da puntos en general, no lo que ganó un jugador en
-  // una partida concreta. Los de equipo/individual son iguales para los cinco
-  // roles; los de firma solo aplican al rol indicado.
-  const sharedFeats = [...FEATS]
-    .filter((f) => f.scope === "equipo" || f.scope === "individual")
-    .sort((a, b) => b.points - a.points);
-  const roleFeats = FEATS.filter((f) => f.scope !== "equipo" && f.scope !== "individual");
-
-  return (
-    <div className="rounded-xl border border-gray-800/60 bg-[#121620]">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-4 py-3 text-[9px] font-bold text-gray-500 hover:text-gray-400 transition-colors"
-      >
-        <span>{t("scoringFormula")}</span>
-        <span className={`transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
-      </button>
-      {open && (
-        <div className="border-t border-gray-800/60 px-4 py-3">
-          <p className="text-[10px] text-gray-500 mb-3">
-            {t("scoringFormulaDescription")}
-          </p>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-            {entries.map((e) => (
-              <div key={e.label} className="rounded-lg bg-[#0b0e14] p-2.5">
-                <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-accent)]">{e.label}</p>
-                <p className="text-[10px] text-gray-300 font-mono mt-0.5">{e.formula}</p>
-                <p className="text-[9px] text-gray-600 mt-0.5">{e.example}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Catálogo de retos: de dónde salen los puntos, no lo que ganó
-              nadie en una partida puntual. */}
-          <p className="mt-5 mb-2 text-[9px] font-bold uppercase tracking-wider text-gray-500">
-            Retos comunes (los cinco roles)
-          </p>
-          <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
-            {sharedFeats.map((f) => (
-              <li key={f.key} className="flex items-center justify-between rounded-lg bg-[#0b0e14] px-2.5 py-1.5 text-[10px]">
-                <span className="text-gray-300">{f.name}</span>
-                <span className="ml-2 shrink-0 font-mono text-[var(--color-accent)]">+{f.points}</span>
-              </li>
-            ))}
-          </ul>
-
-          <p className="mt-4 mb-2 text-[9px] font-bold uppercase tracking-wider text-gray-500">
-            Retos de firma por rol (+5 cada uno)
-          </p>
-          <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-            {roleFeats.map((f) => (
-              <li key={f.key} className="flex items-center justify-between rounded-lg bg-[#0b0e14] px-2.5 py-1.5 text-[10px]">
-                <span className="text-gray-300">
-                  <span className="text-gray-500">{ROLE_ES[f.scope] ?? f.scope}</span> — {f.name}
-                </span>
-                <span className="ml-2 shrink-0 font-mono text-[var(--color-accent)]">+{f.points}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </div>
   );
 }

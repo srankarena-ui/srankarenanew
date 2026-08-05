@@ -19,7 +19,8 @@ import { TournamentReminderPanel } from "./TournamentReminderPanel";
 import { SummonerTrialsLeaderboard } from "./SummonerTrialsLeaderboard";
 import type { Tournament, TournamentParticipant, Profile, MatchWithPlayers, TrialsEnrollmentWithProfile, TrialsConfig } from "@/core/types";
 import type { PickableItem as PrizeItem } from "@/modules/vault/components/VaultPrizePicker";
-import { parsePrizeTable, placementLabel, medalFor } from "@/core/lib/prize-table";
+import { parsePrizeTable } from "@/core/lib/prize-table";
+import { TournamentRewardsPanel } from "./TournamentRewardsPanel";
 import { GLOBAL_REGION } from "@/core/lib/riot-regions";
 import { parseXpTable } from "@/core/lib/xp-table";
 import { RegistrationRequirement } from "./RegistrationRequirement";
@@ -85,6 +86,7 @@ export function TournamentDetail({
   const displayFormat = getDisplayFormat(tournament);
   // Se valida al pintar: un JSON guardado a mano no debería romper la ficha.
   const prizeRows = parsePrizeTable(tournament.prize_table);
+  const xpRows = parseXpTable(tournament.xp_table);
 
   const dateObj = tournament.start_date ? new Date(tournament.start_date) : null;
   const formattedDate = dateObj
@@ -187,7 +189,6 @@ export function TournamentDetail({
             tournamentId={tournament.id}
             enrollments={trialsEnrollments ?? []}
             config={tournament.trials_config as unknown as TrialsConfig}
-            xpTable={parseXpTable(tournament.xp_table)}
             isAdmin={isAdmin}
             currentUserId={currentUserId}
           />
@@ -320,52 +321,12 @@ export function TournamentDetail({
           )}
         </div>
 
-        {(prizeRows.length > 0 || prizeItems.length > 0) && (
-          <div className="mt-4 rounded-2xl border border-gray-800/60 bg-[#121620] p-5">
-            <h3 className="mb-3 text-[10px] text-gray-400">Premios</h3>
-
-            {/* Tabla por puesto: un rango como 3º-4º significa que esas
-                posiciones ganan lo mismo. */}
-            {prizeRows.length > 0 && (
-              <ul className="mb-3 space-y-1.5">
-                {prizeRows.map((row) => (
-                  <li key={`${row.from}-${row.to}`} className="flex items-baseline gap-2.5">
-                    <span className="w-12 shrink-0 text-xs font-bold text-[var(--color-accent)]">
-                      {medalFor(row) ?? placementLabel(row)}
-                    </span>
-                    {medalFor(row) && row.from !== row.to && (
-                      <span className="text-[10px] text-gray-500">{placementLabel(row)}</span>
-                    )}
-                    <span className="text-sm text-white">{row.prize}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            {prizeItems.length > 0 && (
-              <ul className="mb-3 space-y-2">
-                {[...prizeItems]
-                  .sort((a, b) => (a.prize_placement ?? 99) - (b.prize_placement ?? 99))
-                  .map((item) => (
-                    <li key={item.asset_id} className="flex items-center gap-2.5">
-                      <span className="w-7 shrink-0 text-[10px] font-bold text-[var(--color-accent)]">
-                        {item.prize_placement ? `${item.prize_placement}º` : "—"}
-                      </span>
-                      {/* ponytail: imagen del CDN de Steam, sin next/image */}
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={`https://community.cloudflare.steamstatic.com/economy/image/${item.icon_url}/64x64`}
-                        alt=""
-                        className="h-7 w-7 rounded"
-                      />
-                      <span className="text-xs text-white">{item.name}</span>
-                    </li>
-                  ))}
-              </ul>
-            )}
-
-          </div>
-        )}
+        <TournamentRewardsPanel
+          prizeRows={prizeRows}
+          prizeItems={prizeItems}
+          xpRows={xpRows}
+          showPoints={isSummonerTrials}
+        />
 
         {/* Region */}
         {tournament.region && (
