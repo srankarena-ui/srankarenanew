@@ -45,18 +45,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Ese jugador no está inscrito en el torneo" }, { status: 404 });
   }
 
-  // El sello más antiguo sin gastar: gastar en orden evita que quede uno
-  // atascado para siempre al fondo del inventario.
-  const { data: seal } = await admin
-    .from("seals")
-    .select("id")
-    .eq("user_id", auth.userId)
-    .is("spent_at", null)
-    .order("earned_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (!seal) {
+  // Se reserva el sello ANTES de crear nada. Al revés quedaban castigos
+  // impuestos sin sello detrás cuando dos peticiones competían.
+  //
+  // El `is("spent_at", null)` dentro del update es lo que hace la reserva
+  // atómica: si otra petición se adelantó, este update afecta a 0 filas y se
+  // prueba con el siguiente sello en vez de fallar. Antes devolvía 409, y como
+  // el navegador manda dos peticiones por clic en desarrollo, saltaba siempre.
+  const reservado = await reservarSello(admin, auth.userId, targetUserId);
+  if (!reservado) {
     return NextResponse.json({ error: "No tienes sellos sin gastar" }, { status: 400 });
   }
 
@@ -78,6 +75,8 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (challengeError || !challenge) {
+    // Devolver el sello: no se le cobra por un castigo que no llegó a existir.
+    await admin.from("seals").update({ spent_at: null, spent_on: null }).eq("id", reservado);
     return NextResponse.json({ error: "No se pudo crear el castigo" }, { status: 500 });
   }
 
@@ -86,22 +85,39 @@ export async function POST(request: NextRequest) {
     user_id: targetUserId,
   });
 
-  // El sello se marca gastado al final: si algo falla antes, no se pierde.
-  // La condición `spent_at is null` evita que dos peticiones a la vez gasten el
-  // mismo sello dos veces.
-  const { data: spent } = await admin
-    .from("seals")
-    .update({ spent_at: new Date().toISOString(), spent_on: targetUserId, challenge_id: challenge.id })
-    .eq("id", seal.id)
-    .is("spent_at", null)
-    .select("id");
-
-  if (!spent?.length) {
-    // Otra petición se le adelantó. Se deshace el castigo para no dejar uno
-    // impuesto sin sello detrás.
-    await admin.from("challenges").delete().eq("id", challenge.id);
-    return NextResponse.json({ error: "Ese sello ya se había gastado" }, { status: 409 });
-  }
+  await admin.from("seals").update({ challenge_id: challenge.id }).eq("id", reservado);
 
   return NextResponse.json({ castigo: elegido });
+}
+
+/** Reserva un sello sin gastar del usuario. Devuelve su id, o null si no tiene. */
+async function reservarSello(
+  admin: ReturnType<typeof createAdminClient<Database>>,
+  userId: string,
+  targetUserId: string
+): Promise<string | null> {
+  // Se prueban varios porque perder la carrera una vez no significa quedarse
+  // sin munición: puede haber 99 más detrás.
+  for (let intento = 0; intento < 5; intento++) {
+    const { data: seal } = await admin
+      .from("seals")
+      .select("id")
+      .eq("user_id", userId)
+      .is("spent_at", null)
+      .order("earned_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (!seal) return null;
+
+    const { data: claimed } = await admin
+      .from("seals")
+      .update({ spent_at: new Date().toISOString(), spent_on: targetUserId })
+      .eq("id", seal.id)
+      .is("spent_at", null)
+      .select("id");
+
+    if (claimed?.length) return seal.id;
+  }
+  return null;
 }

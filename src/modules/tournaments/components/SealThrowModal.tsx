@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CASTIGOS, castigosParaRol, type Castigo } from "@/core/lib/castigos";
 
 /**
@@ -35,7 +35,15 @@ export function SealThrowModal({
     return () => clearInterval(t);
   }, [girando, target.role]);
 
+  // React monta los efectos dos veces en desarrollo, y aquí el efecto GASTA un
+  // sello: sin esta guardia, cada clic lanzaba dos castigos y cobraba dos.
+  // `cancelled` no basta — solo ignora la respuesta, la petición ya salió.
+  const lanzado = useRef(false);
+
   useEffect(() => {
+    if (lanzado.current) return;
+    lanzado.current = true;
+
     let cancelled = false;
     const started = Date.now();
 
