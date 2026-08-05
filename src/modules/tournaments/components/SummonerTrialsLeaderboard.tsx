@@ -65,7 +65,7 @@ function RankCell({ snap }: { snap: StatsSnapshot | null }) {
     <div className="flex items-center gap-2">
       {/* ponytail: emblema del CDN, sin next/image ni dominio que configurar */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={rankCrest(tier)} alt="" className="h-6 w-6 shrink-0" loading="lazy" />
+      <img src={rankCrest(tier)} alt="" className="h-5 w-5 shrink-0" loading="lazy" />
       <div className="leading-tight">
         <p className="text-[11px] font-bold text-white">
           {TIER_ES[tier] ?? tier} {division}
@@ -169,20 +169,20 @@ export function SummonerTrialsLeaderboard({
         <div className="overflow-x-auto rounded-xl border border-gray-800">
           <table className="w-full min-w-[700px]">
             <thead>
-              <tr className="bg-[#0d1017] text-[9px] font-bold uppercase tracking-[0.2em] text-gray-500">
-                <th className="px-4 py-3 text-left w-10">#</th>
-                <th className="px-4 py-3 text-left">{t("playerColumn")}</th>
-                <th className="px-4 py-3 text-left">Rango</th>
-                <th className="px-4 py-3 text-right">{t("score")}</th>
-                <th className="px-4 py-3 text-right">Rendim.</th>
-                <th className="px-4 py-3 text-right">Retos</th>
-                <th className="px-4 py-3 text-center">{t("matchesColumn")}</th>
-                <th className="px-4 py-3 text-right">{t("avgKda")}</th>
-                <th className="px-4 py-3 text-right">KP%</th>
-                <th className="px-4 py-3 text-right">{t("vision")}</th>
-                <th className="px-4 py-3 text-right">CS/min</th>
-                <th className="px-4 py-3 text-right">{t("damage")}</th>
-                <th className="px-4 py-3 text-right">{t("wl")}</th>
+              <tr className="bg-[#0d1017] text-[9px] font-bold uppercase tracking-[0.1em] text-gray-500">
+                <th className="px-2.5 py-2 text-left w-10">#</th>
+                <th className="px-2.5 py-2 text-left">{t("playerColumn")}</th>
+                <th className="px-2.5 py-2 text-left">Rango</th>
+                <th className="px-2.5 py-2 text-right">{t("score")}</th>
+                <th className="px-2.5 py-2 text-right">Rendim.</th>
+                <th className="px-2.5 py-2 text-right">Retos</th>
+                <th className="px-2.5 py-2 text-center">{t("matchesColumn")}</th>
+                <th className="px-2.5 py-2 text-right">{t("avgKda")}</th>
+                <th className="px-2.5 py-2 text-right">KP%</th>
+                <th className="px-2.5 py-2 text-right">{t("vision")}</th>
+                <th className="px-2.5 py-2 text-right">CS/min</th>
+                <th className="px-2.5 py-2 text-right">{t("damage")}</th>
+                <th className="px-2.5 py-2 text-right">{t("wl")}</th>
               </tr>
             </thead>
             <tbody>
@@ -206,24 +206,24 @@ export function SummonerTrialsLeaderboard({
                     }`}
                   >
                     {/* Rank */}
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-2.5 py-2 text-center">
                       {MEDAL[rank] ? (
-                        <span className="text-base">{MEDAL[rank]}</span>
+                        <span className="text-sm">{MEDAL[rank]}</span>
                       ) : (
                         <span className="text-xs font-bold text-gray-500">{rank}</span>
                       )}
                     </td>
 
                     {/* Player */}
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="h-7 w-7 rounded-full bg-gradient-to-br from-purple-700 to-gray-800 shrink-0 flex items-center justify-center text-[9px] text-purple-200">
+                    <td className="px-2.5 py-2">
+                      <div className="flex items-center gap-2">
+                        <div className="h-6 w-6 rounded-full bg-gradient-to-br from-purple-700 to-gray-800 shrink-0 flex items-center justify-center text-[9px] text-purple-200">
                           {(enrollment.profile.username ?? "?")[0].toUpperCase()}
                         </div>
-                        <div>
-                          <p className={`text-sm font-bold ${isCurrentUser ? "text-purple-300" : "text-white"}`}>
+                        <div className="leading-tight">
+                          <p className={`text-xs font-bold ${isCurrentUser ? "text-purple-300" : "text-white"}`}>
                             {enrollment.profile.username ?? t("unknownPlayer")}
-                            {isCurrentUser && <span className="ml-1.5 text-[9px] text-purple-500">({t("you")})</span>}
+                            {isCurrentUser && <span className="ml-1 text-[9px] text-purple-500">({t("you")})</span>}
                           </p>
                           <p className="text-[9px] text-gray-600">{enrollment.region.toUpperCase()}</p>
                         </div>
@@ -233,12 +233,12 @@ export function SummonerTrialsLeaderboard({
                     {/* Rango de solo/dúo. Antes iba el rol, pero en diez
                         partidas alguien puede jugar tres posiciones y el dato
                         no dice nada; el rango sí sitúa al jugador. */}
-                    <td className="px-4 py-3">
+                    <td className="px-2.5 py-2">
                       <RankCell snap={snap} />
                     </td>
 
                     {/* Score */}
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-2.5 py-2 text-right">
                       <span className="text-sm text-white">{enrollment.score.toFixed(0)}</span>
                       <span className="ml-0.5 text-[9px] text-gray-600"> {t("pointsShort")}</span>
                       {/* Balance negativo: se avisa para que no parezca un error */}
@@ -253,12 +253,12 @@ export function SummonerTrialsLeaderboard({
                     </td>
 
                     {/* Rendimiento: percentil medio dentro de su rol */}
-                    <td className="px-4 py-3 text-right text-xs text-gray-300">
+                    <td className="px-2.5 py-2 text-right text-xs text-gray-300">
                       {snap?.avg_performance != null ? snap.avg_performance.toFixed(0) : "—"}
                     </td>
 
                     {/* Retos conseguidos */}
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-2.5 py-2 text-right">
                       {snap?.feat_points != null ? (
                         <span
                           className="text-xs text-gray-300"
@@ -279,12 +279,12 @@ export function SummonerTrialsLeaderboard({
                     </td>
 
                     {/* Matches progress */}
-                    <td className="px-4 py-3">
-                      <div className="flex flex-col items-center gap-1">
+                    <td className="px-2.5 py-2">
+                      <div className="flex flex-col items-center gap-0.5">
                         <span className="text-[10px] font-bold text-gray-300">
                           {progress}/{total}
                         </span>
-                        <div className="w-16 h-1.5 rounded-full bg-gray-800">
+                        <div className="w-12 h-1 rounded-full bg-gray-800">
                           <div
                             className={`h-full rounded-full transition-all ${
                               pct >= 100 ? "bg-green-500" : "bg-[var(--color-accent-hover)]"
@@ -298,22 +298,22 @@ export function SummonerTrialsLeaderboard({
                     {/* Stats del snapshot. Se comprueba campo a campo, no
                         `snap ?`: un jugador con rango pero sin partidas tiene
                         snapshot con solo el rango dentro. */}
-                    <td className="px-4 py-3 text-right text-xs text-gray-300">
+                    <td className="px-2.5 py-2 text-right text-xs text-gray-300">
                       {num(snap?.avg_kda, 2)}
                     </td>
-                    <td className="px-4 py-3 text-right text-xs text-gray-300">
+                    <td className="px-2.5 py-2 text-right text-xs text-gray-300">
                       {snap?.avg_kill_participation != null ? `${snap.avg_kill_participation.toFixed(0)}%` : "—"}
                     </td>
-                    <td className="px-4 py-3 text-right text-xs text-gray-300">
+                    <td className="px-2.5 py-2 text-right text-xs text-gray-300">
                       {num(snap?.avg_vision_score, 0)}
                     </td>
-                    <td className="px-4 py-3 text-right text-xs text-gray-300">
+                    <td className="px-2.5 py-2 text-right text-xs text-gray-300">
                       {num(snap?.avg_cs_per_min, 1)}
                     </td>
-                    <td className="px-4 py-3 text-right text-xs text-gray-300">
+                    <td className="px-2.5 py-2 text-right text-xs text-gray-300">
                       {snap?.avg_damage != null ? fmtK(snap.avg_damage) : "—"}
                     </td>
-                    <td className="px-4 py-3 text-right text-xs">
+                    <td className="px-2.5 py-2 text-right text-xs">
                       {snap?.wins != null ? (
                         <>
                           <span className="text-green-400">{snap.wins}W</span>

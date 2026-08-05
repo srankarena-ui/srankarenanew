@@ -70,60 +70,43 @@ export function TournamentRewardsPanel({
         )}
 
         {active === "premios" && (
-          <>
+          <ul className="divide-y divide-gray-800/60">
             {/* Un rango como 3º-4º significa que esas posiciones ganan lo mismo. */}
-            {prizeRows.length > 0 && (
-              <ul className="space-y-1.5">
-                {prizeRows.map((row) => (
-                  <li key={`${row.from}-${row.to}`} className="flex items-baseline gap-2.5">
-                    <span className="w-12 shrink-0 text-xs font-bold text-[var(--color-accent)]">
-                      {medalFor(row) ?? placementLabel(row)}
-                    </span>
-                    {medalFor(row) && row.from !== row.to && (
-                      <span className="text-[10px] text-gray-500">{placementLabel(row)}</span>
-                    )}
-                    <span className="text-sm text-white">{row.prize}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
+            {prizeRows.map((row) => (
+              <PlacementRow key={`p${row.from}-${row.to}`} row={row}>
+                <span className="text-sm text-white">{row.prize}</span>
+              </PlacementRow>
+            ))}
 
-            {prizeItems.length > 0 && (
-              <ul className={prizeRows.length > 0 ? "mt-3 space-y-2 border-t border-gray-800/60 pt-3" : "space-y-2"}>
-                {[...prizeItems]
-                  .sort((a, b) => (a.prize_placement ?? 99) - (b.prize_placement ?? 99))
-                  .map((item) => (
-                    <li key={item.asset_id} className="flex items-center gap-2.5">
-                      <span className="w-7 shrink-0 text-[10px] font-bold text-[var(--color-accent)]">
-                        {item.prize_placement ? `${item.prize_placement}º` : "—"}
-                      </span>
-                      {/* ponytail: imagen del CDN de Steam, sin next/image */}
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={`https://community.cloudflare.steamstatic.com/economy/image/${item.icon_url}/64x64`}
-                        alt=""
-                        className="h-7 w-7 rounded"
-                      />
-                      <span className="text-xs text-white">{item.name}</span>
-                    </li>
-                  ))}
-              </ul>
-            )}
-          </>
+            {[...prizeItems]
+              .sort((a, b) => (a.prize_placement ?? 99) - (b.prize_placement ?? 99))
+              .map((item) => (
+                <PlacementRow
+                  key={item.asset_id}
+                  row={item.prize_placement ? { from: item.prize_placement, to: item.prize_placement } : null}
+                >
+                  {/* ponytail: imagen del CDN de Steam, sin next/image */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`https://community.cloudflare.steamstatic.com/economy/image/${item.icon_url}/64x64`}
+                    alt=""
+                    className="h-7 w-7 shrink-0 rounded"
+                  />
+                  <span className="text-xs text-white">{item.name}</span>
+                </PlacementRow>
+              ))}
+          </ul>
         )}
 
         {active === "exp" && (
-          <ul className="space-y-1.5">
+          <ul className="divide-y divide-gray-800/60">
             {xpRows.map((row) => (
-              <li key={`${row.from}-${row.to}`} className="flex items-baseline gap-2.5">
-                <span className="w-12 shrink-0 text-xs font-bold text-[var(--color-accent)]">
-                  {medalFor(row) ?? placementLabel(row)}
+              <PlacementRow key={`x${row.from}-${row.to}`} row={row}>
+                <span className="text-sm text-white">
+                  {row.xp.toLocaleString("es-ES")}
+                  <span className="ml-1 text-[10px] text-gray-500">EXP</span>
                 </span>
-                {medalFor(row) && row.from !== row.to && (
-                  <span className="text-[10px] text-gray-500">{placementLabel(row)}</span>
-                )}
-                <span className="text-sm text-white">{row.xp.toLocaleString("es-ES")} EXP</span>
-              </li>
+              </PlacementRow>
             ))}
           </ul>
         )}
@@ -131,6 +114,30 @@ export function TournamentRewardsPanel({
         {active === "puntos" && <PointsTab />}
       </div>
     </div>
+  );
+}
+
+/**
+ * Una fila de premio: el puesto siempre a la izquierda con ancho fijo, para que
+ * las medallas y los rangos queden en columna y no bailen unos respecto a otros.
+ */
+function PlacementRow({
+  row,
+  children,
+}: {
+  row: { from: number; to: number } | null;
+  children: React.ReactNode;
+}) {
+  return (
+    <li className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+      <span className="flex w-14 shrink-0 items-center gap-1">
+        {row && medalFor(row) && <span className="text-sm leading-none">{medalFor(row)}</span>}
+        <span className="text-[11px] font-bold text-[var(--color-accent)]">
+          {row ? placementLabel(row) : "—"}
+        </span>
+      </span>
+      {children}
+    </li>
   );
 }
 
