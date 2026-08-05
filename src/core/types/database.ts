@@ -385,7 +385,18 @@ export type Database = {
           assigned_at?: string;
           completed_at?: string | null;
         };
-        Relationships: [];
+        // Declarada a mano: PostgREST sí conoce la clave ajena y el embed
+        // `challenges(...)` funciona, pero sin esto el tipo generado lo da por
+        // imposible y `select("user_id, challenges(conditions)")` no compila.
+        Relationships: [
+          {
+            foreignKeyName: "challenge_assignments_challenge_id_fkey";
+            columns: ["challenge_id"];
+            isOneToOne: false;
+            referencedRelation: "challenges";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       seals: {
         Row: {

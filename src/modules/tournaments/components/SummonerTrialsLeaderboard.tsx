@@ -6,6 +6,7 @@ import { createClient } from "@/core/supabase/browser";
 import { SEAL_CAP } from "@/core/lib/seal-rules";
 import { PlayerMatchHistory } from "./PlayerMatchHistory";
 import { SealThrowModal } from "./SealThrowModal";
+import { WinLossBar, Sparkline, CastigosCell } from "./LeaderboardCells";
 import { useTranslations } from "next-intl";
 import { useToast } from "@/core/ui/Toast";
 import type { TrialsEnrollmentWithProfile, TrialsConfig } from "@/core/types";
@@ -129,7 +130,7 @@ const num = (v: number | undefined, decimals: number) =>
 const MEDAL: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
 /** Columnas de la tabla — el desplegable las tiene que abarcar todas. */
-const COLUMNS = 14;
+const COLUMNS = 11;
 
 /**
  * Sellos sin gastar de cada participante del torneo. Una sola consulta para
@@ -159,6 +160,54 @@ function useSealCounts(tournamentId: string): [Record<string, number>, () => voi
   return [counts, () => setNonce((n) => n + 1)];
 }
 
+/**
+ * Racha de cada inscripción y castigos pendientes de cada jugador, en dos
+ * consultas para toda la tabla.
+ *
+ * La racha pide solo `match_score` y `win` con el operador flecha de PostgREST,
+ * no el `match_data` entero: son 11 filas diminutas en vez de traerse todos los
+ * jsonb de partida a la portada.
+ */
+function useTablaExtra(tournamentId: string) {
+  const [racha, setRacha] = useState<Record<string, number[]>>({});
+  const [castigos, setCastigos] = useState<Record<string, string[]>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    const sb = createClient();
+
+    sb.from("summoner_trials_matches")
+      .select("enrollment_id, match_score")
+      .eq("tournament_id", tournamentId)
+      .order("game_creation", { ascending: true })
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        const acc: Record<string, number[]> = {};
+        for (const m of data) {
+          (acc[m.enrollment_id] ??= []).push(Number(m.match_score));
+        }
+        setRacha(acc);
+      });
+
+    sb.from("challenge_assignments")
+      .select("user_id, challenges(conditions)")
+      .eq("status", "pending")
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        const acc: Record<string, string[]> = {};
+        for (const a of data as Array<{ user_id: string; challenges: { conditions: unknown } | null }>) {
+          const cond = a.challenges?.conditions as { key?: string } | null;
+          if (cond?.key) (acc[a.user_id] ??= []).push(cond.key);
+        }
+        setCastigos(acc);
+      });
+
+    return () => { cancelled = true; };
+  }, [tournamentId]);
+
+  return { racha, castigos };
+}
+
 export function SummonerTrialsLeaderboard({
   tournamentId,
   enrollments,
@@ -178,6 +227,7 @@ export function SummonerTrialsLeaderboard({
   >(null);
 
   const puedeLanzar = currentUserId != null && (seals[currentUserId] ?? 0) > 0;
+  const { racha, castigos } = useTablaExtra(tournamentId);
 
   const sorted = [...enrollments].sort((a, b) => b.score - a.score);
 
@@ -254,16 +304,13 @@ export function SummonerTrialsLeaderboard({
                 <th className="px-2.5 py-2 text-left">{t("playerColumn")}</th>
                 <th className="px-2.5 py-2 text-left">Rango</th>
                 <th className="px-2.5 py-2 text-right">{t("score")}</th>
+                <th className="px-2.5 py-2 text-left">V/D</th>
+                <th className="px-2.5 py-2 text-center">Racha</th>
                 <th className="px-2.5 py-2 text-right">Rendim.</th>
                 <th className="px-2.5 py-2 text-right">Retos</th>
                 <th className="px-2.5 py-2 text-center" title="Sellos sin gastar">Sellos</th>
+                <th className="px-2.5 py-2 text-left">Castigos</th>
                 <th className="px-2.5 py-2 text-center">{t("matchesColumn")}</th>
-                <th className="px-2.5 py-2 text-right">{t("avgKda")}</th>
-                <th className="px-2.5 py-2 text-right">KP%</th>
-                <th className="px-2.5 py-2 text-right">{t("vision")}</th>
-                <th className="px-2.5 py-2 text-right">CS/min</th>
-                <th className="px-2.5 py-2 text-right">{t("damage")}</th>
-                <th className="px-2.5 py-2 text-right">{t("wl")}</th>
               </tr>
             </thead>
             <tbody>
@@ -341,6 +388,18 @@ export function SummonerTrialsLeaderboard({
                       )}
                     </td>
 
+                    {/* V/D con barra de proporción */}
+                    <td className="px-2.5 py-2">
+                      <WinLossBar wins={snap?.wins ?? 0} losses={snap?.losses ?? 0} />
+                    </td>
+
+                    {/* Racha: los puntos de cada partida en orden */}
+                    <td className="px-2.5 py-2">
+                      <div className="flex justify-center">
+                        <Sparkline scores={racha[enrollment.id] ?? []} />
+                      </div>
+                    </td>
+
                     {/* Rendimiento: percentil medio dentro de su rol */}
                     <td className="px-2.5 py-2 text-right text-xs text-gray-300">
                       {snap?.avg_performance != null ? snap.avg_performance.toFixed(0) : "—"}
@@ -390,6 +449,11 @@ export function SummonerTrialsLeaderboard({
                       </div>
                     </td>
 
+                    {/* Castigos que lleva encima ahora mismo */}
+                    <td className="px-2.5 py-2">
+                      <CastigosCell keys={castigos[enrollment.user_id] ?? []} />
+                    </td>
+
                     {/* Matches progress */}
                     <td className="px-2.5 py-2">
                       <div className="flex flex-col items-center gap-0.5">
@@ -407,33 +471,6 @@ export function SummonerTrialsLeaderboard({
                       </div>
                     </td>
 
-                    {/* Stats del snapshot. Se comprueba campo a campo, no
-                        `snap ?`: un jugador con rango pero sin partidas tiene
-                        snapshot con solo el rango dentro. */}
-                    <td className="px-2.5 py-2 text-right text-xs text-gray-300">
-                      {num(snap?.avg_kda, 2)}
-                    </td>
-                    <td className="px-2.5 py-2 text-right text-xs text-gray-300">
-                      {snap?.avg_kill_participation != null ? `${snap.avg_kill_participation.toFixed(0)}%` : "—"}
-                    </td>
-                    <td className="px-2.5 py-2 text-right text-xs text-gray-300">
-                      {num(snap?.avg_vision_score, 0)}
-                    </td>
-                    <td className="px-2.5 py-2 text-right text-xs text-gray-300">
-                      {num(snap?.avg_cs_per_min, 1)}
-                    </td>
-                    <td className="px-2.5 py-2 text-right text-xs text-gray-300">
-                      {snap?.avg_damage != null ? fmtK(snap.avg_damage) : "—"}
-                    </td>
-                    <td className="px-2.5 py-2 text-right text-xs">
-                      {snap?.wins != null ? (
-                        <>
-                          <span className="text-green-400">{snap.wins}W</span>
-                          <span className="text-gray-600 mx-0.5">–</span>
-                          <span className="text-red-400">{snap.losses ?? 0}L</span>
-                        </>
-                      ) : "—"}
-                    </td>
                   </tr>
 
                   {isOpen && <PlayerMatchHistory enrollmentId={enrollment.id} columns={COLUMNS} />}
