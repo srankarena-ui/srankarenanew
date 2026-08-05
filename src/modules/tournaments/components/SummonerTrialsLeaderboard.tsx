@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/core/supabase/browser";
 import { SEAL_CAP } from "@/core/lib/seal-rules";
 import { PlayerMatchHistory } from "./PlayerMatchHistory";
+import { SealThrowModal } from "./SealThrowModal";
 import { useTranslations } from "next-intl";
 import { useToast } from "@/core/ui/Toast";
 import type { TrialsEnrollmentWithProfile, TrialsConfig } from "@/core/types";
@@ -135,8 +136,9 @@ const COLUMNS = 14;
  * toda la tabla, desde el navegador: `seals` tiene política `for select using
  * (true)` a propósito — que se vea la munición ajena es parte del juego.
  */
-function useSealCounts(tournamentId: string): Record<string, number> {
+function useSealCounts(tournamentId: string): [Record<string, number>, () => void] {
   const [counts, setCounts] = useState<Record<string, number>>({});
+  const [nonce, setNonce] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -152,9 +154,9 @@ function useSealCounts(tournamentId: string): Record<string, number> {
         setCounts(acc);
       });
     return () => { cancelled = true; };
-  }, [tournamentId]);
+  }, [tournamentId, nonce]);
 
-  return counts;
+  return [counts, () => setNonce((n) => n + 1)];
 }
 
 export function SummonerTrialsLeaderboard({
@@ -170,7 +172,12 @@ export function SummonerTrialsLeaderboard({
   const [syncing, setSyncing] = useState(false);
   // Solo uno abierto a la vez: con varios, la tabla se vuelve ilegible.
   const [expanded, setExpanded] = useState<string | null>(null);
-  const seals = useSealCounts(tournamentId);
+  const [seals, refreshSeals] = useSealCounts(tournamentId);
+  const [throwing, setThrowing] = useState<
+    { userId: string; username: string; role: string | null } | null
+  >(null);
+
+  const puedeLanzar = currentUserId != null && (seals[currentUserId] ?? 0) > 0;
 
   const sorted = [...enrollments].sort((a, b) => b.score - a.score);
 
@@ -224,6 +231,15 @@ export function SummonerTrialsLeaderboard({
           )}
         </div>
       </div>
+
+      {throwing && (
+        <SealThrowModal
+          tournamentId={tournamentId}
+          target={throwing}
+          onDone={refreshSeals}
+          onClose={() => setThrowing(null)}
+        />
+      )}
 
       {sorted.length === 0 ? (
         <div className="rounded-xl border border-gray-800 bg-[#121620] p-8 text-center text-sm text-gray-500">
@@ -353,7 +369,25 @@ export function SummonerTrialsLeaderboard({
 
                     {/* Sellos sin gastar: la munición que tiene encima ahora */}
                     <td className="px-2.5 py-2">
-                      <SealCapsule count={seals[enrollment.user_id] ?? 0} />
+                      <div className="flex flex-col items-center gap-1">
+                        <SealCapsule count={seals[enrollment.user_id] ?? 0} />
+                        {/* Solo sobre los demás, y solo si te queda munición */}
+                        {puedeLanzar && !isCurrentUser && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setThrowing({
+                                userId: enrollment.user_id,
+                                username: enrollment.profile.username ?? "?",
+                                role: (snap?.role as string | undefined) ?? null,
+                              });
+                            }}
+                            className="rounded-md border border-[var(--color-accent)]/40 px-1.5 py-0.5 text-[8px] uppercase tracking-wider text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)] hover:text-white"
+                          >
+                            Aplicar sello
+                          </button>
+                        )}
+                      </div>
                     </td>
 
                     {/* Matches progress */}
