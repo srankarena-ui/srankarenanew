@@ -6,16 +6,21 @@ import { useTranslations } from "next-intl";
 import { useToast } from "@/core/ui/Toast";
 import type { TrialsEnrollmentWithProfile, TrialsConfig } from "@/core/types";
 
+// Todo es opcional a propósito: el snapshot se escribe en dos momentos y con
+// distinto contenido — el rango en cuanto el jugador se inscribe, las medias
+// solo cuando tiene partidas. Declarar las medias como obligatorias hacía que
+// el compilador bendijera `snap.avg_kda.toFixed()`, que revienta en runtime
+// para quien todavía no ha jugado.
 interface StatsSnapshot {
-  avg_kda: number;
-  avg_kill_participation: number;
-  avg_vision_score: number;
-  avg_cs_per_min: number;
-  avg_damage: number;
-  avg_wards_placed: number;
-  avg_objectives: number;
-  wins: number;
-  losses: number;
+  avg_kda?: number;
+  avg_kill_participation?: number;
+  avg_vision_score?: number;
+  avg_cs_per_min?: number;
+  avg_damage?: number;
+  avg_wards_placed?: number;
+  avg_objectives?: number;
+  wins?: number;
+  losses?: number;
   // Desglose de la puntuación por rol. Opcionales: las inscripciones
   // sincronizadas antes del cambio de fórmula no los tienen.
   role?: string;
@@ -84,6 +89,10 @@ interface Props {
 function fmtK(n: number): string {
   return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : n.toFixed(0);
 }
+
+/** Un snapshot puede traer solo el rango: nunca dar por hecho que hay medias. */
+const num = (v: number | undefined, decimals: number) =>
+  v != null ? v.toFixed(decimals) : "—";
 
 const MEDAL: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
@@ -286,28 +295,30 @@ export function SummonerTrialsLeaderboard({
                       </div>
                     </td>
 
-                    {/* Stats (from snapshot) */}
+                    {/* Stats del snapshot. Se comprueba campo a campo, no
+                        `snap ?`: un jugador con rango pero sin partidas tiene
+                        snapshot con solo el rango dentro. */}
                     <td className="px-4 py-3 text-right text-xs text-gray-300">
-                      {snap ? snap.avg_kda.toFixed(2) : "—"}
+                      {num(snap?.avg_kda, 2)}
                     </td>
                     <td className="px-4 py-3 text-right text-xs text-gray-300">
-                      {snap ? `${snap.avg_kill_participation.toFixed(0)}%` : "—"}
+                      {snap?.avg_kill_participation != null ? `${snap.avg_kill_participation.toFixed(0)}%` : "—"}
                     </td>
                     <td className="px-4 py-3 text-right text-xs text-gray-300">
-                      {snap ? snap.avg_vision_score.toFixed(0) : "—"}
+                      {num(snap?.avg_vision_score, 0)}
                     </td>
                     <td className="px-4 py-3 text-right text-xs text-gray-300">
-                      {snap ? snap.avg_cs_per_min.toFixed(1) : "—"}
+                      {num(snap?.avg_cs_per_min, 1)}
                     </td>
                     <td className="px-4 py-3 text-right text-xs text-gray-300">
-                      {snap ? fmtK(snap.avg_damage) : "—"}
+                      {snap?.avg_damage != null ? fmtK(snap.avg_damage) : "—"}
                     </td>
                     <td className="px-4 py-3 text-right text-xs">
-                      {snap ? (
+                      {snap?.wins != null ? (
                         <>
                           <span className="text-green-400">{snap.wins}W</span>
                           <span className="text-gray-600 mx-0.5">–</span>
-                          <span className="text-red-400">{snap.losses}L</span>
+                          <span className="text-red-400">{snap.losses ?? 0}L</span>
                         </>
                       ) : "—"}
                     </td>

@@ -8,6 +8,7 @@ import { Badge } from "@/core/ui/Badge";
 import { useToast } from "@/core/ui/Toast";
 import { DefaultBanner } from "@/core/ui/DefaultBanner";
 import { useTournamentStore } from "@/modules/tournaments/store";
+import { useTabParam } from "@/modules/tournaments/useTabParam";
 import { registerForTournament, unregisterFromTournament } from "@/modules/tournaments/actions";
 import { TeamRegisterButton } from "./TeamRegisterButton";
 import { TournamentOverview } from "./TournamentOverview";
@@ -79,10 +80,19 @@ export function TournamentDetail({
 }: TournamentDetailProps) {
   const t = useTranslations("tournaments");
   const locale = useLocale();
-  const { activeTab, setActiveTab, scoreModalOpen, resolutionModalOpen, selectedMatch } =
-    useTournamentStore();
+  const { scoreModalOpen, resolutionModalOpen, selectedMatch } = useTournamentStore();
 
   const isSummonerTrials = tournament.tournament_format === "summoner_trials";
+
+  // La tercera pestaña se llama distinto según el formato, y la URL usa el
+  // nombre que ve el usuario: ?tab=leaderboard o ?tab=bracket.
+  const thirdSlug = isSummonerTrials ? "leaderboard" : "bracket";
+  const [tabSlug, setTabSlug] = useTabParam(
+    "tab",
+    ["overview", "players", thirdSlug] as const,
+    "overview"
+  );
+  const activeTab = tabSlug === thirdSlug ? "bracket" : (tabSlug as "overview" | "players");
   const displayFormat = getDisplayFormat(tournament);
   // Se valida al pintar: un JSON guardado a mano no debería romper la ficha.
   const prizeRows = parsePrizeTable(tournament.prize_table);
@@ -111,6 +121,7 @@ export function TournamentDetail({
         <div className="mb-6 flex border-b border-gray-800">
           {MAIN_TABS.map((tab) => {
             const isActive = activeTab === tab;
+            const slug = tab === "bracket" ? thirdSlug : tab;
             const label =
               tab === "overview"
                 ? t("tabOverview")
@@ -122,7 +133,7 @@ export function TournamentDetail({
             return (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => setTabSlug(slug)}
                 className={cn(
                   "relative px-5 py-3 text-[11px] uppercase tracking-[0.2em] transition-colors",
                   isActive ? "text-white" : "text-gray-500 hover:text-gray-300"

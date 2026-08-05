@@ -2,7 +2,7 @@
 
 import { cn } from "@/core/lib/cn";
 import { DefaultBanner } from "@/core/ui/DefaultBanner";
-import { useTournamentStore } from "@/modules/tournaments/store";
+import { useTabParam } from "@/modules/tournaments/useTabParam";
 import { useTranslations } from "next-intl";
 import type { Tournament } from "@/core/types";
 import type { PickableItem as PrizeItem } from "@/modules/vault/components/VaultPrizePicker";
@@ -24,7 +24,7 @@ function getOverviewFormatLabel(tournament: Tournament) {
 
 export function TournamentOverview({ tournament, prizeItems = [] }: TournamentOverviewProps) {
   const t = useTranslations("tournaments");
-  const { overviewSubTab, setOverviewSubTab } = useTournamentStore();
+  const [overviewSubTab, setOverviewSubTab] = useTabParam("sub", SUB_TABS, "details");
 
   return (
     <div>

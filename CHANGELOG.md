@@ -2,6 +2,14 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-08-04 — Cada pestaña de torneo con URL propia, y arreglo del leaderboard
+
+**Crash del leaderboard.** Al rellenar el rango de las inscripciones sin partidas, `stats_snapshot` pasó de `null` a un objeto **solo con el rango**. La tabla comprobaba `snap ? snap.avg_kda.toFixed(2) : "—"`: con snapshot presente pero sin medias, `toFixed` de `undefined`. `tsc` no lo vio porque `StatsSnapshot` declaraba las medias como obligatorias — el mismo patrón que ya mordió con `config.scoring_weights`. Ahora todos los campos son opcionales, así que el compilador exige comprobar cada uno, y se comprueba campo a campo en vez de `snap ?`.
+
+**Pestañas en la URL.** `activeTab`, `overviewSubTab` y `bracketSubTab` vivían en el store de zustand: no se podían compartir ni recargar. Pasan a `?tab=` y `?sub=` mediante `useTabParam` (nuevo, `src/modules/tournaments/useTabParam.ts`), y esos tres campos desaparecen del store. La tercera pestaña usa el nombre que ve el usuario — `?tab=leaderboard` en Summoner Trials, `?tab=bracket` en el resto. El valor por defecto no se escribe en la URL para no tener dos direcciones de la misma página, y se usa `push` para que el botón atrás deshaga el cambio de pestaña.
+
+Verificado con `npm run start` sobre un torneo real: las cinco combinaciones de URL devuelven 200 sin excepciones, y los cuatro rangos se pintan.
+
 ## 2026-08-04 — Arreglo: el rango no aparecía para casi nadie
 
 El rango se pedía **dentro** del bloque `if (addedCount > 0)`, que a su vez cuelga de `if (!newIds.length) continue`. O sea: solo se guardaba para quien tuviera partidas nuevas en ese sync concreto. Quien acababa de inscribirse, quien no había jugado desde el último sync, o quien ya había completado el torneo no llegaba nunca a tener rango — las cuatro inscripciones reales estaban así. La "optimización" de pedirlo solo cuando hay partidas nuevas era justo el fallo.

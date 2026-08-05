@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { cn } from "@/core/lib/cn";
 import { useTournamentStore } from "@/modules/tournaments/store";
+import { useTabParam } from "@/modules/tournaments/useTabParam";
 import { BracketMatch } from "./BracketMatch";
 import { Standings } from "./Standings";
 import type { Tournament, TournamentParticipant, Profile, MatchWithPlayers } from "@/core/types";
@@ -19,7 +20,8 @@ interface BracketViewProps {
 export function BracketView({ tournament, matches, participants, isAdmin }: BracketViewProps) {
   const t = useTranslations("tournaments");
   const router = useRouter();
-  const { isScanning, setScanning, bracketSubTab, setBracketSubTab } = useTournamentStore();
+  const { isScanning, setScanning } = useTournamentStore();
+  const [bracketSubTab, setBracketSubTab] = useTabParam("sub", ["bracket", "standings"] as const, "bracket");
 
   // Demo bracket data for 16 players when no real matches exist
   const demoMode = matches.length === 0;
