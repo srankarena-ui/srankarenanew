@@ -4,7 +4,7 @@ import { createClient as createAdminClient } from "@supabase/supabase-js";
 import type { TrialsConfig } from "@/core/types";
 import { roleScore, SCORING_WEIGHTS, type RoleBaselines } from "@/core/lib/role-score";
 import { evaluateFeats, featPoints, type EarnedFeat } from "@/core/lib/tournament-feats";
-import { sealsForMatch, sealsForStreaks } from "@/core/lib/seal-rules";
+import { sealsForMatch, sealsForStreaks, SEAL_CAP } from "@/core/lib/seal-rules";
 import baselines from "@/core/config/role-baselines.json";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/core/types/database";
@@ -291,6 +291,8 @@ async function grantSeals(
       killParticipation: s.killParticipation,
       pentaKills: s.pentaKills,
       teamDamagePercentage: s.teamDamagePercentage ?? 0,
+      quadraKills: s.quadraKills ?? 0,
+      gameDuration: s.gameDuration ?? 0,
       featKeys: (s.feats ?? []).map((f) => f.key),
     })) {
       add(reason, id);
@@ -304,7 +306,24 @@ async function grantSeals(
   }
 
   if (!rows.length) return;
-  await admin.from("seals").upsert(rows, {
+
+  // Tope de inventario. Se cuenta lo que ya tiene sin gastar y solo se otorga
+  // hasta llenar; el resto no se inserta.
+  //
+  // ponytail: los que no caben quedan en cola, no se pierden — al gastar uno,
+  // el siguiente sync mete el que se quedó fuera. Perderlos de verdad (como en
+  // las normas de Blue Shell) exige columna `void` y reproducir en orden
+  // cronológico ganancias y gastos, porque el sync no sabe cuándo estuvo lleno.
+  const { count } = await admin
+    .from("seals")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", enrollment.user_id)
+    .is("spent_at", null);
+
+  const hueco = SEAL_CAP - (count ?? 0);
+  if (hueco <= 0) return;
+
+  await admin.from("seals").upsert(rows.slice(0, hueco), {
     onConflict: "user_id,reason,riot_match_id",
     ignoreDuplicates: true,
   });

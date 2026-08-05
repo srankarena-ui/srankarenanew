@@ -4,9 +4,10 @@ import { useState } from "react";
 import { placementLabel, medalFor, type PrizeRow } from "@/core/lib/prize-table";
 import type { XpRow } from "@/core/lib/xp-table";
 import { FEATS, featsForRole, type Role } from "@/core/lib/tournament-feats";
+import { SEAL_RULES, SEAL_CAP } from "@/core/lib/seal-rules";
 import type { PickableItem } from "@/modules/vault/components/VaultPrizePicker";
 
-type Tab = "premios" | "exp" | "puntos";
+type Tab = "premios" | "exp" | "puntos" | "sellos";
 
 const ROLES: Array<[Role, string]> = [
   ["TOP", "Top"],
@@ -37,6 +38,7 @@ export function TournamentRewardsPanel({
   if (prizeRows.length > 0 || prizeItems.length > 0) tabs.push(["premios", "Premios"]);
   if (xpRows.length > 0) tabs.push(["exp", "Premios EXP"]);
   if (showPoints) tabs.push(["puntos", "Puntos"]);
+  if (showPoints) tabs.push(["sellos", "Sellos"]);
 
   const [tab, setTab] = useState<Tab>(tabs[0]?.[0] ?? "premios");
   if (!tabs.length) return null;
@@ -112,7 +114,66 @@ export function TournamentRewardsPanel({
         )}
 
         {active === "puntos" && <PointsTab />}
+        {active === "sellos" && <SealsTab />}
       </div>
+    </div>
+  );
+}
+
+function SealsTab() {
+  const [open, setOpen] = useState<string | null>(null);
+
+  return (
+    <div>
+      <div className="mb-3 flex items-center gap-2 rounded-lg bg-[#0b0e14] px-3 py-2">
+        <span className="inline-flex items-center gap-1 rounded-full border border-gray-800 px-1.5 py-1">
+          {Array.from({ length: SEAL_CAP }, (_, i) => (
+            <span key={i} className="h-2.5 w-2.5 rounded-full bg-gray-700/60" />
+          ))}
+        </span>
+        <p className="text-[10px] leading-tight text-gray-400">
+          Guardas hasta {SEAL_CAP} sellos. Con uno le impones un castigo a otro
+          participante.
+        </p>
+      </div>
+
+      <h4 className="mb-2 text-[9px] text-gray-500">CÓMO SE CONSIGUEN</h4>
+      <ul className="space-y-1">
+        {SEAL_RULES.map((rule) => (
+          <li key={rule.key}>
+            <div className="flex items-baseline justify-between gap-2 text-xs">
+              <span className="text-gray-300">
+                {rule.name}
+                <button
+                  type="button"
+                  onClick={() => setOpen(open === rule.key ? null : rule.key)}
+                  aria-expanded={open === rule.key}
+                  aria-label={`Qué es ${rule.name}`}
+                  className={`ml-1.5 h-4 w-4 rounded-full border text-[9px] leading-none transition-colors ${
+                    open === rule.key
+                      ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white"
+                      : "border-gray-700 text-gray-500 hover:border-gray-500 hover:text-gray-300"
+                  }`}
+                >
+                  ?
+                </button>
+              </span>
+              <span className="shrink-0 text-[10px] text-gray-500">
+                {rule.rate != null ? `${rule.rate}%` : "racha"}
+              </span>
+            </div>
+            {open === rule.key && (
+              <p className="mt-1 mb-1.5 rounded-lg bg-[#0b0e14] px-2.5 py-2 text-[10px] leading-relaxed text-gray-400">
+                {rule.how}
+              </p>
+            )}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-[10px] leading-relaxed text-gray-600">
+        El porcentaje es cada cuánto ocurre de verdad, medido sobre 10.020
+        partidas reales del parche.
+      </p>
     </div>
   );
 }

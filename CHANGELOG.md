@@ -2,6 +2,16 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-08-05 — Sellos: 14 reglas, tope de 3 y cápsula visible
+
+Cinco reglas nuevas tomadas de las normas de Blue Shell, todas medidas sobre el dataset unido (que sí separa kills de asistencias): masacre 22+ kills 1,37% · orquesta 30+ asistencias 0,68% · KDA de 20 0,77% · cuadrakill 0,88% · maratón (ganar en 40+ min) 5,99%. Sus dos umbrales estaban bien calibrados: 22 kills y 30 asistencias salen casi igual de raros, que es lo que hace falta para que un carry y un support tengan la misma oportunidad.
+
+**Producción total: 0,236 sellos por partida** — 2,36 en un torneo de 10, 4,72 en uno de 20. Con eso el tope de 3 casi nunca muerde en el corto y obliga a gastar en el largo, que es su función. El check falla si la producción se sale de esa banda por arriba o por abajo, no solo si una regla concreta se dispara.
+
+**Cápsula de 3 huecos** en la clasificación en vez de un contador: los vacíos en gris, los ganados encendidos. Se ve de un vistazo cuánta munición tiene y cuánta le cabe. Nueva pestaña «Sellos» en la tarjeta lateral con las 14 reglas, su «?» explicativo y la frecuencia real de cada una.
+
+ponytail: los sellos que no caben quedan en cola, no se pierden — al gastar uno, el siguiente sync mete el que se quedó fuera. Perderlos de verdad (como en Blue Shell) exige columna `void` y reproducir en orden cronológico ganancias y gastos, porque el sync no sabe cuándo estuvo lleno.
+
 ## 2026-08-05 — Historial de partidas al pulsar un jugador del leaderboard
 
 Al pulsar una fila de la clasificación se despliega debajo su historial del torneo: campeón con icono, rol, duración, K/D/A y KDA, KP, CS y CS/min, daño, visión, rendimiento, los retos conseguidos en esa partida y los puntos que sumó o restó. Marco verde/rojo según el resultado.

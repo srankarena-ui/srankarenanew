@@ -1,7 +1,9 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/core/supabase/browser";
+import { SEAL_CAP } from "@/core/lib/seal-rules";
 import { PlayerMatchHistory } from "./PlayerMatchHistory";
 import { useTranslations } from "next-intl";
 import { useToast } from "@/core/ui/Toast";
@@ -56,6 +58,34 @@ function rankCrest(tier: string): string {
   return `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${tier.toLowerCase()}.svg`;
 }
 
+/**
+ * Los SEAL_CAP huecos siempre visibles, en gris los vacíos: así se ve de un
+ * vistazo cuánta munición tiene y cuánta le cabe todavía, que un número suelto
+ * no dice.
+ */
+function SealCapsule({ count }: { count: number }) {
+  const lleno = count >= SEAL_CAP;
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-1 ${
+        lleno ? "border-[var(--color-accent)]/60 bg-[var(--color-accent)]/10" : "border-gray-800 bg-[#0b0e14]"
+      }`}
+      title={lleno ? `${count}/${SEAL_CAP} sellos — inventario lleno` : `${count}/${SEAL_CAP} sellos`}
+    >
+      {Array.from({ length: SEAL_CAP }, (_, i) => (
+        <span
+          key={i}
+          className={`h-2.5 w-2.5 rounded-full transition-colors ${
+            i < count
+              ? "bg-[var(--color-accent)] shadow-[0_0_5px_var(--color-accent)]"
+              : "bg-gray-700/60"
+          }`}
+        />
+      ))}
+    </span>
+  );
+}
+
 function RankCell({ snap }: { snap: StatsSnapshot | null }) {
   const tier = snap?.rank_tier;
   if (!tier) {
@@ -98,7 +128,34 @@ const num = (v: number | undefined, decimals: number) =>
 const MEDAL: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
 /** Columnas de la tabla — el desplegable las tiene que abarcar todas. */
-const COLUMNS = 13;
+const COLUMNS = 14;
+
+/**
+ * Sellos sin gastar de cada participante del torneo. Una sola consulta para
+ * toda la tabla, desde el navegador: `seals` tiene política `for select using
+ * (true)` a propósito — que se vea la munición ajena es parte del juego.
+ */
+function useSealCounts(tournamentId: string): Record<string, number> {
+  const [counts, setCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    createClient()
+      .from("seals")
+      .select("user_id")
+      .eq("tournament_id", tournamentId)
+      .is("spent_at", null)
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        const acc: Record<string, number> = {};
+        for (const s of data) acc[s.user_id] = (acc[s.user_id] ?? 0) + 1;
+        setCounts(acc);
+      });
+    return () => { cancelled = true; };
+  }, [tournamentId]);
+
+  return counts;
+}
 
 export function SummonerTrialsLeaderboard({
   tournamentId,
@@ -113,6 +170,7 @@ export function SummonerTrialsLeaderboard({
   const [syncing, setSyncing] = useState(false);
   // Solo uno abierto a la vez: con varios, la tabla se vuelve ilegible.
   const [expanded, setExpanded] = useState<string | null>(null);
+  const seals = useSealCounts(tournamentId);
 
   const sorted = [...enrollments].sort((a, b) => b.score - a.score);
 
@@ -182,6 +240,7 @@ export function SummonerTrialsLeaderboard({
                 <th className="px-2.5 py-2 text-right">{t("score")}</th>
                 <th className="px-2.5 py-2 text-right">Rendim.</th>
                 <th className="px-2.5 py-2 text-right">Retos</th>
+                <th className="px-2.5 py-2 text-center" title="Sellos sin gastar">Sellos</th>
                 <th className="px-2.5 py-2 text-center">{t("matchesColumn")}</th>
                 <th className="px-2.5 py-2 text-right">{t("avgKda")}</th>
                 <th className="px-2.5 py-2 text-right">KP%</th>
@@ -290,6 +349,11 @@ export function SummonerTrialsLeaderboard({
                       ) : (
                         <span className="text-xs text-gray-600">—</span>
                       )}
+                    </td>
+
+                    {/* Sellos sin gastar: la munición que tiene encima ahora */}
+                    <td className="px-2.5 py-2">
+                      <SealCapsule count={seals[enrollment.user_id] ?? 0} />
                     </td>
 
                     {/* Matches progress */}

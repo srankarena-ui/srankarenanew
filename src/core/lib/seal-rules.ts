@@ -22,7 +22,22 @@ export const SEAL_RULES: SealRule[] = [
     key: "kda_perfecto",
     name: "KDA perfecto",
     how: "Terminar con una muerte como mucho, más del 50% de participación y al menos 8 participaciones. Morir una vez cuenta igual que no morir: Riot divide entre 1 en los dos casos, así que el número es el mismo.",
-    rate: 1.77,
+    rate: 1.72,
+  },
+  { key: "masacre", name: "Masacre", how: "22 asesinatos o más en una sola partida.", rate: 1.37 },
+  {
+    key: "orquesta",
+    name: "Orquesta",
+    how: "30 asistencias o más en una sola partida. El equivalente de la masacre para quien no remata: sale igual de raro.",
+    rate: 0.68,
+  },
+  { key: "kda_20", name: "KDA de 20", how: "Terminar con un KDA superior a 20.", rate: 0.77 },
+  { key: "cuadrakill", name: "Cuadrakill", how: "Matar a cuatro enemigos tú solo.", rate: 0.88 },
+  {
+    key: "maraton",
+    name: "Maratón",
+    how: "Ganar una partida de 40 minutos o más.",
+    rate: 5.99,
   },
   { key: "pentakill", name: "Pentakill", how: "Matar a los cinco enemigos tú solo.", rate: 0.10 },
   {
@@ -80,9 +95,19 @@ export interface SealMatchInput {
   pentaKills: number;
   /** 0-1, del bloque `challenges` de match-v5. */
   teamDamagePercentage: number;
+  quadraKills: number;
+  /** Segundos. */
+  gameDuration: number;
   /** Claves de los retos de torneo conseguidos en esa partida. */
   featKeys: string[];
 }
+
+/**
+ * Tope de sellos sin gastar. Con las reglas actuales un jugador gana ~2,4 en un
+ * torneo de 10 partidas y ~4,7 en uno de 20: en el corto casi nunca se llena, en
+ * el largo le obliga a gastar, que es para lo que está el tope.
+ */
+export const SEAL_CAP = 3;
 
 /** Reglas que se deciden mirando una sola partida. */
 export function sealsForMatch(s: SealMatchInput): string[] {
@@ -94,6 +119,12 @@ export function sealsForMatch(s: SealMatchInput): string[] {
   if (s.deaths <= 1 && s.killParticipation > 50 && s.kills + s.assists >= 8) {
     earned.push("kda_perfecto");
   }
+
+  if (s.kills >= 22) earned.push("masacre");
+  if (s.assists >= 30) earned.push("orquesta");
+  if ((s.kills + s.assists) / Math.max(1, s.deaths) > 20) earned.push("kda_20");
+  if (s.quadraKills > 0) earned.push("cuadrakill");
+  if (s.win && s.gameDuration >= 2400) earned.push("maraton");
 
   if (s.pentaKills > 0) earned.push("pentakill");
   if (s.featKeys.includes("doubleAces")) earned.push("doble_barrido");

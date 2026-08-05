@@ -3,7 +3,7 @@
 //   node scripts/check-seal-rules.mjs
 import assert from "node:assert";
 import fs from "node:fs";
-import { sealsForMatch, sealsForStreaks, SEAL_RULES } from "../src/core/lib/seal-rules.ts";
+import { sealsForMatch, sealsForStreaks, SEAL_RULES, SEAL_CAP } from "../src/core/lib/seal-rules.ts";
 
 // ── Rachas: lo único con estado, y donde es fácil equivocarse ────────────────
 const w = (n) => Array.from({ length: n }, (_, i) => ({ win: true, matchId: `w${i}` }));
@@ -23,7 +23,8 @@ assert.equal(sealsForStreaks([...w(3), ...l(5)]).length, 1);
 // ── Reglas de una partida ───────────────────────────────────────────────────
 const base = {
   win: true, deaths: 0, kills: 5, assists: 5, killParticipation: 80,
-  pentaKills: 0, teamDamagePercentage: 0.2, featKeys: [],
+  pentaKills: 0, teamDamagePercentage: 0.2, quadraKills: 0, gameDuration: 1800,
+  featKeys: [],
 };
 const has = (patch, key) => sealsForMatch({ ...base, ...patch }).includes(key);
 
@@ -46,21 +47,38 @@ assert(!has({ win: true, teamDamagePercentage: 0.5 }, "carga_derrotada"));
 assert(!has({ win: false, featKeys: ["hadOpenNexus"] }, "desde_las_cenizas"));
 assert(has({ win: true, featKeys: ["hadOpenNexus"] }, "desde_las_cenizas"));
 
+// Reglas nuevas
+assert(has({ kills: 22 }, "masacre"));
+assert(!has({ kills: 21 }, "masacre"));
+assert(has({ assists: 30 }, "orquesta"));
+assert(has({ quadraKills: 1 }, "cuadrakill"));
+assert(has({ win: true, gameDuration: 2400 }, "maraton"));
+assert(!has({ win: false, gameDuration: 3000 }, "maraton"), "perder una larga no es maratón");
+// KDA de 20 con la convención de Riot: sin muertes se divide entre 1.
+assert(has({ kills: 10, assists: 11, deaths: 0 }, "kda_20"));
+assert(!has({ kills: 10, assists: 10, deaths: 0 }, "kda_20"), "exactamente 20 no supera 20");
+
 // ── Frecuencia real: ninguna regla puede inundar la economía ────────────────
-const rows = fs.readFileSync("data/challenges.jsonl", "utf8").trim().split("\n").map(JSON.parse);
+// Se usa el dataset unido, que sí separa kills de asistencias.
+const { loadPerformances } = await import("./dataset.mjs");
+const rows = loadPerformances();
 const counts = {};
+let totalSellos = 0;
 for (const r of rows) {
-  const c = r.c;
+  const c = r.c ?? {};
   const earned = sealsForMatch({
-    win: !!r.w,
-    deaths: c.deathsByEnemyChamps ?? 0,
-    kills: c.takedowns ?? 0, // el dataset no separa kills de assists
-    assists: 0,
+    win: r.win,
+    deaths: r.deaths,
+    kills: r.kills,
+    assists: r.assists,
     killParticipation: (c.killParticipation ?? 0) * 100,
     pentaKills: c.pentaKills ?? 0,
     teamDamagePercentage: c.teamDamagePercentage ?? 0,
-    featKeys: [],
+    quadraKills: c.quadraKills ?? 0,
+    gameDuration: r.duration_min * 60,
+    featKeys: Object.keys(c),
   });
+  totalSellos += earned.length;
   for (const k of earned) counts[k] = (counts[k] ?? 0) + 1;
 }
 
@@ -78,4 +96,15 @@ for (const [key, n] of Object.entries(counts)) {
   assert(pct < 10, `la regla ${key} salta en el ${pct.toFixed(1)}% de las partidas: inunda la economía`);
 }
 
-console.log("\nOK: rachas, casos límite y frecuencias dentro de lo previsto.");
+// El tope de inventario solo significa algo si la producción se le acerca: si
+// un torneo típico diera 0,3 sellos, el tope de 3 sería decorativo; si diera 15,
+// estaría siempre lleno y sobraría la mitad de las reglas.
+const porPartida = totalSellos / rows.length;
+console.log(`\nproducción: ${porPartida.toFixed(3)} sellos por partida`);
+for (const t of [10, 15, 20]) {
+  console.log(`  torneo de ${String(t).padStart(2)} partidas → ${(porPartida * t).toFixed(2)} sellos`);
+}
+assert(porPartida * 10 >= 1, "en 10 partidas casi nadie llegaría a tener un sello");
+assert(porPartida * 10 <= SEAL_CAP * 2, `en 10 partidas se generarían ${(porPartida * 10).toFixed(1)}: el tope de ${SEAL_CAP} sería una pared constante`);
+
+console.log("\nOK: rachas, casos límite, frecuencias y tope dentro de lo previsto.");
