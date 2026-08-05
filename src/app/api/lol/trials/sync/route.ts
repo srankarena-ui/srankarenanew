@@ -4,7 +4,10 @@ import { createClient as createAdminClient } from "@supabase/supabase-js";
 import type { TrialsConfig } from "@/core/types";
 import { roleScore, SCORING_WEIGHTS, type RoleBaselines } from "@/core/lib/role-score";
 import { evaluateFeats, featPoints, type EarnedFeat } from "@/core/lib/tournament-feats";
+import { sealsForMatch, sealsForStreaks } from "@/core/lib/seal-rules";
 import baselines from "@/core/config/role-baselines.json";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/core/types/database";
 
 function getCluster(platform: string): string {
   const p = platform.toLowerCase();
@@ -52,6 +55,8 @@ interface MatchStats {
   teamHeraldKills: number;
   teamGrubKills: number;
   teamTowerKills: number;
+  /** 0-1: cuánto del daño a campeones de su equipo hizo él. */
+  teamDamagePercentage: number;
   pentaKills: number;
   quadraKills: number;
   tripleKills: number;
@@ -176,6 +181,8 @@ function extractStats(
     teamHeraldKills: team?.objectives?.riftHerald?.kills ?? 0,
     teamGrubKills: team?.objectives?.horde?.kills ?? 0,
     teamTowerKills: team?.objectives?.tower?.kills ?? 0,
+    // 0-1. Lo usan las reglas de sellos ("carga del equipo").
+    teamDamagePercentage: (player.challenges?.teamDamagePercentage as number) ?? 0,
     pentaKills: (player.pentaKills as number) ?? 0,
     quadraKills: (player.quadraKills as number) ?? 0,
     tripleKills: (player.tripleKills as number) ?? 0,
@@ -249,6 +256,58 @@ async function fetchRank(
     onError(`rango: ${String(err)}`);
     return null;
   }
+}
+
+/**
+ * Otorga los sellos que le correspondan por las partidas del torneo.
+ *
+ * Se recalcula sobre TODAS las partidas cada vez, no solo las nuevas: es lo que
+ * permite que cambiar una regla reparta hacia atrás sin escribir un backfill. El
+ * índice único (user_id, reason, riot_match_id) es lo que evita duplicar, así
+ * que reejecutarlo es inofensivo.
+ */
+async function grantSeals(
+  admin: SupabaseClient<Database>,
+  enrollment: { id: string; user_id: string },
+  tournamentId: string,
+  matches: Array<{ riot_match_id: string; match_data: unknown }>
+) {
+  const ordered = matches
+    .map((m) => ({ id: m.riot_match_id, s: m.match_data as unknown as MatchStats }))
+    .sort((a, b) => a.s.gameCreation - b.s.gameCreation);
+
+  const rows: Array<{
+    user_id: string; tournament_id: string; reason: string; riot_match_id: string;
+  }> = [];
+  const add = (reason: string, riot_match_id: string) =>
+    rows.push({ user_id: enrollment.user_id, tournament_id: tournamentId, reason, riot_match_id });
+
+  for (const { id, s } of ordered) {
+    for (const reason of sealsForMatch({
+      win: s.win,
+      deaths: s.deaths,
+      kills: s.kills,
+      assists: s.assists,
+      killParticipation: s.killParticipation,
+      pentaKills: s.pentaKills,
+      teamDamagePercentage: s.teamDamagePercentage ?? 0,
+      featKeys: (s.feats ?? []).map((f) => f.key),
+    })) {
+      add(reason, id);
+    }
+  }
+
+  for (const { reason, matchId } of sealsForStreaks(
+    ordered.map(({ id, s }) => ({ win: s.win, matchId: id }))
+  )) {
+    add(reason, matchId);
+  }
+
+  if (!rows.length) return;
+  await admin.from("seals").upsert(rows, {
+    onConflict: "user_id,reason,riot_match_id",
+    ignoreDuplicates: true,
+  });
 }
 
 /** Cuántas veces ha conseguido cada reto en todo el torneo. */
@@ -434,8 +493,10 @@ export async function POST(request: NextRequest) {
         // Recompute aggregate from all stored matches
         const { data: allMatches } = await admin
           .from("summoner_trials_matches")
-          .select("match_data, match_score")
+          .select("riot_match_id, match_data, match_score")
           .eq("enrollment_id", enrollment.id);
+
+        await grantSeals(admin, enrollment, tournamentId, allMatches ?? []);
 
         const allStats = (allMatches ?? []).map((m) => m.match_data as unknown as MatchStats);
         const n = allStats.length;

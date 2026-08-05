@@ -387,6 +387,36 @@ export type Database = {
         };
         Relationships: [];
       };
+      seals: {
+        Row: {
+          id: string;
+          user_id: string;
+          tournament_id: string | null;
+          reason: string;
+          riot_match_id: string | null;
+          earned_at: string;
+          spent_at: string | null;
+          spent_on: string | null;
+          challenge_id: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          tournament_id?: string | null;
+          reason: string;
+          riot_match_id?: string | null;
+          earned_at?: string;
+          spent_at?: string | null;
+          spent_on?: string | null;
+          challenge_id?: string | null;
+        };
+        Update: {
+          spent_at?: string | null;
+          spent_on?: string | null;
+          challenge_id?: string | null;
+        };
+        Relationships: [];
+      };
       challenge_completions: {
         Row: {
           id: string;

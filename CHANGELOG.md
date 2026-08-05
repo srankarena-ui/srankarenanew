@@ -2,6 +2,20 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-08-05 — Sellos: la moneda para imponer castigos (mitad de ganarlos)
+
+El ítem se llama **sello**. Se descartó "castigo" porque choca con el hechizo de invocador — Smite es *Castigar* en el cliente en español.
+
+**Nueve reglas, todas medidas** sobre las 10.020 actuaciones de `data/challenges.jsonl` antes de fijarlas, no estimadas: KDA perfecto 1,77% · pentakill 0,10% · doble barrido 0,20% · desde las cenizas 1,75% · robo ancestral 2,20% · carga del equipo 3,32% · cargaste y perdiste 4,62% · rachas de 5 victorias y de 5 derrotas (no medibles: el dataset son actuaciones sueltas, no secuencias). Se descartaron *3+ asesinatos en solitario* (24,54%) y *morir 10+ veces* (22,72%) por inundar la economía.
+
+**El KDA perfecto lleva suelo de 8 participaciones.** Un 2/1/1 en una partida de cuatro asesinatos cumplía "una muerte y KP > 50%" sin haber hecho nada. El suelo solo recorta del 2,13% al 1,77%, o sea que casi todo lo que filtra es ese caso.
+
+**Modelo de datos**: `seals`, una fila por sello (migración 032). El saldo es contar las que tienen `spent_at` nulo — sin tabla de monedero ni triggers. El índice único `(user_id, reason, riot_match_id)` es lo que sostiene todo: el sync recalcula **todas** las partidas cada vez, así que cambiar una regla reparte hacia atrás sin backfill y reejecutar es inofensivo. Sin `WHERE` a propósito: los NULL ya son distintos entre sí en un índice único, y uno parcial no siempre sirve para `ON CONFLICT`.
+
+Comprobación: `node --experimental-strip-types scripts/check-seal-rules.mjs` — casos límite de rachas, el 2/1/1, y falla si alguna regla salta en más del 10% de las partidas.
+
+**Falta la otra mitad**: gastar el sello para imponerle un castigo a otro jugador. El catálogo de castigos está diseñado en `docs/retos-verificacion.md` pero sin construir.
+
 ## 2026-08-04 — Cada pestaña de torneo con URL propia, y arreglo del leaderboard
 
 **Crash del leaderboard.** Al rellenar el rango de las inscripciones sin partidas, `stats_snapshot` pasó de `null` a un objeto **solo con el rango**. La tabla comprobaba `snap ? snap.avg_kda.toFixed(2) : "—"`: con snapshot presente pero sin medias, `toFixed` de `undefined`. `tsc` no lo vio porque `StatsSnapshot` declaraba las medias como obligatorias — el mismo patrón que ya mordió con `config.scoring_weights`. Ahora todos los campos son opcionales, así que el compilador exige comprobar cada uno, y se comprueba campo a campo en vez de `snap ?`.
