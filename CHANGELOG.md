@@ -8,7 +8,9 @@ Resumen breve de cada implementación (feature, fix, refactor pedido). Una entra
 
 **La pestaña Puntos tiene selector de rol.** 18 de los 20 retos son comunes y 2 dependen del rol, así que hay botones Top/Jungla/Mid/ADC/Support y la lista se reordena por puntos marcando cuáles son "tu rol". Solo aparece en formato `summoner_trials`; un bracket normal no puntúa por partida.
 
-Archivos: `TournamentRewardsPanel.tsx` (nuevo), `TournamentDetail.tsx`, `SummonerTrialsLeaderboard.tsx` (fuera `ScoringWeightsInfo` y el prop `xpTable`).
+**Cada reto explica qué hay que hacer.** "Sin salida" o "Territorio tomado" no dicen nada por sí solos, así que `Feat` lleva un campo `how` obligatorio (lo exige el tipo, no hace falta test) y un "?" al lado del nombre lo despliega junto al porcentaje de partidas que lo consiguen. Se abre en su sitio y de uno en uno en vez de un tooltip flotante: la tarjeta es estrecha y así funciona tocando en móvil.
+
+Archivos: `TournamentRewardsPanel.tsx` (nuevo), `TournamentDetail.tsx`, `SummonerTrialsLeaderboard.tsx` (fuera `ScoringWeightsInfo` y el prop `xpTable`), `core/lib/tournament-feats.ts`.
 
 ## 2026-08-03 — Requisitos de inscripción y vault oculto mientras solo haya LoL
 
