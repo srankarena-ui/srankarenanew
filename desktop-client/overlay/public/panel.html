@@ -240,8 +240,14 @@
     <!-- Riot / Rango -->
     <div class="card"><div class="in">
       <h2>Cuenta de Riot · Rango</h2>
-      <label>Clave de desarrollador de Riot</label>
-      <input type="text" id="riotApiKey" placeholder="RGAPI-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+      <p class="hint" style="margin-top:0">
+        Ya no hace falta clave de desarrollador: las consultas van por S-Rank
+        Arena, así que no hay que renovar nada cada 24 horas.
+      </p>
+      <!-- Se conserva oculto porque el resto del panel guarda y lee este campo
+           al enviar la configuración; quitarlo del todo obligaría a tocar el
+           guardado entero para no ganar nada. -->
+      <input type="hidden" id="riotApiKey" value="">
       <div class="row">
         <div><label>Nombre de invocador</label><input type="text" id="riotGameName" placeholder="ej: Hydro"></div>
         <div><label>Tag</label><input type="text" id="riotTagLine" placeholder="ej: LAN"></div>

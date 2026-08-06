@@ -285,9 +285,31 @@ function normalizeRankEntry(entry) {
   return { tier, division: hidesDivision ? null : entry.rank, lp: entry.leaguePoints };
 }
 
-async function riotGet(url, apiKey) {
+// Dónde escucha el cliente de S-Rank Arena. Lo pasa él al arrancar este
+// proceso; si no está, se cae al puerto de siempre.
+const SRANK_LOCAL = process.env.SRANK_LOCAL ?? "http://127.0.0.1:8788";
+
+/**
+ * Todas las llamadas a la API de Riot pasan por aquí, y por eso basta con
+ * cambiar esta función: van a través del cliente, que las reenvía a la web,
+ * que es la única que tiene la clave.
+ *
+ * Antes cada streamer metía su propia clave de desarrollador en el panel, y esa
+ * caduca cada 24 horas. Mandarle a cada uno la clave de la plataforma tampoco
+ * valía: es una sola para todos, y repartida por veinte máquinas cualquiera
+ * podría quemar el límite o filtrarla.
+ *
+ * Data Dragon y Community Dragon siguen yendo directos: son públicos y no
+ * llevan clave.
+ */
+async function riotGet(url, _apiKey) {
+  const esRiot = /^https:\/\/[a-z0-9-]+\.api\.riotgames\.com\//.test(url);
+  const destino = esRiot
+    ? `${SRANK_LOCAL}/local/riot?url=${encodeURIComponent(url)}`
+    : url;
+
   try {
-    const res = await fetch(url, { headers: { "X-Riot-Token": apiKey } });
+    const res = await fetch(destino);
     if (!res.ok) return { error: `${res.status} ${res.statusText}` };
     return { data: await res.json() };
   } catch (e) { return { error: e.message }; }

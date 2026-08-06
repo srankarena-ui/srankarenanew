@@ -114,7 +114,13 @@ async function arrancarOverlay() {
     cwd: join(RAIZ, "overlay"),
     // Su configuración —con la clave de Riot del streamer— vive fuera del
     // programa, para que actualizar el cliente no la borre.
-    env: { ...process.env, LOL_OVERLAY_DATA_DIR: join(RAIZ, "overlay-datos") },
+    env: {
+      ...process.env,
+      LOL_OVERLAY_DATA_DIR: join(RAIZ, "overlay-datos"),
+      // Para que sus llamadas a Riot vuelvan por aquí y lleguen a la web con
+      // la clave puesta. Sin esto seguiría pidiendo una clave al streamer.
+      SRANK_LOCAL: `http://127.0.0.1:${PUERTO}`,
+    },
     stdio: "ignore",
   });
   overlay.on("exit", () => { overlay = null; });
@@ -271,6 +277,27 @@ const server = createServer(async (req, res) => {
   // tanto lo que justifica que esto sea una aplicación y no una pestaña.
   if (url.pathname === "/local/juego") {
     return json(200, await estadoJuego());
+  }
+
+  // Pasarela para el overlay: pide aquí y esto lo reenvía a la web, que es
+  // quien tiene la clave de Riot. Así el overlay no guarda credenciales de
+  // ningún tipo y el streamer no tiene que renovar nada cada 24 horas.
+  if (url.pathname === "/local/riot") {
+    const destino = url.searchParams.get("url");
+    if (!destino) return json(400, { error: "Falta url" });
+
+    const t = await token();
+    if (!t) return json(401, { error: "Sin sesión" });
+
+    const arriba = await fetch(`${API}/api/riot/proxy?url=${encodeURIComponent(destino)}`, {
+      headers: { Authorization: `Bearer ${t}` },
+    });
+    const cuerpo = await arriba.text();
+
+    // Se conserva el estado: el overlay distingue un 404 (sin rango) de un 429
+    // (límite), y aplanarlo aquí le quitaría esa información.
+    res.writeHead(arriba.status, { "Content-Type": "application/json" });
+    return res.end(cuerpo);
   }
 
   // La dirección de la web, para incrustarla sin tenerla escrita en el HTML.
