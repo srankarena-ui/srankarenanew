@@ -480,7 +480,16 @@ export async function POST(request: NextRequest) {
         .eq("id", enrollment.id);
     }
 
-    if (enrollment.matches_tracked >= matches_to_track) continue;
+    // Bloque de descarga. Se sale con `break descarga`, no con `continue`: los
+    // tres cortes que había —torneo completado, fallo al pedir los ids, y
+    // ninguna partida nueva— saltaban por encima del recálculo que viene
+    // después, así que quien rechazaba un castigo y no jugaba no veía nunca su
+    // resta. Es la tercera vez que este patrón muerde: lo que no depende de
+    // partidas nuevas no puede colgar del camino de las partidas.
+    let addedCount = 0;
+
+    descarga: {
+    if (enrollment.matches_tracked >= matches_to_track) break descarga;
 
     try {
       const cluster = getCluster(enrollment.region);
@@ -491,7 +500,7 @@ export async function POST(request: NextRequest) {
         `https://${cluster}.api.riotgames.com/lol/match/v5/matches/by-puuid/${enrollment.puuid}/ids?start=0&count=30&startTime=${enrolledAtSec}`,
         { headers: { "X-Riot-Token": apiKey } }
       );
-      if (!idsRes.ok) { errors.push(`Failed IDs for ${enrollment.user_id}`); continue; }
+      if (!idsRes.ok) { errors.push(`Failed IDs for ${enrollment.user_id}`); break descarga; }
       const allIds: string[] = await idsRes.json();
 
       const { data: existingMatches } = await admin
@@ -501,9 +510,7 @@ export async function POST(request: NextRequest) {
 
       const trackedIds = new Set((existingMatches ?? []).map((m) => m.riot_match_id));
       const newIds = allIds.filter((id) => !trackedIds.has(id));
-      if (!newIds.length) continue;
-
-      let addedCount = 0;
+      if (!newIds.length) break descarga;
 
       // Ventanas en las que sus partidas no cuentan: desde que se le impuso un
       // castigo hasta que lo aceptó o rechazó. Si sigue sin decidir, la ventana
@@ -566,12 +573,17 @@ export async function POST(request: NextRequest) {
         }
       }
 
+    } catch (err) {
+      errors.push(`Error for ${enrollment.user_id}: ${String(err)}`);
+    }
+    } // fin descarga
+
       // Se recalcula SIEMPRE, no solo cuando llegan partidas nuevas. Tenerlo
       // dentro de `if (addedCount > 0)` dejaba sin aplicar todo lo que no
       // depende de una partida —la resta por rechazar un castigo, sin ir más
       // lejos: quien rechaza y no juega se quedaba con su puntuación intacta.
       // Es una consulta a la base, sin peticiones a Riot, así que es barato.
-      {
+    try {
         const { data: allMatches } = await admin
           .from("summoner_trials_matches")
           .select("riot_match_id, match_data, match_score")
@@ -652,7 +664,6 @@ export async function POST(request: NextRequest) {
           .from("summoner_trials_enrollments")
           .update({ matches_tracked: n, score: totalScore, stats_snapshot: statsSnapshot })
           .eq("id", enrollment.id);
-      }
     } catch (err) {
       errors.push(`Error for ${enrollment.user_id}: ${String(err)}`);
     }
