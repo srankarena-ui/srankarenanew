@@ -111,8 +111,8 @@ export const CASTIGOS: Castigo[] = [
   {
     key: "autofill",
     via: "cliente",
-    name: "Rellenar",
-    how: "Buscar cola con Rellenar en vez de elegir tus dos posiciones. Se comprueba al entrar en cola, que es cuando la elección deja de poder cambiarse.",
+    name: "Autofill",
+    how: "Buscar cola con Autofill en vez de elegir tus dos posiciones. Se comprueba al entrar en cola, que es cuando la elección deja de poder cambiarse.",
     dureza: 2,
   },
   {

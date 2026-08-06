@@ -9,12 +9,12 @@ import type { Database } from "@/core/types/database";
  * Lo que el cliente de escritorio ve y ninguna API pública expone.
  *
  * De momento solo las posiciones de cola, que es lo que resuelve el castigo
- * "Rellenar": match-v5 guarda el rol en el que acabaste jugando, pero nunca lo
+ * "Autofill": match-v5 guarda el rol en el que acabaste jugando, pero nunca lo
  * que pediste al buscar partida.
  *
  * Se reporta **al entrar en cola**, no en el lobby: hasta que pulsas buscar
  * partida la elección se puede cambiar tantas veces como quieras, así que
- * mirarla antes permitiría poner Rellenar, dar el castigo por cumplido, y
+ * mirarla antes permitiría poner Autofill, dar el castigo por cumplido, y
  * cambiarlo justo después.
  */
 export async function POST(request: NextRequest) {
@@ -60,11 +60,11 @@ export async function POST(request: NextRequest) {
     userId: auth.userId,
     type: cumplio ? NOTIFICATION_TYPES.castigoCumplido : NOTIFICATION_TYPES.castigoIncumplido,
     title: cumplio
-      ? "Castigo cumplido: Rellenar"
-      : `Castigo incumplido: Rellenar · −${REJECTION_PENALTY} puntos`,
+      ? "Castigo cumplido: Autofill"
+      : `Castigo incumplido: Autofill · −${REJECTION_PENALTY} puntos`,
     body: cumplio
-      ? "Entraste en cola con Rellenar."
-      : `Entraste en cola con ${firstPosition} en vez de Rellenar.`,
+      ? "Entraste en cola con Autofill."
+      : `Entraste en cola con ${firstPosition} en vez de Autofill.`,
   });
 
   return NextResponse.json({ ok: true, resuelto: cumplio ? "completed" : "failed" });

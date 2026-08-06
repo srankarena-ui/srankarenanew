@@ -14,7 +14,7 @@ import { createServer } from "node:http";
 import { readFileSync, writeFileSync, existsSync, rmSync, mkdirSync } from "node:fs";
 import { join, extname, dirname, sep } from "node:path";
 import { randomUUID } from "node:crypto";
-import { exec, spawn } from "node:child_process";
+import { exec, execFile, spawn } from "node:child_process";
 import { request as httpsRequest } from "node:https";
 import { fileURLToPath } from "node:url";
 
@@ -152,6 +152,100 @@ async function arrancarOverlay() {
 // plano ocupando el 8787 impide volver a arrancarlo.
 for (const señal of ["SIGINT", "SIGTERM", "exit"]) {
   process.on(señal, () => { if (overlay && !overlay.killed) overlay.kill(); });
+}
+
+// ── Avisos ──────────────────────────────────────────────────────────────────
+/**
+ * Aviso propio si corremos dentro de Electron —ventana sin marco, con el estilo
+ * de la aplicación y que se ve sobre la partida— y globo de Windows si no.
+ *
+ * El respaldo existe porque este servidor también se ejecuta suelto con node
+ * durante el desarrollo, sin ninguna ventana alrededor.
+ */
+function avisar(titulo, cuerpo, urgente = true) {
+  if (typeof globalThis.__srankAvisar === "function") {
+    globalThis.__srankAvisar(titulo, cuerpo, urgente);
+    console.log(`  [aviso] ${titulo}`);
+    return;
+  }
+  avisarConWindows(titulo, cuerpo);
+}
+
+function avisarConWindows(titulo, cuerpo) {
+  const ps = `
+Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+[System.Media.SystemSounds]::Exclamation.Play()
+$n = New-Object System.Windows.Forms.NotifyIcon
+$n.Icon = [System.Drawing.SystemIcons]::Warning
+$n.BalloonTipTitle = ${JSON.stringify(titulo)}
+$n.BalloonTipText  = ${JSON.stringify(cuerpo)}
+$n.Visible = $true
+$n.ShowBalloonTip(15000)
+Start-Sleep -Seconds 8
+$n.Dispose()`;
+  // execFile con argumentos sueltos: montar la orden como una cadena obliga a
+  // escapar comillas a mano y falla en silencio con cualquier acento o comilla.
+  execFile("powershell", ["-NoProfile", "-WindowStyle", "Hidden", "-Command", ps], () => {});
+  console.log(`  [aviso] ${titulo}`);
+}
+
+/**
+ * Vigila el cliente de League y avisa en los dos momentos que importan: al
+ * entrar en cola, para recordarle lo que lleva encima mientras aún puede
+ * planear; y en selección, si va a incumplirlo y todavía está a tiempo.
+ *
+ * Vive aquí y no en un script aparte porque el usuario no va a arrancar dos
+ * cosas, y porque este proceso ya sondea la LCU para la barra.
+ */
+let faseAnterior = null;
+let avisadoEnCola = false;
+let ultimoProblema = null;
+
+async function vigilar() {
+  const fase = await lcu("/lol-gameflow/v1/gameflow-phase");
+  if (fase !== faseAnterior) faseAnterior = fase;
+
+  if (fase !== "Matchmaking" && fase !== "ChampSelect") {
+    avisadoEnCola = false;
+    ultimoProblema = null;
+    return;
+  }
+
+  const inbox = await api("/api/me/inbox");
+  const reto = (inbox.body?.retos ?? []).find((r) => r.key);
+  if (!reto) return;
+
+  if (fase === "Matchmaking" && !avisadoEnCola) {
+    avisadoEnCola = true;
+    avisar(
+      reto.status === "pending" ? `Castigo sin decidir: ${reto.title}` : `Tienes un castigo: ${reto.title}`,
+      reto.status === "pending"
+        ? "Hasta que lo aceptes o lo rechaces, tus partidas no cuentan para el torneo."
+        : reto.description ?? ""
+    );
+    return;
+  }
+
+  if (fase !== "ChampSelect") return;
+
+  const cs = await lcu("/lol-champ-select/v1/session");
+  const yo = cs?.myTeam?.find((m) => m.cellId === cs.localPlayerCellId);
+  if (!yo) return;
+
+  // Mismas reglas que usa el servidor para verificar; duplicarlas aquí las
+  // separaría del catálogo a la primera que cambie una.
+  const hechizos = [yo.spell1Id, yo.spell2Id];
+  const problema =
+    reto.key === "sin_flash" && hechizos.includes(4) ? "Llevas Destello" :
+    reto.key === "sin_prender" && hechizos.includes(14) ? "Llevas Prender" :
+    reto.key === "campeon_aleatorio" && reto.params?.campeon && yo.championId
+      ? `Te tocaba ${reto.params.campeon}` : null;
+
+  // Solo cuando cambia: si no, avisaría cada dos segundos mientras siga mal.
+  if (problema && problema !== ultimoProblema) {
+    avisar(`Vas a incumplir: ${reto.title}`, `${problema}. Cámbialo antes de que empiece la partida.`);
+  }
+  ultimoProblema = problema;
 }
 
 // ── Cliente de League ───────────────────────────────────────────────────────
@@ -292,6 +386,11 @@ const server = createServer(async (req, res) => {
 
   // Estado del cliente de League. Es lo único que la web no puede saber, y por
   // tanto lo que justifica que esto sea una aplicación y no una pestaña.
+  if (url.pathname === "/local/probar-aviso") {
+    avisar("Vas a incumplir: Sin Flash", "Llevas Destello. Cámbialo antes de que empiece la partida.", true);
+    return json(200, { ok: true });
+  }
+
   if (url.pathname === "/local/juego") {
     return json(200, await estadoJuego());
   }
@@ -352,6 +451,10 @@ server.listen(PUERTO, "127.0.0.1", () => {
   console.log(`  API: ${API}`);
   console.log(sesion ? `  Sesión guardada: ${sesion.email}` : "  Sin sesión iniciada");
 });
+
+// Cada 2 s, igual que la barra: los cambios de fase del juego duran segundos y
+// perderse la entrada en cola es perderse el único momento útil del aviso.
+setInterval(() => { vigilar().catch(() => {}); }, 2000);
 
 // Lo importa main.js (la ventana de Electron) para esperar a que escuche antes
 // de cargar la interfaz: sin eso la ventana abre contra un puerto muerto.

@@ -11,6 +11,61 @@ const PUERTO = Number(process.env.SRANK_PORT ?? 8788);
 const URL_LOCAL = `http://localhost:${PUERTO}`;
 
 let ventana = null;
+let aviso = null;
+
+const ANCHO_AVISO = 380;
+const ALTO_AVISO = 104;
+
+/**
+ * Aviso propio: ventana sin marco, siempre encima y transparente.
+ *
+ * Los globos de Windows no se pueden maquillar —son los del sistema y punto—,
+ * y encima de la partida no valen. Esto además es la base del aviso en juego:
+ * con League en ventana sin bordes, se ve por encima.
+ */
+function mostrarAviso(titulo, cuerpo, urgente) {
+  const { screen } = require("electron");
+  const pantalla = screen.getPrimaryDisplay().workArea;
+
+  if (!aviso || aviso.isDestroyed()) {
+    aviso = new BrowserWindow({
+      width: ANCHO_AVISO,
+      height: ALTO_AVISO,
+      frame: false,
+      transparent: true,
+      resizable: false,
+      movable: false,
+      skipTaskbar: true,      // no aparece en la barra de tareas
+      focusable: false,       // no roba el foco: robarlo en partida es fatal
+      alwaysOnTop: true,
+      show: false,
+    });
+    // Por encima incluso de ventanas a pantalla completa sin bordes.
+    aviso.setAlwaysOnTop(true, "screen-saver");
+    aviso.setIgnoreMouseEvents(true);
+  }
+
+  aviso.setBounds({
+    x: pantalla.x + pantalla.width - ANCHO_AVISO - 18,
+    y: pantalla.y + 18,
+    width: ANCHO_AVISO,
+    height: ALTO_AVISO,
+  });
+
+  const params = new URLSearchParams({
+    titulo,
+    cuerpo: cuerpo ?? "",
+    urgente: urgente ? "1" : "0",
+  });
+  aviso.loadFile(path.join(__dirname, "src", "aviso.html"), { search: params.toString() });
+  aviso.showInactive();  // se muestra sin quitar el foco al juego
+
+  // La propia página avisa por el hash cuando termina de irse.
+  aviso.webContents.removeAllListeners("did-navigate-in-page");
+  aviso.webContents.on("did-navigate-in-page", (_e, url) => {
+    if (url.endsWith("#fin") && aviso && !aviso.isDestroyed()) aviso.hide();
+  });
+}
 
 function crearVentana() {
   ventana = new BrowserWindow({
@@ -57,6 +112,11 @@ if (!app.requestSingleInstanceLock()) {
     // La carpeta del programa no es escribible una vez instalado; la sesión y
     // la configuración del overlay van a la de datos de usuario.
     process.env.SRANK_DATA_DIR = app.getPath("userData");
+
+    // El servidor no puede importar Electron: también se ejecuta suelto con
+    // node para desarrollo, y ahí `require("electron")` no existe. Se le deja
+    // esta función y él la usa si está.
+    globalThis.__srankAvisar = mostrarAviso;
 
     const { default: servidor } = await import("./server.mjs");
     await new Promise((listo) =>

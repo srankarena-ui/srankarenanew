@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+
+  /* Fondo transparente: la ventana no tiene marco, así que lo único que se ve
+     es la tarjeta. */
+  html, body {
+    height: 100%;
+    background: transparent;
+    overflow: hidden;
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-user-select: none;
+  }
+
+  .aviso {
+    height: 100%;
+    display: flex;
+    gap: 14px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #161b26, #0e121b);
+    border: 1px solid #2a3142;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+    color: #e8ecf4;
+
+    /* Entra deslizándose desde la derecha. La animación es lo que hace que se
+       note sin tener que ser estridente. */
+    transform: translateX(110%);
+    opacity: 0;
+    animation: entrar 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .aviso.saliendo { animation: salir 0.28s ease-in forwards; }
+
+  @keyframes entrar { to { transform: translateX(0); opacity: 1; } }
+  @keyframes salir  { to { transform: translateX(110%); opacity: 0; } }
+
+  /* Barra de color a la izquierda: rojo si vas a incumplir, morado si es un
+     aviso normal. Se lee de un vistazo sin haber leído el texto. */
+  .marca {
+    width: 4px;
+    flex: none;
+    border-radius: 4px;
+    background: var(--color, #7c5cff);
+    box-shadow: 0 0 12px var(--color, #7c5cff);
+  }
+
+  .icono { font-size: 22px; line-height: 1; flex: none; margin-top: 2px; }
+
+  .texto { min-width: 0; flex: 1; }
+
+  h1 {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-bottom: 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  p {
+    font-size: 12.5px;
+    color: #9aa3b8;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .marca-agua {
+    position: absolute;
+    right: 16px;
+    bottom: 11px;
+    font-size: 8px;
+    letter-spacing: 0.2em;
+    color: #4a5265;
+  }
+
+  /* Cuenta atrás: se ve cuánto queda antes de que desaparezca. */
+  .tiempo {
+    position: absolute;
+    left: 18px; right: 18px; bottom: 7px;
+    height: 2px;
+    border-radius: 2px;
+    background: #232937;
+    overflow: hidden;
+  }
+  .tiempo i {
+    display: block;
+    height: 100%;
+    background: var(--color, #7c5cff);
+    animation: menguar var(--duracion, 9s) linear forwards;
+  }
+  @keyframes menguar { from { width: 100%; } to { width: 0; } }
+</style>
+</head>
+<body>
+  <div class="aviso" id="aviso">
+    <div class="marca"></div>
+    <div class="icono" id="icono">◆</div>
+    <div class="texto">
+      <h1 id="titulo"></h1>
+      <p id="cuerpo"></p>
+    </div>
+    <div class="marca-agua">S-RANK</div>
+    <div class="tiempo"><i></i></div>
+  </div>
+
+<script>
+  const DURACION = 9000;
+
+  window.addEventListener("message", (e) => pintar(e.data));
+
+  // Electron pasa los datos por la URL: es lo más simple que funciona sin
+  // abrir un canal de comunicación entre procesos solo para esto.
+  const p = new URLSearchParams(location.search);
+  if (p.get("titulo")) {
+    pintar({
+      titulo: p.get("titulo"),
+      cuerpo: p.get("cuerpo") ?? "",
+      urgente: p.get("urgente") === "1",
+    });
+  }
+
+  function pintar({ titulo, cuerpo, urgente }) {
+    document.getElementById("titulo").textContent = titulo;
+    document.getElementById("cuerpo").textContent = cuerpo;
+    document.getElementById("icono").textContent = urgente ? "⚠" : "◆";
+    document.documentElement.style.setProperty("--color", urgente ? "#ff5470" : "#7c5cff");
+    document.documentElement.style.setProperty("--duracion", DURACION + "ms");
+
+    sonar(urgente);
+
+    // Se avisa a Electron para que oculte la ventana cuando termine la
+    // animación de salida, no antes: si no, se corta a media transición.
+    setTimeout(() => {
+      document.getElementById("aviso").classList.add("saliendo");
+      setTimeout(() => { location.hash = "fin"; }, 300);
+    }, DURACION);
+  }
+
+  /* Sonido generado, sin fichero: dos notas cortas. Meter un .wav obligaría a
+     empaquetarlo y a elegir uno, y esto suena discreto y no depende de los
+     sonidos del sistema, que cada uno tiene configurados de una manera. */
+  function sonar(urgente) {
+    try {
+      const ctx = new AudioContext();
+      const notas = urgente ? [880, 660] : [660, 880];
+      notas.forEach((hz, i) => {
+        const osc = ctx.createOscillator();
+        const vol = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = hz;
+        osc.connect(vol).connect(ctx.destination);
+        const t = ctx.currentTime + i * 0.13;
+        vol.gain.setValueAtTime(0.0001, t);
+        vol.gain.exponentialRampToValueAtTime(0.22, t + 0.02);
+        vol.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+        osc.start(t);
+        osc.stop(t + 0.18);
+      });
+    } catch {
+      // Sin sonido tampoco pasa nada: el aviso se ve igual.
+    }
+  }
+</script>
+</body>
+</html>
