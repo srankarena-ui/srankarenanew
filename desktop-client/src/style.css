@@ -1,155 +1,122 @@
 :root {
   color-scheme: dark;
-  font-family: system-ui, sans-serif;
+  --acento: #7c5cff;
+  --fondo: #0b0e14;
+  --panel: #121620;
+  --borde: #262c3a;
+  --texto: #e8ecf4;
+  --apagado: #6d768c;
 }
 
+* { box-sizing: border-box; }
+
+html,
 body {
+  height: 100%;
   margin: 0;
-  padding: 24px;
-  background: #0b0e14;
-  color: #e5e7eb;
+  background: var(--fondo);
+  color: var(--texto);
+  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  overflow: hidden;
 }
 
-h1 {
-  margin: 0 0 20px;
-  font-size: 18px;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-}
-
-.hint,
-.account {
-  color: #9ca3af;
-  font-size: 13px;
-}
-
-form {
+/* ── Entrada ─────────────────────────────────────────────────────────────── */
+#login {
+  height: 100%;
   display: grid;
-  gap: 10px;
+  place-content: center;
+  text-align: center;
+  padding: 32px;
+  max-width: 440px;
+  margin: 0 auto;
 }
 
-input[type="email"],
-input[type="password"] {
-  padding: 10px;
-  border: 1px solid #374151;
-  border-radius: 8px;
-  background: #121620;
-  color: inherit;
-  font-size: 14px;
+#login h1 {
+  margin: 0 0 18px;
+  font-size: 15px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--apagado);
 }
+
+.hint { color: var(--apagado); font-size: 13px; }
+.error { color: #ff8080; font-size: 13px; min-height: 18px; margin-top: 10px; }
 
 button {
-  padding: 10px;
+  margin-top: 16px;
+  padding: 12px 20px;
   border: 0;
-  border-radius: 8px;
-  background: #7c3aed;
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
+  border-radius: 10px;
+  background: var(--acento);
+  color: #fff;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
   cursor: pointer;
 }
+button:disabled { opacity: 0.5; cursor: default; }
+button.secondary { background: transparent; border: 1px solid var(--borde); color: var(--apagado); }
+button.pequeno { margin: 0; padding: 7px 12px; font-size: 9px; }
 
-button:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
+/* ── Con sesión: barra propia + la web debajo ────────────────────────────── */
+#app { height: 100%; display: flex; flex-direction: column; }
 
-button.secondary {
-  background: transparent;
-  border: 1px solid #374151;
-  color: #9ca3af;
-  width: 100%;
-}
-
-button.danger {
-  background: #dc2626;
-}
-
-.error {
-  color: #f87171;
-  font-size: 13px;
-  min-height: 18px;
-}
-
-.status {
+.barra {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 16px 0;
-  padding: 12px;
-  border: 1px solid #374151;
-  border-radius: 10px;
-  font-size: 14px;
+  gap: 18px;
+  flex: none;
+  height: 52px;
+  padding: 0 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--borde);
 }
 
-.dot {
-  width: 10px;
-  height: 10px;
+.marca {
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: var(--acento);
+}
+
+.estado { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--apagado); }
+
+.punto {
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: #6b7280;
-  flex-shrink: 0;
+  background: #4b5262;
+  transition: background 0.3s, box-shadow 0.3s;
 }
+.punto.vivo { background: #22c55e; box-shadow: 0 0 8px rgba(34, 197, 94, 0.55); }
+.punto.jugando { background: var(--acento); box-shadow: 0 0 8px rgba(124, 92, 255, 0.55); }
 
-.log {
-  list-style: none;
-  margin: 0 0 16px;
-  padding: 0;
-  display: grid;
-  gap: 6px;
-  font-size: 13px;
-  color: #86efac;
-}
-
-.toggle {
+/* El castigo activo, siempre a la vista. Es la información que justifica tener
+   esto abierto en vez de una pestaña más del navegador. */
+.castigo {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 8px;
-  margin-bottom: 16px;
-  font-size: 13px;
-  color: #9ca3af;
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.08);
 }
-
-.overlay {
-  position: fixed;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: rgba(0, 0, 0, 0.7);
+.castigo .etiqueta {
+  font-size: 8px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #ff8080;
 }
+.castigo strong { font-size: 13px; }
+.sub { font-size: 11px; color: var(--apagado); }
 
-.overlay[hidden] {
-  display: none;
-}
+.hueco { flex: 1; }
 
-.dialog {
-  background: #121620;
-  border: 1px solid #374151;
-  border-radius: 12px;
-  padding: 20px;
-}
+.cuenta { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--apagado); }
 
-.dialog h2 {
-  margin: 0 0 8px;
-  font-size: 16px;
-}
-
-.dialog p {
-  margin: 0 0 16px;
-  font-size: 13px;
-  color: #9ca3af;
-}
-
-.actions {
-  display: grid;
-  gap: 8px;
-}
-
-/* Distintivo de streamer, junto al nombre de la cuenta. */
 .badge {
-  display: inline-block;
-  margin-left: 8px;
-  padding: 2px 9px;
+  padding: 2px 8px;
   border-radius: 999px;
   font-size: 11px;
   background: rgba(124, 92, 255, 0.15);
@@ -157,10 +124,9 @@ button.danger {
   color: #b9a5ff;
 }
 
-h2 {
-  margin: 22px 0 8px;
-  font-size: 11px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: #6d768c;
+iframe {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  background: var(--fondo);
 }

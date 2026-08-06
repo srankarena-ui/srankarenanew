@@ -1,11 +1,10 @@
-// Interfaz del cliente. Habla con el servidor local (server.mjs), que es quien
-// guarda la sesión y pone el token en cada llamada a la web: así el JWT nunca
-// llega al navegador.
+// Interfaz del cliente. Habla con el servidor local (server.mjs), que guarda la
+// sesión y pone el token en cada llamada a la web: el JWT nunca llega aquí.
 //
-// Antes esto invocaba `window.__TAURI__`. Se cambió a HTTP porque Tauri no
-// compila sin el SDK de Windows y el cliente llevaba meses sin poder arrancarse
-// ni una vez. Envolverlo en Tauri más adelante no obliga a tocar este fichero:
-// serviría el mismo HTML contra el mismo servidor local.
+// La web va incrustada tal cual, sin replicarla: cambia cada semana y mantener
+// dos versiones las separa solas. Lo que aporta el cliente no es interfaz sino
+// acceso —al cliente de League, a los avisos, al overlay— y eso vive en la
+// barra de arriba, que es lo que un navegador no puede darte.
 const $ = (id) => document.getElementById(id);
 
 async function local(ruta, opciones) {
@@ -13,10 +12,9 @@ async function local(ruta, opciones) {
   return { ok: res.ok, body: await res.json().catch(() => ({})) };
 }
 
-// ── Sesión ──────────────────────────────────────────────────────────────────
-// El login ocurre en el navegador, no aquí: Supabase exige captcha fuera de la
-// web, y así la contraseña nunca pasa por el cliente. Al volver, el servidor
-// local ya tiene la sesión guardada, así que basta con ir preguntando.
+// ── Entrada ─────────────────────────────────────────────────────────────────
+// El login ocurre en el navegador: Supabase exige captcha fuera de la web, y
+// así la contraseña nunca pasa por el cliente.
 let sondeoLogin = null;
 
 $("login-button").addEventListener("click", async () => {
@@ -57,49 +55,56 @@ function mostrarLogin() {
   $("app").hidden = true;
 }
 
-function mostrarSesion({ email, perfil }) {
+async function mostrarSesion({ email, perfil }) {
   $("login").hidden = true;
   $("app").hidden = false;
 
-  const nombre = perfil?.username || email;
-  $("account-email").textContent = nombre;
-  $("account-sub").textContent = email;
+  $("account-email").textContent = perfil?.username || email || "";
+  $("badge-streamer").hidden = !perfil?.is_streamer;
 
-  // El apartado de streamer solo existe si un admin le dio el distintivo.
-  const esStreamer = !!perfil?.is_streamer;
-  $("badge-streamer").hidden = !esStreamer;
-  $("streamer-si").hidden = !esStreamer;
-  $("streamer-no").hidden = esStreamer;
+  // Se carga una sola vez: recargarla en cada sondeo perdería lo que el usuario
+  // esté haciendo dentro.
+  const marco = $("web");
+  if (!marco.src) {
+    const { body } = await local("/local/config");
+    marco.src = `${body.api}/es/tournaments`;
+  }
 }
 
-async function cargarRetos() {
-  const caja = $("retos");
+async function refrescarCastigo() {
   const { ok, body } = await local("/local/inbox");
-  if (!ok) { caja.innerHTML = '<li class="hint">No se pudo consultar.</li>'; return; }
+  const caja = $("castigo");
+  if (!ok) return;
 
-  const retos = body.retos ?? [];
-  if (!retos.length) { caja.innerHTML = '<li class="hint">Sin castigos activos.</li>'; return; }
+  const reto = (body.retos ?? [])[0];
+  caja.hidden = !reto;
+  if (!reto) return;
 
-  caja.innerHTML = retos.map((r) => `
-    <li>
-      <strong>${r.title}</strong><br>
-      <span class="hint">${r.description ?? ""}</span><br>
-      <span class="${r.status === "pending" ? "error" : "hint"}">
-        ${r.status === "pending"
-          ? "Sin decidir · tus partidas no cuentan hasta que respondas"
-          : "Aceptado · cúmplelo en tu próxima partida"}
-      </span>
-    </li>`).join("");
+  $("castigo-nombre").textContent = reto.title;
+  $("castigo-estado").textContent =
+    reto.status === "pending" ? "sin decidir · tus partidas no cuentan" : "acéptalo en tu próxima partida";
+}
+
+async function refrescarJuego() {
+  const { body } = await local("/local/juego");
+  const punto = $("punto-juego");
+
+  $("texto-juego").textContent = body.texto ?? "League cerrado";
+  punto.className = "punto";
+  if (body.conectado) punto.classList.add(body.fase === "InProgress" ? "jugando" : "vivo");
 }
 
 async function arrancar() {
   const { body } = await local("/local/estado");
   if (!body.sesion) return mostrarLogin();
-  mostrarSesion(body);
-  cargarRetos();
+  await mostrarSesion(body);
+  refrescarCastigo();
+  refrescarJuego();
 }
 
 arrancar();
-// 15 s basta para un castigo que se cumple en la siguiente partida: sondear más
-// rápido no adelanta nada y multiplica las llamadas por cada cliente abierto.
-setInterval(() => { if (!$("app").hidden) cargarRetos(); }, 15000);
+
+// El estado del juego cambia en segundos; el castigo, no. Sondeos distintos
+// para no pedir a la web doce veces por minuto sin motivo.
+setInterval(() => { if (!$("app").hidden) refrescarJuego(); }, 2000);
+setInterval(() => { if (!$("app").hidden) refrescarCastigo(); }, 15000);

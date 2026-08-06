@@ -15,6 +15,7 @@ import { readFileSync, writeFileSync, existsSync, rmSync } from "node:fs";
 import { join, extname, dirname } from "node:path";
 import { randomUUID } from "node:crypto";
 import { exec } from "node:child_process";
+import { request as httpsRequest } from "node:https";
 import { fileURLToPath } from "node:url";
 
 const RAIZ = dirname(fileURLToPath(import.meta.url));
@@ -86,6 +87,67 @@ async function api(ruta) {
   if (!t) return { status: 401, body: { error: "Sin sesión" } };
   const res = await fetch(`${API}${ruta}`, { headers: { Authorization: `Bearer ${t}` } });
   return { status: res.status, body: await res.json().catch(() => ({})) };
+}
+
+// ── Cliente de League ───────────────────────────────────────────────────────
+const LOCKFILES = [
+  "C:/Riot Games/League of Legends/lockfile",
+  "D:/Riot Games/League of Legends/lockfile",
+];
+
+function lcu(ruta) {
+  // El puerto y la contraseña cambian en cada arranque del cliente: se relee
+  // siempre, nunca se cachea.
+  const lock = LOCKFILES.find(existsSync);
+  if (!lock) return Promise.resolve(null);
+  const [, , port, pass] = readFileSync(lock, "utf8").trim().split(":");
+
+  return new Promise((resolve) => {
+    const req = httpsRequest(
+      {
+        host: "127.0.0.1",
+        port,
+        path: ruta,
+        headers: { Authorization: "Basic " + Buffer.from(`riot:${pass}`).toString("base64") },
+        // Certificado autofirmado contra tu propia máquina. La excepción es
+        // solo para esta petición, no global.
+        rejectUnauthorized: false,
+      },
+      (res) => {
+        let d = "";
+        res.on("data", (x) => (d += x));
+        res.on("end", () => {
+          if (res.statusCode !== 200) return resolve(null);
+          try { resolve(JSON.parse(d)); } catch { resolve(null); }
+        });
+      }
+    );
+    req.on("error", () => resolve(null));
+    req.end();
+  });
+}
+
+const FASES = {
+  None: "En el cliente", Lobby: "En el lobby", Matchmaking: "Buscando partida",
+  ReadyCheck: "Partida encontrada", ChampSelect: "Selección de campeón",
+  InProgress: "En partida", WaitingForStats: "Terminando", EndOfGame: "Fin de partida",
+};
+
+async function estadoJuego() {
+  const fase = await lcu("/lol-gameflow/v1/gameflow-phase");
+  if (!fase) return { conectado: false, texto: "League cerrado" };
+
+  const estado = { conectado: true, fase, texto: FASES[fase] ?? fase, hechizos: null, campeon: null };
+
+  if (fase === "ChampSelect") {
+    const cs = await lcu("/lol-champ-select/v1/session");
+    const yo = cs?.myTeam?.find((m) => m.cellId === cs.localPlayerCellId);
+    if (yo) {
+      estado.hechizos = [yo.spell1Id, yo.spell2Id];
+      estado.campeon = yo.championId || null;
+    }
+  }
+  return estado;
 }
 
 const TIPOS = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml" };
@@ -163,13 +225,30 @@ const server = createServer(async (req, res) => {
     return json(r.status, r.body);
   }
 
+  // Estado del cliente de League. Es lo único que la web no puede saber, y por
+  // tanto lo que justifica que esto sea una aplicación y no una pestaña.
+  if (url.pathname === "/local/juego") {
+    return json(200, await estadoJuego());
+  }
+
+  // La dirección de la web, para incrustarla sin tenerla escrita en el HTML.
+  if (url.pathname === "/local/config") {
+    return json(200, { api: API });
+  }
+
   // ── Estáticos ─────────────────────────────────────────────────────────────
   const ruta = url.pathname === "/" ? "/index.html" : url.pathname;
   const fichero = join(RAIZ, "src", ruta);
   if (!fichero.startsWith(join(RAIZ, "src"))) return json(403, { error: "Fuera de sitio" });
   if (!existsSync(fichero)) return json(404, { error: "No encontrado" });
 
-  res.writeHead(200, { "Content-Type": TIPOS[extname(fichero)] ?? "application/octet-stream" });
+  // Sin caché: el cliente se actualiza con el propio programa, y una versión
+  // vieja de main.js guardada por el navegador hace que un arreglo parezca no
+  // haber funcionado.
+  res.writeHead(200, {
+    "Content-Type": TIPOS[extname(fichero)] ?? "application/octet-stream",
+    "Cache-Control": "no-store",
+  });
   res.end(readFileSync(fichero));
 });
 

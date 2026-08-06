@@ -6,12 +6,12 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <h1>S-Rank Arena</h1>
-
+    <!-- Pantalla de entrada. Ocupa todo hasta que hay sesión. -->
     <section id="login">
+      <h1>S-Rank Arena</h1>
       <p class="hint">
-        Se abrirá S-Rank Arena en tu navegador para que inicies sesión. Tu
-        contraseña no pasa por aquí.
+        Se abrirá S-Rank Arena en tu navegador para que inicies sesión.
+        Tu contraseña no pasa por aquí.
       </p>
       <button type="button" id="login-button">Entrar</button>
       <p id="login-hint" class="hint" hidden>
@@ -20,28 +20,37 @@
       <p id="login-error" class="error" role="alert"></p>
     </section>
 
-    <section id="app" hidden>
-      <p class="account">
-        <strong id="account-email"></strong>
-        <span class="badge" id="badge-streamer" hidden>🎥 Streamer</span>
-        <br /><span class="hint" id="account-sub"></span>
-      </p>
+    <!-- Con sesión: barra propia arriba y la web debajo. La barra es lo que
+         un navegador no puede darte — estado del juego, castigo activo,
+         avisos— y por eso esto es una aplicación y no una pestaña. -->
+    <div id="app" hidden>
+      <header class="barra">
+        <div class="marca">S-RANK</div>
 
-      <h2>Castigos</h2>
-      <ul id="retos" class="log" aria-live="polite">
-        <li class="hint">Cargando…</li>
-      </ul>
+        <div class="estado">
+          <span class="punto" id="punto-juego"></span>
+          <span id="texto-juego">Comprobando…</span>
+        </div>
 
-      <h2>Streamer</h2>
-      <p class="hint" id="streamer-no" hidden>
-        El apartado de streamer lo concede un administrador desde el panel.
-      </p>
-      <p class="hint" id="streamer-si" hidden>
-        Overlay para OBS disponible. Pendiente de integrar en el cliente.
-      </p>
+        <div class="castigo" id="castigo" hidden>
+          <span class="etiqueta">Castigo</span>
+          <strong id="castigo-nombre"></strong>
+          <span id="castigo-estado" class="sub"></span>
+        </div>
 
-      <button id="logout" class="secondary">Cerrar sesión</button>
-    </section>
+        <div class="hueco"></div>
+
+        <div class="cuenta">
+          <span id="account-email"></span>
+          <span class="badge" id="badge-streamer" hidden>🎥</span>
+        </div>
+        <button id="logout" class="secondary pequeno">Salir</button>
+      </header>
+
+      <!-- La web, tal cual. No se replica: cambia cada semana y mantener dos
+           versiones las separa solas. -->
+      <iframe id="web" title="S-Rank Arena"></iframe>
+    </div>
 
     <script src="main.js"></script>
   </body>

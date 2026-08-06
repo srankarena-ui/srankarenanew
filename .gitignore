@@ -45,3 +45,6 @@ next-env.d.ts
 
 # artefactos de compilacion del cliente Tauri
 /desktop-client/src-tauri/target
+
+# Sesion del cliente de escritorio: contiene el token del usuario.
+desktop-client/sesion.json
