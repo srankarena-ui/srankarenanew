@@ -566,14 +566,20 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      if (addedCount > 0) {
-        // Recompute aggregate from all stored matches
+      // Se recalcula SIEMPRE, no solo cuando llegan partidas nuevas. Tenerlo
+      // dentro de `if (addedCount > 0)` dejaba sin aplicar todo lo que no
+      // depende de una partida —la resta por rechazar un castigo, sin ir más
+      // lejos: quien rechaza y no juega se quedaba con su puntuación intacta.
+      // Es una consulta a la base, sin peticiones a Riot, así que es barato.
+      {
         const { data: allMatches } = await admin
           .from("summoner_trials_matches")
           .select("riot_match_id, match_data, match_score")
           .eq("enrollment_id", enrollment.id);
 
-        await grantSeals(admin, enrollment, tournamentId, allMatches ?? []);
+        if (addedCount > 0) {
+          await grantSeals(admin, enrollment, tournamentId, allMatches ?? []);
+        }
 
         const allStats = (allMatches ?? []).map((m) => m.match_data as unknown as MatchStats);
         const n = allStats.length;
@@ -582,7 +588,14 @@ export async function POST(request: NextRequest) {
 
         const rechazos = await penalizacionPorRechazos(admin, enrollment.user_id);
 
-        const statsSnapshot = {
+        // Lo que ya había guardado. El snapshot se reemplaza entero al
+        // actualizar, así que sin esto una sincronización borraba el rango, que
+        // se escribe antes en el bucle y no se recalcula aquí.
+        const previo = (enrollment.stats_snapshot as Record<string, unknown>) ?? {};
+
+        // Las medias solo si hay partidas: escribir ceros haría que la tabla
+        // pintara "0.00" en vez de "—" para quien todavía no ha jugado.
+        const medias = n > 0 ? {
           avg_kda: avg((s) => s.kda),
           avg_kill_participation: avg((s) => s.killParticipation),
           avg_vision_score: avg((s) => s.visionScore),
@@ -594,14 +607,18 @@ export async function POST(request: NextRequest) {
           ),
           wins: allStats.filter((s) => s.win).length,
           losses: allStats.filter((s) => !s.win).length,
+          avg_performance: avg((s) => s.performance ?? 0),
+        } : {};
+
+        const statsSnapshot = {
+          ...medias,
 
           // Desglose de la puntuación nueva, para poder explicarla en la tabla
           // sin recalcular nada al pintarla.
           role: mostPlayedRole(allStats),
-          rank_tier: rank?.tier ?? null,
-          rank_division: rank?.division ?? null,
-          rank_lp: rank?.lp ?? null,
-          avg_performance: avg((s) => s.performance ?? 0),
+          rank_tier: rank?.tier ?? previo.rank_tier ?? null,
+          rank_division: rank?.division ?? previo.rank_division ?? null,
+          rank_lp: rank?.lp ?? previo.rank_lp ?? null,
           feat_points: allStats.reduce((a, s) => a + (s.points?.feats ?? 0), 0),
           participation_points: allStats.reduce((a, s) => a + (s.points?.participation ?? 0), 0),
           victory_points: allStats.reduce((a, s) => a + (s.points?.victory ?? 0), 0),
