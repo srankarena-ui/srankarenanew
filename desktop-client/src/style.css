@@ -10,6 +10,12 @@
 
 * { box-sizing: border-box; }
 
+/* El atributo `hidden` oculta poniendo `display: none`, y cualquier regla de
+   `display` propia lo anula. Como #login y #app llevan grid y flex, sin esto
+   `elemento.hidden = true` no ocultaba nada y la pantalla de entrada se quedaba
+   encima de la aplicación para siempre. */
+[hidden] { display: none !important; }
+
 html,
 body {
   height: 100%;
