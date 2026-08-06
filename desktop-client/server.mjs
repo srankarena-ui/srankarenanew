@@ -33,7 +33,7 @@ const SESION = join(DATOS, "sesion.json");
 // Estas dos son públicas por diseño: la anon key va en el HTML de cualquier
 // página de Supabase. La service role no aparece aquí ni puede aparecer.
 const SUPABASE_URL = process.env.SRANK_SUPABASE_URL ?? "https://iucvkkujwtsxeefkagiw.supabase.co";
-const SUPABASE_ANON = process.env.SRANK_SUPABASE_ANON ?? "";
+const SUPABASE_ANON = process.env.SRANK_SUPABASE_ANON ?? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1Y3Zra3Vqd3RzeGVlZmthZ2l3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2OTU4MzYsImV4cCI6MjA5MTI3MTgzNn0.b8UOUgT012AQzooxGcT_EbLAhRi8RhfGsB-NgvrZHlw";
 
 let sesion = existsSync(SESION) ? JSON.parse(readFileSync(SESION, "utf8")) : null;
 
