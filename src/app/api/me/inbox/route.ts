@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   const userId = auth.userId;
   const now = new Date();
 
-  const [challenges, duos, teamInvites, participations] = await Promise.all([
+  const [challenges, duos, teamInvites, participations, avisos] = await Promise.all([
     admin
       .from("challenge_assignments")
       .select("id, challenge_id, assigned_at")
@@ -36,6 +36,14 @@ export async function GET(request: NextRequest) {
       .from("tournament_participants")
       .select("tournament_id")
       .eq("user_id", userId),
+    // Avisos persistentes. Distintos de `retos`: aquellos son lo que sigue
+    // pendiente ahora, estos son lo que ha pasado y si lo has visto o no.
+    admin
+      .from("notifications")
+      .select("id, type, title, body, link, read_at, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(30),
   ]);
 
   // Retos: se resuelven sus definiciones y se descartan los caducados o con
@@ -105,10 +113,37 @@ export async function GET(request: NextRequest) {
     })),
   ];
 
+  const notificaciones = avisos.data ?? [];
+
   return NextResponse.json({
     retos,
     invitaciones,
     torneos,
+    avisos: notificaciones,
+    noLeidos: notificaciones.filter((a) => !a.read_at).length,
     total: retos.length + invitaciones.length,
   });
+}
+
+// Marcar avisos como leídos. Sin cuerpo marca todos; con `ids`, solo esos.
+export async function POST(request: NextRequest) {
+  const auth = await requireAuthedRequestFlexible(request, "me-inbox-read", 120, 60);
+  if ("response" in auth) return auth.response;
+
+  const { ids } = await request.json().catch(() => ({}));
+
+  // Siempre acotado al usuario aunque vengan ids: sin el `eq`, cualquiera
+  // podría marcar como leídos los avisos de otro pasando sus identificadores.
+  let query = getAdminClient()
+    .from("notifications")
+    .update({ read_at: new Date().toISOString() })
+    .eq("user_id", auth.userId)
+    .is("read_at", null);
+
+  if (Array.isArray(ids) && ids.length) query = query.in("id", ids);
+
+  const { error } = await query;
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  return NextResponse.json({ ok: true });
 }

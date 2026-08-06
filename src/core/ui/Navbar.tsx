@@ -8,6 +8,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Button } from "@/core/ui/Button";
+import { NotificationBell } from "@/core/ui/NotificationBell";
 
 export function Navbar() {
   const t = useTranslations("common");
@@ -158,6 +159,8 @@ export function Navbar() {
           {/* Logged in */}
           {isLoggedIn && (
             <div className="flex items-center gap-2">
+              <NotificationBell locale={locale} />
+
               {/* Username — links to public profile */}
               <a
                 href={`/${locale}/profile/${encodeURIComponent(profile ? formatProfileSlug(profile.username, profile.discriminator) : user?.id || "")}`}

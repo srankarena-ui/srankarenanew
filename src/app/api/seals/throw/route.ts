@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { requireAuthedRequest } from "@/core/lib/require-auth";
 import { rollCastigo } from "@/core/lib/castigos";
+import { notify, NOTIFICATION_TYPES } from "@/core/lib/notify";
 import type { Database } from "@/core/types/database";
 
 /**
@@ -87,7 +88,41 @@ export async function POST(request: NextRequest) {
 
   await admin.from("seals").update({ challenge_id: challenge.id }).eq("id", reservado);
 
+  // Sin esto el castigado no se enteraba salvo que abriese la clasificación y
+  // mirase su propia fila.
+  const [quien, aQuien] = await Promise.all([
+    nombre(admin, auth.userId),
+    nombre(admin, targetUserId),
+  ]);
+  const link = `/es/tournaments/${tournamentId}?tab=leaderboard`;
+
+  await notify(admin, [
+    {
+      userId: targetUserId,
+      type: NOTIFICATION_TYPES.castigoRecibido,
+      title: `${quien} te ha aplicado un sello: ${elegido.name}`,
+      body: elegido.how,
+      link,
+    },
+    {
+      userId: auth.userId,
+      type: NOTIFICATION_TYPES.castigoLanzado,
+      title: `Le has aplicado un sello a ${aQuien}: ${elegido.name}`,
+      body: elegido.how,
+      link,
+    },
+  ]);
+
   return NextResponse.json({ castigo: elegido });
+}
+
+/** Nombre para el texto del aviso; el id crudo no le dice nada a nadie. */
+async function nombre(
+  admin: ReturnType<typeof createAdminClient<Database>>,
+  userId: string
+): Promise<string> {
+  const { data } = await admin.from("profiles").select("username").eq("id", userId).maybeSingle();
+  return data?.username ?? "Alguien";
 }
 
 /** Reserva un sello sin gastar del usuario. Devuelve su id, o null si no tiene. */
