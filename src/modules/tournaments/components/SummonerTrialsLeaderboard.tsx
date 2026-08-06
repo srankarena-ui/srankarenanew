@@ -7,6 +7,7 @@ import { SEAL_CAP } from "@/core/lib/seal-rules";
 import { PlayerMatchHistory } from "./PlayerMatchHistory";
 import { SealThrowModal } from "./SealThrowModal";
 import { WinLossBar, Sparkline, CastigosCell } from "./LeaderboardCells";
+import { CastigoPendiente } from "./CastigoPendiente";
 import { useTranslations } from "next-intl";
 import { useToast } from "@/core/ui/Toast";
 import type { TrialsEnrollmentWithProfile, TrialsConfig } from "@/core/types";
@@ -190,8 +191,10 @@ function useTablaExtra(tournamentId: string) {
       });
 
     sb.from("challenge_assignments")
+      // Aceptados también: son los que están en vigor. Filtrar solo `pending`
+      // hacía desaparecer de la tabla justo el que hay que cumplir.
       .select("user_id, challenges(conditions)")
-      .eq("status", "pending")
+      .in("status", ["pending", "accepted"])
       .then(({ data }) => {
         if (cancelled || !data) return;
         const acc: Record<string, string[]> = {};
@@ -281,6 +284,8 @@ export function SummonerTrialsLeaderboard({
           )}
         </div>
       </div>
+
+      {currentUserId && <CastigoPendiente userId={currentUserId} />}
 
       {throwing && (
         <SealThrowModal

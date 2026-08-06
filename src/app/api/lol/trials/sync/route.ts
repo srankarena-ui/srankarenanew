@@ -5,6 +5,7 @@ import type { TrialsConfig } from "@/core/types";
 import { roleScore, SCORING_WEIGHTS, type RoleBaselines } from "@/core/lib/role-score";
 import { evaluateFeats, featPoints, type EarnedFeat } from "@/core/lib/tournament-feats";
 import { sealsForMatch, sealsForStreaks, SEAL_CAP } from "@/core/lib/seal-rules";
+import { REJECTION_PENALTY } from "@/core/lib/castigos";
 import baselines from "@/core/config/role-baselines.json";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/core/types/database";
@@ -329,6 +330,53 @@ async function grantSeals(
   });
 }
 
+/** Una ventana en la que las partidas del jugador no cuentan. `hasta` nulo = sigue abierta. */
+type Ventana = { desde: number; hasta: number | null };
+
+/**
+ * Ventanas congeladas del jugador: de cuando se le impuso cada castigo a cuando
+ * lo decidió. Las que siguen sin decidir congelan todo lo que venga después.
+ */
+async function ventanasCongeladas(
+  admin: SupabaseClient<Database>,
+  userId: string
+): Promise<Ventana[]> {
+  const { data } = await admin
+    .from("challenge_assignments")
+    .select("assigned_at, decided_at, status")
+    .eq("user_id", userId)
+    .in("status", ["pending", "accepted", "rejected"]);
+
+  return (data ?? [])
+    // Los decididos al instante no llegaron a congelar nada; se filtran para no
+    // recorrer ventanas vacías en cada partida.
+    .filter((a) => a.status === "pending" || a.decided_at)
+    .map((a) => ({
+      desde: new Date(a.assigned_at).getTime(),
+      hasta: a.status === "pending" ? null : new Date(a.decided_at!).getTime(),
+    }));
+}
+
+function enVentanaCongelada(ventanas: Ventana[], gameCreation: number): boolean {
+  return ventanas.some(
+    (v) => gameCreation >= v.desde && (v.hasta === null || gameCreation < v.hasta)
+  );
+}
+
+/** Castigos rechazados: cada uno resta del total del torneo. */
+async function penalizacionPorRechazos(
+  admin: SupabaseClient<Database>,
+  userId: string
+): Promise<number> {
+  const { count } = await admin
+    .from("challenge_assignments")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("status", "rejected");
+
+  return (count ?? 0) * REJECTION_PENALTY;
+}
+
 /** Cuántas veces ha conseguido cada reto en todo el torneo. */
 function countFeats(all: MatchStats[]): Array<{ name: string; count: number; points: number }> {
   const acc = new Map<string, { name: string; count: number; points: number }>();
@@ -457,6 +505,11 @@ export async function POST(request: NextRequest) {
 
       let addedCount = 0;
 
+      // Ventanas en las que sus partidas no cuentan: desde que se le impuso un
+      // castigo hasta que lo aceptó o rechazó. Si sigue sin decidir, la ventana
+      // está abierta y no cuenta nada nuevo.
+      const congelado = await ventanasCongeladas(admin, enrollment.user_id);
+
       for (const matchId of newIds) {
         if (addedCount >= remaining) break;
 
@@ -469,6 +522,11 @@ export async function POST(request: NextRequest) {
 
         // Only track the configured match type
         if (!queues.includes(match.info?.queueId)) continue;
+
+        // Jugada con un castigo sin decidir: no cuenta, y no contará nunca
+        // aunque decida más tarde. Si contara al descongelarse, ignorar el
+        // castigo saldría gratis y volveríamos al problema que evitamos.
+        if (enVentanaCongelada(congelado, match.info.gameCreation as number)) continue;
 
         // Solo enforcement: reject if another enrolled tournament player was on the same team
         if (match_type === "solo") {
@@ -522,6 +580,8 @@ export async function POST(request: NextRequest) {
         const avg = (fn: (s: MatchStats) => number) =>
           n > 0 ? parseFloat((allStats.reduce((a, s) => a + fn(s), 0) / n).toFixed(2)) : 0;
 
+        const rechazos = await penalizacionPorRechazos(admin, enrollment.user_id);
+
         const statsSnapshot = {
           avg_kda: avg((s) => s.kda),
           avg_kill_participation: avg((s) => s.killParticipation),
@@ -550,6 +610,7 @@ export async function POST(request: NextRequest) {
           ),
           feats_earned: countFeats(allStats),
           deficit: Math.max(0, allStats.length - 2 * allStats.filter((s) => s.win).length),
+          rejection_penalty: rechazos,
           deficit_penalty:
             Math.max(0, allStats.length - 2 * allStats.filter((s) => s.win).length)
             * DEFICIT_PENALTY_PER_LOSS,
@@ -568,8 +629,7 @@ export async function POST(request: NextRequest) {
         const wins = allStats.filter((s) => s.win).length;
         const deficit = Math.max(0, allStats.length - wins - wins);
         const deficitPenalty = deficit * DEFICIT_PENALTY_PER_LOSS;
-
-        const totalScore = parseFloat((sumScore - deficitPenalty).toFixed(2));
+        const totalScore = parseFloat((sumScore - deficitPenalty - rechazos).toFixed(2));
 
         await admin
           .from("summoner_trials_enrollments")

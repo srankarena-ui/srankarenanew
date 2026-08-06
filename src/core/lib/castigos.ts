@@ -29,6 +29,16 @@ export interface Castigo {
 
 const ALL_ROLES: Role[] = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"];
 
+/**
+ * Lo que cuesta rechazar un castigo.
+ *
+ * Tiene que doler más que cumplirlo, o nadie cumpliría ninguno. Medido sobre
+ * 10.020 partidas reales: una partida media vale 92,6 puntos, y entre ganarla y
+ * perderla hay 76,4. Así que cumplir un castigo cuesta como mucho 76,4 —el caso
+ * en que te hace perder—, y 100 se queda justo por encima sin ser una condena.
+ */
+export const REJECTION_PENALTY = 100;
+
 export const CASTIGOS: Castigo[] = [
   {
     key: "sin_flash",
