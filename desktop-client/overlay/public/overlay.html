@@ -884,7 +884,11 @@
     pic.style.width = fit.size + '%'; pic.style.height = fit.size + '%';
     pic.style.top = fit.y + '%'; pic.style.left = fit.x + '%';
     art.style.backgroundSize = `auto ${fit.zoom}%`;
-    art.style.backgroundPosition = `${fit.borderX}% ${fit.borderY}%`;
+    // Igual que en el panel: se mueve la capa, no el fondo dentro de ella.
+    // background-position solo desplaza si la imagen desborda su recuadro, y con
+    // el zoom al 100% no desborda, así que no movía nada.
+    art.style.backgroundPosition = 'center';
+    art.style.transform = `translate(${fit.borderX - 50}%, ${fit.borderY - 50}%)`;
 
     // tamaño del conjunto completo (marco+ícono) — el contenedor que envuelve a pic+art.
     const frameSize = (mini ? s.iconFit?.frameMini : s.iconFit?.frameBig) || (mini ? 64 : 130);

@@ -477,7 +477,12 @@ function applyPreviewFit(fit) {
   $("prevPic").style.width = fit.size + "%"; $("prevPic").style.height = fit.size + "%";
   $("prevPic").style.top = fit.y + "%"; $("prevPic").style.left = fit.x + "%";
   $("prevArt").style.backgroundSize = `auto ${fit.zoom}%`;
-  $("prevArt").style.backgroundPosition = `${fit.borderX}% ${fit.borderY}%`;
+  // El marco se desplaza moviendo la capa, no con background-position: eso solo
+  // mueve algo cuando la imagen es más grande que su recuadro, así que con el
+  // zoom al 100% —el valor por defecto— los deslizadores no hacían nada y
+  // parecían rotos. 50 es el centro; cada punto desplaza un 1% del recuadro.
+  $("prevArt").style.backgroundPosition = "center";
+  $("prevArt").style.transform = `translate(${fit.borderX - 50}%, ${fit.borderY - 50}%)`;
 }
 
 function updatePreviewAssets(s) {
