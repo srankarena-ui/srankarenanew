@@ -1,79 +1,94 @@
-const { invoke } = window.__TAURI__.core;
-const { listen } = window.__TAURI__.event;
-
+// Interfaz del cliente. Habla con el servidor local (server.mjs), que es quien
+// guarda la sesión y pone el token en cada llamada a la web: así el JWT nunca
+// llega al navegador.
+//
+// Antes esto invocaba `window.__TAURI__`. Se cambió a HTTP porque Tauri no
+// compila sin el SDK de Windows y el cliente llevaba meses sin poder arrancarse
+// ni una vez. Envolverlo en Tauri más adelante no obliga a tocar este fichero:
+// serviría el mismo HTML contra el mismo servidor local.
 const $ = (id) => document.getElementById(id);
 
-const DOT_COLORS = {
-  logged_out: "#6b7280",
-  waiting: "#eab308",
-  in_game: "#22c55e",
-  completed: "#22c55e",
-  error: "#ef4444",
-};
-
-function showApp(email) {
-  $("account-email").textContent = email;
-  $("login").hidden = true;
-  $("app").hidden = false;
+async function local(ruta, opciones) {
+  const res = await fetch(ruta, opciones);
+  return { ok: res.ok, body: await res.json().catch(() => ({})) };
 }
 
+// ── Sesión ──────────────────────────────────────────────────────────────────
 $("login-form").addEventListener("submit", async (event) => {
   event.preventDefault();
-  const button = $("login-button");
-  button.disabled = true;
+  const boton = $("login-button");
+  boton.disabled = true;
+  boton.textContent = "Entrando…";
   $("login-error").textContent = "";
 
-  try {
-    const email = await invoke("login", {
-      email: $("email").value,
-      password: $("password").value,
-    });
-    $("password").value = "";
-    showApp(email);
-  } catch (err) {
-    $("login-error").textContent = String(err);
-  } finally {
-    button.disabled = false;
-  }
+  const { body } = await local("/local/entrar", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: $("email").value, password: $("password").value }),
+  });
+
+  boton.disabled = false;
+  boton.textContent = "Entrar";
+  if (body.error) { $("login-error").textContent = body.error; return; }
+
+  $("password").value = "";
+  arrancar();
 });
 
 $("logout").addEventListener("click", async () => {
-  await invoke("logout");
-  $("app").hidden = true;
+  await local("/local/salir", { method: "POST" });
+  arrancar();
+});
+
+// ── Pintado ─────────────────────────────────────────────────────────────────
+function mostrarLogin() {
   $("login").hidden = false;
-});
+  $("app").hidden = true;
+}
 
-$("autostart").addEventListener("change", (event) => {
-  invoke("set_autostart", { enabled: event.target.checked });
-});
+function mostrarSesion({ email, perfil }) {
+  $("login").hidden = true;
+  $("app").hidden = false;
 
-listen("status", ({ payload }) => {
-  $("status-dot").style.background = DOT_COLORS[payload.state] ?? "#6b7280";
-  $("status-text").textContent = payload.detail;
+  const nombre = perfil?.username || email;
+  $("account-email").textContent = nombre;
+  $("account-sub").textContent = email;
 
-  // Los retos cumplidos se acumulan en la lista; el resto solo cambia el estado.
-  if (payload.state === "completed") {
-    const item = document.createElement("li");
-    item.textContent = payload.detail;
-    $("log").prepend(item);
-  }
-});
+  // El apartado de streamer solo existe si un admin le dio el distintivo.
+  const esStreamer = !!perfil?.is_streamer;
+  $("badge-streamer").hidden = !esStreamer;
+  $("streamer-si").hidden = !esStreamer;
+  $("streamer-no").hidden = esStreamer;
+}
 
-// Cerrar la ventana está interceptado en Rust: aquí solo se confirma.
-listen("confirm-close", () => {
-  $("confirm").hidden = false;
-});
+async function cargarRetos() {
+  const caja = $("retos");
+  const { ok, body } = await local("/local/inbox");
+  if (!ok) { caja.innerHTML = '<li class="hint">No se pudo consultar.</li>'; return; }
 
-$("stay").addEventListener("click", () => {
-  $("confirm").hidden = true;
-});
+  const retos = body.retos ?? [];
+  if (!retos.length) { caja.innerHTML = '<li class="hint">Sin castigos activos.</li>'; return; }
 
-$("quit").addEventListener("click", () => {
-  invoke("exit_app");
-});
+  caja.innerHTML = retos.map((r) => `
+    <li>
+      <strong>${r.title}</strong><br>
+      <span class="hint">${r.description ?? ""}</span><br>
+      <span class="${r.status === "pending" ? "error" : "hint"}">
+        ${r.status === "pending"
+          ? "Sin decidir · tus partidas no cuentan hasta que respondas"
+          : "Aceptado · cúmplelo en tu próxima partida"}
+      </span>
+    </li>`).join("");
+}
 
-(async () => {
-  $("autostart").checked = await invoke("autostart_enabled");
-  const email = await invoke("current_email");
-  if (email) showApp(email);
-})();
+async function arrancar() {
+  const { body } = await local("/local/estado");
+  if (!body.sesion) return mostrarLogin();
+  mostrarSesion(body);
+  cargarRetos();
+}
+
+arrancar();
+// 15 s basta para un castigo que se cumple en la siguiente partida: sondear más
+// rápido no adelanta nada y multiplica las llamadas por cada cliente abierto.
+setInterval(() => { if (!$("app").hidden) cargarRetos(); }, 15000);

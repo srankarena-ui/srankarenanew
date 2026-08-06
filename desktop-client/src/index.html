@@ -19,36 +19,27 @@
     </section>
 
     <section id="app" hidden>
-      <p class="account">Sesión: <strong id="account-email"></strong></p>
+      <p class="account">
+        <strong id="account-email"></strong>
+        <span class="badge" id="badge-streamer" hidden>🎥 Streamer</span>
+        <br /><span class="hint" id="account-sub"></span>
+      </p>
 
-      <div id="status" class="status">
-        <span id="status-dot" class="dot"></span>
-        <span id="status-text">Conectando…</span>
-      </div>
+      <h2>Castigos</h2>
+      <ul id="retos" class="log" aria-live="polite">
+        <li class="hint">Cargando…</li>
+      </ul>
 
-      <ul id="log" class="log" aria-live="polite"></ul>
-
-      <label class="toggle">
-        <input type="checkbox" id="autostart" />
-        Iniciar con Windows
-      </label>
+      <h2>Streamer</h2>
+      <p class="hint" id="streamer-no" hidden>
+        El apartado de streamer lo concede un administrador desde el panel.
+      </p>
+      <p class="hint" id="streamer-si" hidden>
+        Overlay para OBS disponible. Pendiente de integrar en el cliente.
+      </p>
 
       <button id="logout" class="secondary">Cerrar sesión</button>
     </section>
-
-    <div id="confirm" class="overlay" hidden>
-      <div class="dialog" role="alertdialog" aria-labelledby="confirm-title">
-        <h2 id="confirm-title">¿Cerrar el cliente?</h2>
-        <p>
-          Si lo cierras, las partidas que estés jugando dejarán de verificarse
-          automáticamente para los retos que dependen de datos en vivo.
-        </p>
-        <div class="actions">
-          <button id="stay">Mantener abierto</button>
-          <button id="quit" class="danger">Cerrar igual</button>
-        </div>
-      </div>
-    </div>
 
     <script src="main.js"></script>
   </body>

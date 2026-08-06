@@ -153,6 +153,31 @@ export async function updateUserRole(userId: string, role: string) {
   return { success: true };
 }
 
+/**
+ * Concede o retira el distintivo de streamer.
+ *
+ * Mismo motivo que `updateUserRole` para usar la service role: la columna está
+ * protegida por un trigger (migración 037) para que nadie se la conceda a sí
+ * mismo editando su perfil. Quien autoriza es el `requireAdmin` de arriba.
+ */
+export async function updateStreamerBadge(userId: string, isStreamer: boolean) {
+  const guard = await requireAdmin();
+  if ("error" in guard) return guard;
+
+  const admin = createServiceClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+  const { error } = await admin
+    .from("profiles")
+    .update({ is_streamer: isStreamer })
+    .eq("id", userId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin");
+  return { success: true };
+}
+
 export async function createGame(formData: FormData) {
   const supabase = await createClient();
 

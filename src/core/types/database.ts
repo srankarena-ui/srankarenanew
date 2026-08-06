@@ -80,6 +80,7 @@ export type Database = {
           discriminator: string | null;
           onboarded: boolean;
           is_dummy: boolean;
+          is_streamer: boolean;
           bio: string | null;
           banner_url: string | null;
           theme: string | null;
@@ -105,6 +106,7 @@ export type Database = {
           discriminator?: string | null;
           onboarded?: boolean;
           is_dummy?: boolean;
+          is_streamer?: boolean;
           bio?: string | null;
           banner_url?: string | null;
           theme?: string | null;
@@ -130,6 +132,7 @@ export type Database = {
           discriminator?: string | null;
           onboarded?: boolean;
           is_dummy?: boolean;
+          is_streamer?: boolean;
           bio?: string | null;
           banner_url?: string | null;
           theme?: string | null;

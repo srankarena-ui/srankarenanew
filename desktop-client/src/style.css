@@ -144,3 +144,23 @@ button.danger {
   display: grid;
   gap: 8px;
 }
+
+/* Distintivo de streamer, junto al nombre de la cuenta. */
+.badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  background: rgba(124, 92, 255, 0.15);
+  border: 1px solid rgba(124, 92, 255, 0.4);
+  color: #b9a5ff;
+}
+
+h2 {
+  margin: 22px 0 8px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #6d768c;
+}

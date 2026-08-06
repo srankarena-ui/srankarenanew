@@ -6,7 +6,7 @@ import { Card } from "@/core/ui/Card";
 import { Badge } from "@/core/ui/Badge";
 import { Button } from "@/core/ui/Button";
 import { useToast } from "@/core/ui/Toast";
-import { updateUserRole } from "@/modules/admin/actions";
+import { updateUserRole, updateStreamerBadge } from "@/modules/admin/actions";
 import { useRouter } from "next/navigation";
 import type { Profile } from "@/core/types";
 
@@ -41,6 +41,15 @@ export function UserTable({ users }: UserTableProps) {
     }
   }
 
+  async function handleStreamer(userId: string, isStreamer: boolean) {
+    const result = await updateStreamerBadge(userId, isStreamer);
+    if ("error" in result) toast(result.error, "error");
+    else {
+      toast(isStreamer ? "Distintivo de streamer concedido" : "Distintivo retirado", "success");
+      router.refresh();
+    }
+  }
+
   return (
     <div className="space-y-3">
       <input
@@ -65,6 +74,7 @@ export function UserTable({ users }: UserTableProps) {
                 </p>
               </div>
               <Badge variant={ROLE_VARIANT[user.role] || "default"}>{user.role}</Badge>
+              {user.is_streamer && <Badge variant="warning">🎥 Streamer</Badge>}
             </div>
             <div className="flex items-center gap-2">
               {["user", "organizer", "admin"].map((role) => (
@@ -78,6 +88,19 @@ export function UserTable({ users }: UserTableProps) {
                   {role}
                 </Button>
               ))}
+
+              {/* Separado de los roles a propósito: ser streamer es ortogonal a
+                  ser admin u organizador, no una opción más de la misma lista. */}
+              <Button
+                variant={user.is_streamer ? "primary" : "ghost"}
+                size="sm"
+                onClick={() => handleStreamer(user.id, !user.is_streamer)}
+                title={user.is_streamer
+                  ? "Quitar el distintivo de streamer"
+                  : "Dar acceso al apartado de streamer en el cliente"}
+              >
+                🎥
+              </Button>
             </div>
           </div>
         </Card>
