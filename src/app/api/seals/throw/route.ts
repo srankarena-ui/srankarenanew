@@ -47,6 +47,28 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Ese jugador no está inscrito en el torneo" }, { status: 404 });
   }
 
+  // Un castigo a la vez por persona. No es un enfriamiento por tiempo: mientras
+  // tenga uno sin resolver no puede recibir otro, y se libera al cumplirlo o
+  // rechazarlo. Así nadie se lleva diez seguidos, y no hace falta ni temporizador
+  // ni tabla — el estado ya está aquí.
+  //
+  // Se comprueba antes de reservar el sello: cobrarlo y luego rechazar el
+  // lanzamiento sería quitarle munición a quien no ha lanzado nada.
+  const { data: activo } = await admin
+    .from("challenge_assignments")
+    .select("id")
+    .eq("user_id", targetUserId)
+    .in("status", ["pending", "accepted"])
+    .limit(1)
+    .maybeSingle();
+
+  if (activo) {
+    return NextResponse.json(
+      { error: "Ya tiene un castigo activo. Podrás lanzarle otro cuando lo cumpla o lo rechace." },
+      { status: 409 }
+    );
+  }
+
   // Se reserva el sello ANTES de crear nada. Al revés quedaban castigos
   // impuestos sin sello detrás cuando dos peticiones competían.
   //

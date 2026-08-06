@@ -435,8 +435,12 @@ export function SummonerTrialsLeaderboard({
                     <td className="px-2.5 py-2">
                       <div className="flex flex-col items-center gap-1">
                         <SealCapsule count={seals[enrollment.user_id] ?? 0} />
-                        {/* Solo sobre los demás, y solo si te queda munición */}
-                        {puedeLanzar && !isCurrentUser && (
+                        {/* Solo sobre los demás, si te queda munición, y si no
+                            tiene ya uno sin resolver: uno a la vez por persona.
+                            El servidor lo comprueba igual — esto es para no
+                            ofrecer un botón que va a fallar. */}
+                        {puedeLanzar && !isCurrentUser
+                          && (castigos[enrollment.user_id] ?? []).length === 0 && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
