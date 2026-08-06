@@ -29,6 +29,8 @@ export interface CastigoFacts {
   objetoMasCaro: number;
   /** Nombre interno del campeón que jugó, como lo da match-v5 ("MonkeyKing"). */
   campeon: string;
+  /** Id de la piedra angular. Pies veloces (Fleet Footwork) es 8021. */
+  piedraAngular: number;
 }
 
 /**
@@ -82,6 +84,12 @@ export interface Castigo {
 
 const ALL_ROLES: Role[] = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"];
 
+/** Pies veloces (Fleet Footwork), piedra angular de Precisión. */
+export const PIES_VELOCES = 8021;
+
+/** Ventana para "tus campeones más jugados": el top de siempre no sirve. */
+export const DIAS_RECIENTES = 30;
+
 /**
  * Lo que cuesta rechazar un castigo.
  *
@@ -116,9 +124,9 @@ export const CASTIGOS: Castigo[] = [
   },
   {
     key: "sin_botas",
-    verify: (f) => !f.comproBotas,
-    name: "Sin botas",
-    how: "Terminar la partida sin botas en el inventario. Se miran los objetos finales, así que venderlas antes de acabar también vale.",
+    verify: (f) => !f.comproBotas && f.piedraAngular !== PIES_VELOCES,
+    name: "Sin botas ni pies veloces",
+    how: "Terminar sin botas en el inventario y sin la piedra angular Pies veloces. Las dos fuentes de movilidad fuera. Se miran los objetos finales, así que venderlas antes de acabar también vale.",
     dureza: 2,
   },
   {
@@ -161,9 +169,9 @@ export const CASTIGOS: Castigo[] = [
   },
   {
     key: "ulti_tres_veces",
-    verify: (f) => f.usosUlti <= 3,
+    verify: (f) => f.usosUlti <= 5,
     name: "Ultimate racionada",
-    how: "Usar tu definitiva tres veces como mucho en toda la partida.",
+    how: "Usar tu definitiva cinco veces como mucho en toda la partida. Ojo con los campeones que cambian de forma con la R (Jayce, Elise, Nidalee): con ellos es imposible.",
     dureza: 3,
   },
   {
@@ -175,9 +183,9 @@ export const CASTIGOS: Castigo[] = [
   },
   {
     key: "secundario_seis",
-    verify: (f) => Math.min(...f.usosHechizos) >= 6,
+    verify: (f) => Math.min(...f.usosHechizos) >= 4,
     name: "Usa el otro",
-    how: "Usar tus dos hechizos de invocador al menos seis veces cada uno. Se piden los dos y no «el secundario» porque el orden de las teclas lo elige cada jugador: no hay un secundario que Riot distinga.",
+    how: "Usar tus dos hechizos de invocador al menos cuatro veces cada uno. Se piden los dos y no «el secundario» porque el orden de las teclas lo elige cada jugador: Riot no distingue uno de otro. Cuatro y no seis porque con seis Teleporte es imposible —0% en las partidas medidas— y con cuatro Destello sale en el 82%.",
     dureza: 1,
   },
   {
@@ -193,7 +201,7 @@ export const CASTIGOS: Castigo[] = [
     verify: (f, p) => !(p.vetados ?? []).includes(f.campeon),
     needsMastery: true,
     name: "Sin tus favoritos",
-    how: "No jugar ninguno de tus tres campeones más jugados. Se congelan al imponerte el castigo, así que no vale cambiarlos después.",
+    how: "No jugar ninguno de tus tres campeones más jugados de los últimos 30 días. Se congelan al imponerte el castigo, así que no vale cambiarlos después.",
     dureza: 2,
   },
 ];

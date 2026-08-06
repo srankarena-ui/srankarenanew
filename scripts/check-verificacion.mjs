@@ -19,6 +19,7 @@ const LIMPIA = {
   pings: 0,
   comproBotas: false,
   objetoMasCaro: 1300,
+  piedraAngular: 8010,   // Conquistador: no es Pies veloces
 };
 
 const con = (patch) => ({ ...LIMPIA, ...patch });
@@ -40,9 +41,9 @@ const INFRACCIONES = {
   sin_guardianes_control: { visionWardsBought: 1 },
   sin_consumibles: { consumablesPurchased: 1 },
   presupuesto: { objetoMasCaro: 1601 },
-  ulti_tres_veces: { usosUlti: 4 },
+  ulti_tres_veces: { usosUlti: 6 },
   sin_pings: { pings: 1 },
-  secundario_seis: { usosHechizos: [8, 5] },
+  secundario_seis: { usosHechizos: [8, 3] },
 };
 
 for (const c of CASTIGOS_VERIFICABLES) {
@@ -61,8 +62,11 @@ assert.equal(verificarCastigo("sin_botas", con({ comproBotas: false })), true, "
 // Los umbrales, justo en el borde: un "1600 de oro como máximo" que rechace
 // 1600 exactos es un castigo distinto del anunciado.
 assert.equal(verificarCastigo("presupuesto", con({ objetoMasCaro: 1600 })), true, "1600 exactos entran en el presupuesto");
-assert.equal(verificarCastigo("ulti_tres_veces", con({ usosUlti: 3 })), true, "tres usos exactos cumplen");
-assert.equal(verificarCastigo("secundario_seis", con({ usosHechizos: [6, 6] })), true, "seis exactos cumplen");
+assert.equal(verificarCastigo("ulti_tres_veces", con({ usosUlti: 5 })), true, "cinco usos exactos cumplen");
+assert.equal(verificarCastigo("secundario_seis", con({ usosHechizos: [4, 4] })), true, "cuatro exactos cumplen");
+
+// Pies veloces cuenta igual que llevar botas: el castigo son las dos cosas.
+assert.equal(verificarCastigo("sin_botas", con({ piedraAngular: 8021 })), false, "Pies veloces incumple aunque no lleve botas");
 
 // El hechizo puede ir en cualquiera de las dos ranuras: el orden lo elige el
 // jugador, así que mirar solo la primera dejaría pasar a media plataforma.

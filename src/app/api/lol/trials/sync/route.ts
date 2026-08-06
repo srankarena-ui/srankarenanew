@@ -381,6 +381,8 @@ async function verificarCastigos(
     comproBotas: items.some((id) => botas.has(id)),
     objetoMasCaro: items.reduce((max, id) => Math.max(max, precio.get(id) ?? 0), 0),
     campeon: (player.championName as string) ?? "",
+    piedraAngular: ((player.perks as { styles?: Array<{ description: string; selections?: Array<{ perk: number }> }> } | undefined)
+      ?.styles?.find((e) => e.description === "primaryStyle")?.selections?.[0]?.perk) ?? 0,
   }, (cond?.params ?? {}) as CastigoParams);
 
   if (cumplio === null) return; // castigo antiguo sin forma de comprobarse

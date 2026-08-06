@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { requireAuthedRequest } from "@/core/lib/require-auth";
-import { rollCastigo, type CastigoParams } from "@/core/lib/castigos";
+import { rollCastigo, DIAS_RECIENTES, type CastigoParams } from "@/core/lib/castigos";
 import { championCatalog } from "@/core/lib/ddragon-items";
 import { notify, NOTIFICATION_TYPES } from "@/core/lib/notify";
 import type { Database } from "@/core/types/database";
@@ -172,7 +172,14 @@ async function congelarParams(
   );
   if (!res.ok) return null;
 
-  const masteries = (await res.json()) as Array<{ championId: number; championPoints: number }>;
+  const masteries = (await res.json()) as Array<{ championId: number; championPoints: number; lastPlayTime: number }>;
+
+  // Solo lo jugado últimamente. El top de maestría es acumulado de siempre, así
+  // que sin este filtro «tus tres más jugados» puede vetarle campeones que no
+  // toca hace meses — comprobado en una cuenta real: uno del top llevaba 112
+  // días sin jugarse, y el castigo salía gratis.
+  const corte = Date.now() - DIAS_RECIENTES * 86400_000;
+  const recientes = masteries.filter((m) => (m.lastPlayTime ?? 0) >= corte);
   const nombres = await championCatalog();
   const nombre = (id: number) => nombres.get(id);
 
@@ -198,7 +205,7 @@ async function congelarParams(
 
   if (castigoKey === "sin_tus_tres") {
     return {
-      vetados: [...masteries]
+      vetados: [...(recientes.length >= 3 ? recientes : masteries)]
         .sort((a, b) => b.championPoints - a.championPoints)
         .slice(0, 3)
         .map((m) => nombre(m.championId))
