@@ -2,6 +2,20 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-08-06 — Castigos: imponerlos, decidirlos y verificarlos solos
+
+**Imponer.** Con un sello le impones un castigo a otro participante. Lo sortea el servidor —el giro del modal es adorno; si decidiera el navegador, cualquiera recargaría hasta sacar el más suave— filtrando por el rol del castigado y pesando por dureza, así que los duros salen a un tercio de los suaves. Un castigo a la vez por persona: mientras tenga uno sin resolver no puede recibir otro. No es enfriamiento por tiempo sino por estado, sin temporizador ni tabla nueva.
+
+**Decidir.** Aceptar o rechazar. Rechazar cuesta 100 puntos, calibrado sobre 10.020 partidas: una vale 92,6 de media y entre ganarla y perderla hay 76,4, así que rechazar duele más que cumplir aunque el castigo te haga perder. Sin decidir, las partidas nuevas dejan de contar — es una pausa, no un castigo, y `decided_at` hace que lo jugado en ese hueco no cuente nunca, ni al resincronizar. Sin esa marca, aceptar tres días tarde recuperaría todo y volveríamos a premiar el ignorar.
+
+**Verificar.** Los 12 se comprueban solos contra match-v5, sin peticiones extra salvo una de maestría al imponerlos. Hechizos, usos de la ultimate, guardianes de control, consumibles y los catorce campos de ping salen del participante que el sync ya descarga; botas y presupuesto, del catálogo de Data Dragon en vez de una lista de IDs que se quedaría vieja en silencio. Los de campeón congelan la maestría al imponerse: mirarla después daría otro resultado, porque sube al jugar.
+
+**Avisos.** Primer canal de la plataforma: tabla `notifications`, campana con contador y `/api/me/inbox` como fuente única para web, cliente de escritorio y overlay. Avisa al recibir el castigo y al resolverse.
+
+Migraciones 032-036. Comprobaciones: `check-castigos.mjs` (3.000 tiradas por rol) y `check-verificacion.mjs` (cada castigo detecta su infracción y la ruleta nunca reparte lo que no sabe comprobar).
+
+**Tres veces el mismo fallo**, y merece quedar escrito: lógica que no depende de partidas nuevas enterrada detrás de los `continue` del camino de las partidas. Primero el rango, luego la resta por rechazar, luego otra vez. La descarga es ahora un bloque etiquetado y el recálculo vive fuera.
+
 ## 2026-08-05 — Sellos: 14 reglas, tope de 3 y cápsula visible
 
 Cinco reglas nuevas tomadas de las normas de Blue Shell, todas medidas sobre el dataset unido (que sí separa kills de asistencias): masacre 22+ kills 1,37% · orquesta 30+ asistencias 0,68% · KDA de 20 0,77% · cuadrakill 0,88% · maratón (ganar en 40+ min) 5,99%. Sus dos umbrales estaban bien calibrados: 22 kills y 30 asistencias salen casi igual de raros, que es lo que hace falta para que un carry y un support tengan la misma oportunidad.
