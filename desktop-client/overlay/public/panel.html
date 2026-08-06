@@ -554,9 +554,16 @@ function wireIconFitSliders() {
   });
 }
 
-function showRank(rank) {
+function showRank(rank, pedido = false) {
   const box = $("rankStatus");
-  if (!rank || (!rank.tier && !rank.error && !rank.profileIconUrl)) { box.className = "rankStatus"; box.textContent = ""; return; }
+  // Vacío y sin error. Si lo pidió el usuario hay que decirle qué pasa —dejar el
+  // hueco en blanco es idéntico a un botón que no hace nada—, pero en el sondeo
+  // automático no: haría parpadear el recuadro en rojo cada dos segundos.
+  if (!rank || (!rank.tier && !rank.error && !rank.profileIconUrl)) {
+    box.className = pedido ? "rankStatus error" : "rankStatus";
+    box.innerHTML = pedido ? "<span>Sin resultado. Comprueba el nombre, el tag y la región.</span>" : "";
+    return;
+  }
   box.className = "rankStatus" + (rank.error && !rank.tier ? " error" : "");
   const icon = rank.profileIconUrl ? `<img id="rankProfileIcon" src="${rank.profileIconUrl}">` : "";
   const emblem = rank.tier ? `<img id="rankEmblem" src="https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-${rank.tier}.png">` : "";
@@ -681,13 +688,30 @@ function buildCommandsUI() {
 $("resetBtn").onclick = async () => { await fetch("/reset-session", { method: "POST" }); refreshStatus(); };
 
 $("rankBtn").onclick = async () => {
+  const btn = $("rankBtn");
+  const antes = btn.textContent;
+
+  // El botón se apaga y cambia de texto mientras busca: sin eso, una consulta
+  // que tarda un segundo es indistinguible de un botón que no funciona.
+  btn.disabled = true;
+  btn.textContent = "Buscando…";
   $("rankStatus").className = "rankStatus";
-  $("rankStatus").textContent = "Buscando…";
+  $("rankStatus").innerHTML = "<span>Consultando a Riot…</span>";
+
   const body = {
     riotApiKey: $("riotApiKey").value, riotGameName: $("riotGameName").value, riotTagLine: $("riotTagLine").value, riotPlatform: $("riotPlatform").value,
   };
-  const res = await (await fetch("/config", { method: "POST", body: JSON.stringify(body) })).json();
-  showRank(res.rank);
+
+  try {
+    const res = await (await fetch("/config", { method: "POST", body: JSON.stringify(body) })).json();
+    showRank(res.rank, true);
+  } catch (e) {
+    $("rankStatus").className = "rankStatus error";
+    $("rankStatus").innerHTML = `<span>No se pudo consultar: ${e.message}</span>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = antes;
+  }
 };
 
 async function refreshStatus() {

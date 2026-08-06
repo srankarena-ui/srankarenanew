@@ -352,7 +352,7 @@ let rank = { ...DEFAULT_RANK };
 
 async function fetchRank() {
   const { riotApiKey: key, riotGameName: name, riotTagLine: tag, riotPlatform: platform } = config;
-  if (!key || !name || !tag) return;
+  if (!name || !tag) return;
   const regional = PLATFORM_TO_REGIONAL[platform] || "americas";
 
   const acc = await riotGet(`https://${regional}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(name)}/${encodeURIComponent(tag)}`, key);
@@ -733,7 +733,7 @@ let matchHistory = [];
 
 async function fetchMatchHistory() {
   const { riotApiKey: key, riotGameName: name, riotTagLine: tag, riotPlatform: platform } = config;
-  if (!key || !name || !tag) return;
+  if (!name || !tag) return;
   const regional = PLATFORM_TO_REGIONAL[platform] || "americas";
 
   const acc = await riotGet(`https://${regional}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(name)}/${encodeURIComponent(tag)}`, key);
@@ -929,7 +929,7 @@ function queueRankedCheck(deadTimeSec) {
 async function checkPendingRankedResult() {
   if (!pendingRankedCheck || rankedCheckBusy) return;
   const { riotApiKey: key, riotGameName: name, riotTagLine: tag, riotPlatform: platform } = config;
-  if (!key || !name || !tag) { pendingRankedCheck = null; return; } // sin cuenta de Riot no hay cómo verificar
+  if (!name || !tag) { pendingRankedCheck = null; return; } // sin cuenta de Riot no hay cómo verificar
 
   rankedCheckBusy = true;
   try {
@@ -963,7 +963,7 @@ async function checkPendingRankedResult() {
 // YA jugada, para no confundirla con "la que recién terminó" y sumarla de más la primera vez.
 async function initLastSeenMatchId() {
   const { riotApiKey: key, riotGameName: name, riotTagLine: tag, riotPlatform: platform } = config;
-  if (!key || !name || !tag) return;
+  if (!name || !tag) return;
   const regional = PLATFORM_TO_REGIONAL[platform] || "americas";
   const acc = await riotGet(`https://${regional}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(name)}/${encodeURIComponent(tag)}`, key);
   if (acc.error) return;
