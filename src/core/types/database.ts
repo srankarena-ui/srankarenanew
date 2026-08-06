@@ -369,6 +369,7 @@ export type Database = {
           assigned_at: string;
           completed_at: string | null;
           decided_at: string | null;
+          resolved_match_id: string | null;
         };
         Insert: {
           id?: string;
@@ -386,6 +387,7 @@ export type Database = {
           assigned_at?: string;
           completed_at?: string | null;
           decided_at?: string | null;
+          resolved_match_id?: string | null;
         };
         // Declarada a mano: PostgREST sí conoce la clave ajena y el embed
         // `challenges(...)` funciona, pero sin esto el tipo generado lo da por

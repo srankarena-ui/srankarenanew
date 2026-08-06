@@ -8,11 +8,38 @@
 
 import type { Role } from "./challenge-conditions";
 
+/**
+ * Lo que se sabe de la partida al comprobar un castigo. Todo sale del
+ * participante de match-v5 que el sync ya descarga, salvo `compróBotas` y
+ * `objetoMasCaro`, que necesitan el catálogo de Data Dragon.
+ */
+export interface CastigoFacts {
+  /** IDs de los dos hechizos de invocador. Destello es 4, Prender 14. */
+  hechizos: [number, number];
+  /** Veces que usó cada hechizo de invocador. */
+  usosHechizos: [number, number];
+  /** Lanzamientos de la definitiva (`spell4Casts`). */
+  usosUlti: number;
+  visionWardsBought: number;
+  consumablesPurchased: number;
+  /** Suma de los catorce tipos de ping. */
+  pings: number;
+  comproBotas: boolean;
+  /** Oro del objeto más caro que terminó llevando. */
+  objetoMasCaro: number;
+}
+
 export interface Castigo {
   key: string;
   name: string;
   /** Qué tiene que hacer —o no hacer— el castigado. */
   how: string;
+  /**
+   * Devuelve true si lo cumplió. Sin esta función el castigo no entra en la
+   * ruleta: imponer algo que no sabemos comprobar convierte el sistema en un
+   * pacto de honor, y en directo eso no se sostiene.
+   */
+  verify?: (f: CastigoFacts) => boolean;
   /**
    * Roles a los que se le puede imponer. Ausente = a cualquiera.
    *
@@ -42,14 +69,16 @@ export const REJECTION_PENALTY = 100;
 export const CASTIGOS: Castigo[] = [
   {
     key: "sin_flash",
+    verify: (f) => !f.hechizos.includes(4),
     name: "Sin Flash",
     how: "Jugar la partida sin llevar Destello.",
     dureza: 2,
   },
   {
     key: "sin_botas",
+    verify: (f) => !f.comproBotas,
     name: "Sin botas",
-    how: "No comprar botas en toda la partida.",
+    how: "Terminar la partida sin botas en el inventario. Se miran los objetos finales, así que venderlas antes de acabar también vale.",
     dureza: 2,
   },
   {
@@ -60,6 +89,7 @@ export const CASTIGOS: Castigo[] = [
   },
   {
     key: "sin_guardianes_control",
+    verify: (f) => f.visionWardsBought === 0,
     name: "Sin guardianes de control",
     how: "No comprar ni un guardián de control en toda la partida.",
     // Para un support es la mitad de su trabajo; para el resto es una molestia.
@@ -68,38 +98,44 @@ export const CASTIGOS: Castigo[] = [
   },
   {
     key: "sin_consumibles",
+    verify: (f) => f.consumablesPurchased === 0,
     name: "Sin consumibles",
     how: "Nada de pociones, elixires ni consumibles en toda la partida.",
     dureza: 2,
   },
   {
     key: "presupuesto",
+    verify: (f) => f.objetoMasCaro <= 1600,
     name: "Presupuesto ajustado",
-    how: "No comprar ningún objeto que cueste más de 1600 de oro.",
+    how: "Terminar la partida sin ningún objeto de más de 1600 de oro. Se miran los objetos finales, no las compras.",
     dureza: 3,
   },
   {
     key: "sin_prender",
+    verify: (f) => !f.hechizos.includes(14),
     name: "Sin Prender",
     how: "Jugar sin llevar Prender.",
     dureza: 1,
   },
   {
     key: "ulti_tres_veces",
+    verify: (f) => f.usosUlti <= 3,
     name: "Ultimate racionada",
     how: "Usar tu definitiva tres veces como mucho en toda la partida.",
     dureza: 3,
   },
   {
     key: "sin_pings",
+    verify: (f) => f.pings === 0,
     name: "Silencio",
-    how: "No usar ni un solo ping en toda la partida. Riot cuenta los trece tipos por separado, así que se comprueba sumándolos.",
+    how: "No usar ni un solo ping en toda la partida. Riot cuenta los catorce tipos por separado, así que se comprueba sumándolos.",
     dureza: 1,
   },
   {
     key: "secundario_seis",
+    verify: (f) => Math.min(...f.usosHechizos) >= 6,
     name: "Usa el otro",
-    how: "Usar tu hechizo de invocador secundario al menos seis veces.",
+    how: "Usar tus dos hechizos de invocador al menos seis veces cada uno. Se piden los dos y no «el secundario» porque el orden de las teclas lo elige cada jugador: no hay un secundario que Riot distinga.",
     dureza: 1,
   },
   {
@@ -119,13 +155,26 @@ export const CASTIGOS: Castigo[] = [
 /** Peso en la ruleta: lo más duro sale menos. Dureza 1 → 3, 2 → 2, 3 → 1. */
 const peso = (c: Castigo) => 4 - c.dureza;
 
+/** Los que sabemos comprobar. Solo estos entran en la ruleta. */
+export const CASTIGOS_VERIFICABLES = CASTIGOS.filter((c) => c.verify);
+
 /** Los que se le pueden imponer a ese rol. Sin rol conocido, solo los de todos. */
 export function castigosParaRol(role: string | null): Castigo[] {
-  return CASTIGOS.filter((c) => {
+  return CASTIGOS_VERIFICABLES.filter((c) => {
     if (!c.roles) return true;
     if (!role) return false; // sin saber su rol, no arriesgar uno que lo rompa
     return c.roles.includes(role as Role);
   });
+}
+
+/**
+ * ¿Cumplió el castigo en esa partida? `null` si no se sabe comprobar —no
+ * debería pasar, porque la ruleta solo reparte verificables, pero un castigo
+ * antiguo guardado en base puede serlo.
+ */
+export function verificarCastigo(key: string, f: CastigoFacts): boolean | null {
+  const c = castigo(key);
+  return c?.verify ? c.verify(f) : null;
 }
 
 /**

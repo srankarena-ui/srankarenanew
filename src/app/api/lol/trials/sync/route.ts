@@ -5,7 +5,8 @@ import type { TrialsConfig } from "@/core/types";
 import { roleScore, SCORING_WEIGHTS, type RoleBaselines } from "@/core/lib/role-score";
 import { evaluateFeats, featPoints, type EarnedFeat } from "@/core/lib/tournament-feats";
 import { sealsForMatch, sealsForStreaks, SEAL_CAP } from "@/core/lib/seal-rules";
-import { REJECTION_PENALTY } from "@/core/lib/castigos";
+import { REJECTION_PENALTY, verificarCastigo } from "@/core/lib/castigos";
+import { itemCatalog } from "@/core/lib/ddragon-items";
 import baselines from "@/core/config/role-baselines.json";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/core/types/database";
@@ -330,6 +331,68 @@ async function grantSeals(
   });
 }
 
+/**
+ * Comprueba los castigos aceptados contra una partida.
+ *
+ * Se resuelve el más antiguo cuya decisión sea anterior al inicio de la partida:
+ * lo que se aceptó a mitad de partida no puede exigirse en esa misma. Uno por
+ * partida, para que no se resuelvan tres de golpe con una sola.
+ */
+async function verificarCastigos(
+  admin: SupabaseClient<Database>,
+  userId: string,
+  matchId: string,
+  gameCreation: number,
+  player: Participant
+): Promise<void> {
+  const { data } = await admin
+    .from("challenge_assignments")
+    .select("id, decided_at, challenges(conditions)")
+    .eq("user_id", userId)
+    .eq("status", "accepted")
+    .order("decided_at", { ascending: true });
+
+  const pendiente = (data ?? []).find(
+    (a) => a.decided_at && new Date(a.decided_at).getTime() < gameCreation
+  ) as { id: string; challenges: { conditions: unknown } | null } | undefined;
+  if (!pendiente) return;
+
+  const key = (pendiente.challenges?.conditions as { key?: string } | null)?.key;
+  if (!key) return;
+
+  const { botas, precio } = await itemCatalog();
+  const items = [0, 1, 2, 3, 4, 5, 6]
+    .map((i) => (player[`item${i}`] as number) ?? 0)
+    .filter((id) => id > 0);
+
+  const cumplio = verificarCastigo(key, {
+    hechizos: [(player.summoner1Id as number) ?? 0, (player.summoner2Id as number) ?? 0],
+    usosHechizos: [(player.summoner1Casts as number) ?? 0, (player.summoner2Casts as number) ?? 0],
+    usosUlti: (player.spell4Casts as number) ?? 0,
+    visionWardsBought: (player.visionWardsBoughtInGame as number) ?? 0,
+    consumablesPurchased: (player.consumablesPurchased as number) ?? 0,
+    // Los catorce tipos de ping van en campos separados; el castigo es que no
+    // haya usado ninguno, así que se suman todos.
+    pings: Object.entries(player)
+      .filter(([k]) => k.endsWith("Pings"))
+      .reduce((a, [, v]) => a + ((v as number) ?? 0), 0),
+    comproBotas: items.some((id) => botas.has(id)),
+    objetoMasCaro: items.reduce((max, id) => Math.max(max, precio.get(id) ?? 0), 0),
+  });
+
+  if (cumplio === null) return; // castigo antiguo sin forma de comprobarse
+
+  await admin
+    .from("challenge_assignments")
+    .update({
+      status: cumplio ? "completed" : "failed",
+      completed_at: new Date().toISOString(),
+      resolved_match_id: matchId,
+    })
+    .eq("id", pendiente.id)
+    .eq("status", "accepted");
+}
+
 /** Una ventana en la que las partidas del jugador no cuentan. `hasta` nulo = sigue abierta. */
 type Ventana = { desde: number; hasta: number | null };
 
@@ -372,7 +435,7 @@ async function penalizacionPorRechazos(
     .from("challenge_assignments")
     .select("id", { count: "exact", head: true })
     .eq("user_id", userId)
-    .eq("status", "rejected");
+    .in("status", ["rejected", "failed"]);
 
   return (count ?? 0) * REJECTION_PENALTY;
 }
@@ -552,6 +615,16 @@ export async function POST(request: NextRequest) {
           (p) => p.puuid === enrollment.puuid
         );
         if (!participant) continue;
+
+        // Se comprueba antes de guardar la partida: si el reto se cumplió o se
+        // incumplió, fue en esta, y aquí es donde está el participante entero.
+        await verificarCastigos(
+          admin,
+          enrollment.user_id,
+          matchId,
+          match.info.gameCreation as number,
+          participant
+        );
 
         const stats = extractStats(participant, match.info as Record<string, unknown>);
         const matchScore = stats.points.total;

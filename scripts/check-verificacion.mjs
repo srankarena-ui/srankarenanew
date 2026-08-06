@@ -1,0 +1,77 @@
+// La verificación decide si alguien pierde 100 puntos en directo. Se comprueba
+// que cada castigo distingue cumplir de no cumplir, y que ninguno se queda sin
+// forma de comprobarse.
+//   node --experimental-strip-types scripts/check-verificacion.mjs
+import assert from "node:assert";
+import {
+  CASTIGOS, CASTIGOS_VERIFICABLES, castigosParaRol, verificarCastigo, rollCastigo,
+} from "../src/core/lib/castigos.ts";
+
+// Partida "limpia": no lleva Destello ni Prender, no compró nada, no pingueó.
+// Cumple todos los castigos a la vez, que es el punto de partida útil.
+const LIMPIA = {
+  hechizos: [6, 12],          // Fantasma + Teleporte
+  usosHechizos: [8, 8],
+  usosUlti: 2,
+  visionWardsBought: 0,
+  consumablesPurchased: 0,
+  pings: 0,
+  comproBotas: false,
+  objetoMasCaro: 1300,
+};
+
+const con = (patch) => ({ ...LIMPIA, ...patch });
+
+// ── Cada castigo: se cumple en la limpia, se incumple con su infracción ──────
+const INFRACCIONES = {
+  sin_flash: { hechizos: [4, 12] },
+  sin_prender: { hechizos: [14, 12] },
+  sin_botas: { comproBotas: true },
+  sin_guardianes_control: { visionWardsBought: 1 },
+  sin_consumibles: { consumablesPurchased: 1 },
+  presupuesto: { objetoMasCaro: 1601 },
+  ulti_tres_veces: { usosUlti: 4 },
+  sin_pings: { pings: 1 },
+  secundario_seis: { usosHechizos: [8, 5] },
+};
+
+for (const c of CASTIGOS_VERIFICABLES) {
+  const infraccion = INFRACCIONES[c.key];
+  assert(infraccion, `"${c.key}" entra en la ruleta pero el check no lo cubre`);
+
+  assert.equal(verificarCastigo(c.key, LIMPIA), true, `"${c.key}" no da por cumplida la partida limpia`);
+  assert.equal(verificarCastigo(c.key, con(infraccion)), false, `"${c.key}" no detecta su infracción`);
+}
+
+// Lo que se comprueba son los objetos FINALES, no las compras: el texto de
+// esos dos castigos lo dice, y el check lo fija para que no se separen.
+assert.equal(verificarCastigo("sin_botas", con({ comproBotas: false })), true, "terminar sin botas cumple");
+
+// Los umbrales, justo en el borde: un "1600 de oro como máximo" que rechace
+// 1600 exactos es un castigo distinto del anunciado.
+assert.equal(verificarCastigo("presupuesto", con({ objetoMasCaro: 1600 })), true, "1600 exactos entran en el presupuesto");
+assert.equal(verificarCastigo("ulti_tres_veces", con({ usosUlti: 3 })), true, "tres usos exactos cumplen");
+assert.equal(verificarCastigo("secundario_seis", con({ usosHechizos: [6, 6] })), true, "seis exactos cumplen");
+
+// El hechizo puede ir en cualquiera de las dos ranuras: el orden lo elige el
+// jugador, así que mirar solo la primera dejaría pasar a media plataforma.
+assert.equal(verificarCastigo("sin_flash", con({ hechizos: [12, 4] })), false, "Destello en la segunda ranura también incumple");
+assert.equal(verificarCastigo("sin_prender", con({ hechizos: [12, 14] })), false, "Prender en la segunda ranura también incumple");
+
+// ── Nada sin comprobar puede llegar a un jugador ─────────────────────────────
+assert.equal(verificarCastigo("campeon_aleatorio", LIMPIA), null, "los no verificables devuelven null");
+
+for (const role of ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY", null]) {
+  for (const c of castigosParaRol(role)) {
+    assert(c.verify, `"${c.key}" se le puede imponer a ${role} sin saber comprobarlo`);
+  }
+  for (let i = 0; i < 2000; i++) {
+    assert(rollCastigo(role).verify, `la ruleta saco un castigo sin verificación para ${role}`);
+  }
+}
+
+const fuera = CASTIGOS.filter((c) => !c.verify);
+console.log(`${CASTIGOS_VERIFICABLES.length} de ${CASTIGOS.length} castigos se comprueban solos`);
+console.log(`fuera de la ruleta hasta poder comprobarlos: ${fuera.map((c) => c.name).join(", ")}`);
+console.log("\nOK: cada castigo detecta su infracción, los umbrales caen donde se anuncia,");
+console.log("    y la ruleta nunca reparte algo que no sepamos verificar.");
