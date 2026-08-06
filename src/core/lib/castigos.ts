@@ -237,6 +237,54 @@ export function verificarCastigo(
   return c?.verify ? c.verify(f, p) : null;
 }
 
+/** Lo que se ve en selección de campeón, antes de que empiece la partida. */
+export interface SeleccionFacts {
+  /** Los dos hechizos de invocador elegidos. */
+  hechizos: [number, number];
+  /** Nombre interno del campeón, o null si todavía no ha elegido. */
+  campeon: string | null;
+}
+
+const HECHIZOS: Record<number, string> = {
+  1: "Limpieza", 3: "Agotar", 4: "Destello", 6: "Fantasma", 7: "Curar",
+  11: "Castigar", 12: "Teleporte", 14: "Prender", 21: "Barrera", 32: "Marca",
+};
+
+export const nombreHechizo = (id: number) => HECHIZOS[id] ?? String(id);
+
+/**
+ * ¿Va a incumplir el castigo con lo que lleva elegido ahora mismo?
+ *
+ * Devuelve el motivo, o null si de momento va bien. Esto es prevención, no
+ * verificación: avisar en selección vale más que restarle 100 puntos después,
+ * y aquí todavía está a tiempo de cambiarlo.
+ *
+ * Vive junto al catálogo para que el aviso y la comprobación no se separen: si
+ * un día cambia qué incumple un castigo, cambia en un solo sitio.
+ */
+export function problemaEnSeleccion(
+  key: string,
+  params: CastigoParams,
+  f: SeleccionFacts
+): string | null {
+  switch (key) {
+    case "sin_flash":
+      return f.hechizos.includes(4) ? "Llevas Destello" : null;
+    case "sin_prender":
+      return f.hechizos.includes(14) ? "Llevas Prender" : null;
+    case "campeon_aleatorio":
+      if (!f.campeon || !params.campeon) return null;
+      return f.campeon !== params.campeon ? `Te tocaba ${params.campeon}, no ${f.campeon}` : null;
+    case "campeon_bajo":
+    case "sin_tus_tres":
+      if (!f.campeon) return null;
+      return (params.vetados ?? []).includes(f.campeon) ? `${f.campeon} está vetado` : null;
+    default:
+      // El resto solo se sabe jugando: no comprar botas, no pinguear, el oro.
+      return null;
+  }
+}
+
 /**
  * Gira la ruleta. `random` se inyecta para poder comprobarlo: un sorteo que solo
  * se puede observar en producción no se puede verificar.

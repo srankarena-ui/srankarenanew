@@ -19,9 +19,12 @@ export async function GET(request: NextRequest) {
   const [challenges, duos, teamInvites, participations, avisos] = await Promise.all([
     admin
       .from("challenge_assignments")
-      .select("id, challenge_id, assigned_at")
+      .select("id, challenge_id, assigned_at, status")
       .eq("user_id", userId)
-      .eq("status", "pending"),
+      // Aceptados tambien: es el que hay que cumplir. Los pendientes importan
+      // por otro motivo — mientras no decida, sus partidas no cuentan — asi que
+      // se manda el estado y el cliente redacta el aviso segun cual sea.
+      .in("status", ["pending", "accepted"]),
     admin
       .from("player_duos")
       .select("id, requester_id, created_at")
@@ -48,12 +51,17 @@ export async function GET(request: NextRequest) {
 
   // Retos: se resuelven sus definiciones y se descartan los caducados o con
   // condiciones corruptas, para no notificar algo que el jugador no puede cumplir.
-  const retos: Array<{ id: string; challengeId: string; title: string; assignedAt: string }> = [];
+  // `key` y `description` van para el cliente de escritorio: con solo el título
+  // tendría que adivinar de qué castigo se trata comparando texto.
+  const retos: Array<{
+    id: string; challengeId: string; title: string; description: string | null;
+    key: string | null; params: Record<string, unknown>; status: string; assignedAt: string;
+  }> = [];
   const assignments = challenges.data ?? [];
   if (assignments.length) {
     const { data: defs } = await admin
       .from("challenges")
-      .select("id, title, is_active, starts_at, ends_at, conditions")
+      .select("id, title, description, is_active, starts_at, ends_at, conditions")
       .in("id", assignments.map((a) => a.challenge_id));
 
     const byId = new Map((defs ?? []).map((d) => [d.id, d]));
@@ -62,8 +70,20 @@ export async function GET(request: NextRequest) {
       if (!def?.is_active) continue;
       if (def.starts_at && new Date(def.starts_at) > now) continue;
       if (def.ends_at && new Date(def.ends_at) < now) continue;
-      if (!parseCondition(def.conditions)) continue;
-      retos.push({ id: a.id, challengeId: def.id, title: def.title, assignedAt: a.assigned_at });
+      const cond = parseCondition(def.conditions);
+      if (!cond) continue;
+      retos.push({
+        id: a.id,
+        challengeId: def.id,
+        title: def.title,
+        description: def.description,
+        key: cond.type === "castigo" ? cond.key : null,
+        // El campeón sorteado y los vetados: sin ellos el cliente no puede
+        // avisar en selección, solo repetir el título.
+        params: cond.type === "castigo" ? (cond.params ?? {}) : {},
+        status: a.status,
+        assignedAt: a.assigned_at,
+      });
     }
   }
 
