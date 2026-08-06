@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920, initial-scale=1">
+<title>LoL Overlay — Hextech</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@500;600;700;800&family=Fragment+Mono&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@500;600&family=Space+Mono:wght@700&family=Orbitron:wght@600;800&family=Rajdhani:wght@600;700&family=Teko:wght@600;700&family=Bebas+Neue&family=Chakra+Petch:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============ TRANSPARENT CANVAS (OBS Browser Source) ============ */
+  html, body { margin:0; padding:0; background: transparent; width:1920px; height:1080px; overflow:hidden; }
+  *, *::before, *::after { box-sizing: border-box; }
+
+  :root{
+    --bg-0:#0A0E1A; --bg-1:#121826;
+    --gold:#3E6BFF; --gold-bright:#36D2FF; --gold-shadow:#2A3760; --gold-dim:#7E93C4;
+    --cream:#F3F6FC; --cyan:#36D2FF; --win:#3E6BFF; --lose:#F0483E;
+    --border:rgba(62,107,255,.30); --border-strong:rgba(62,107,255,.5);
+    --panel-alpha: .92; --fx: cubic-bezier(.16,.84,.31,1); --bevel: 20px;
+    --ui: 'Instrument Sans', system-ui, sans-serif;
+    --mono: 'Fragment Mono', ui-monospace, monospace;
+    --numfont: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  #stage{ position: relative; width:1920px; height:1080px; font-family: var(--ui); -webkit-font-smoothing: antialiased; }
+
+  .lbl{ font-family: var(--mono); text-transform: uppercase; letter-spacing:.05em; color:var(--gold-dim); font-weight:600; }
+
+  /* ===================== BEVELED PANEL PRIMITIVE ===================== */
+  .bevel{ border-radius: var(--bevel); }
+  .panel{ position: relative; padding:1px; border-radius: calc(var(--bevel) + 1px);
+    background: linear-gradient(150deg, var(--border-strong), var(--border) 55%, rgba(54,210,255,.22)); }
+  .panel > .fill{ position: relative; border-radius: var(--bevel);
+    background:
+      radial-gradient(120% 130% at 50% 0%, rgba(62,107,255,.10), transparent 60%),
+      linear-gradient(180deg, rgba(18,24,38,.92), rgba(10,14,26,.92));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 0 40px rgba(0,0,0,.35); }
+  .orn{ display:none; }
+
+  .ic{ width:1em; height:1em; display:inline-block; vertical-align:-.14em; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+  .ic.f{ fill: currentColor; stroke:none; }
+
+  /* ===================== RANK FRAME (composite) ===================== */
+  #rankFrame, #miniFrameSlot > .rf{ position: relative; }
+  #rankFrame{ width:130px; height:130px; }
+  #miniFrameSlot{ width:64px; height:64px; }
+  #miniFrameSlot .rf{ width:64px; height:64px; }
+  .rf img, #rankFrame #pic{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:46%; height:46%; object-fit:cover; border-radius:50%;
+    box-shadow:0 0 0 2px #0A0E1A, 0 2px 8px rgba(0,0,0,.6); }
+  #rankFrameArt, .rf .art{
+    position:absolute; inset:0; background-size:contain; background-repeat:no-repeat; background-position:center;
+    pointer-events:none; }
+
+  /* ======================  BIG CARD (deadView)  ================ */
+  /* --wx/--wy/--ws: posición/tamaño configurables desde el preview del panel (drag). Con todo en
+     0/0/1 el resultado es idéntico al centrado fijo de siempre. */
+  #deadView{ position:absolute; top:50%; left:50%; width:1200px;
+    transform:translate(calc(-50% + var(--wx,0px)), calc(-50% + var(--wy,0px))) scale(var(--ws,1));
+    opacity:0; display:none; }
+  #deadView .fill{ padding:26px 32px 22px; overflow:hidden; }
+  .dv-head, .dv-grid{ position:relative; z-index:2; }
+
+  /* fondo con el splash art del campeón (opcional, activado desde el panel) */
+  #champBg{ display:none; position:absolute; inset:0; z-index:0; }
+  #champBg img{ width:100%; height:100%; object-fit:cover; }
+  .champ-scrim{ display:none; position:absolute; inset:0; z-index:1;
+    background: linear-gradient(100deg, rgba(10,14,26,.94) 0%, rgba(10,14,26,.75) 38%, rgba(10,14,26,.4) 70%, rgba(10,14,26,.6) 100%); }
+  .champ-scrim::after{ content:""; position:absolute; inset:0; background:rgba(10,14,26,.42); }
+  #deadView[data-theme="splash"] #champBg, #deadView[data-theme="splash"] .champ-scrim{ display:block; }
+  #deadView[data-theme="splash"] .dv-grid{ min-height:340px; }
+
+  .dv-head{ display:flex; align-items:center; gap:14px; color:var(--cyan); font-family:var(--mono);
+    font-size:12px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; margin-bottom:14px; }
+  .dv-head .dot{ width:9px;height:9px;border-radius:50%;background:var(--cyan); box-shadow:0 0 10px var(--cyan); animation:pulse 1.4s infinite; }
+  .dv-head .hline{ flex:1; height:1px; background:linear-gradient(90deg, rgba(10,200,185,.5), transparent); }
+  .dv-head .clock{ color:var(--cream); letter-spacing:.05em; }
+
+  /* flex y no grid: una columna oculta (data-part apagado) colapsa sola en vez de dejar el hueco
+     que dejaría una plantilla de columnas fija. Las proporciones son las mismas que 1fr/1.7fr. */
+  .dv-grid{ display:flex; gap:24px; align-items:stretch; }
+  .dv-grid > .idt{ width:360px; flex:none; }
+  .dv-grid > .respawn{ flex:1 1 0; }
+  .dv-grid > .stats{ flex:1.7 1 0; }
+  .vdiv{ width:1px; flex:none; background:linear-gradient(180deg,transparent,var(--border),transparent); align-self:stretch; }
+
+  .idt{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:8px; }
+  .idt .rfwrap{ position:relative; margin-bottom:6px; }
+  #name{ font-size:36px; font-weight:800; color:var(--cream); letter-spacing:-.02em; }
+  #titleLine{ font-size:16px; color:var(--cyan); font-weight:600; }
+  #rankLine{ margin-top:6px; font-family:var(--mono); font-size:14px; letter-spacing:.05em; color:var(--gold-dim); text-transform:uppercase; font-weight:600; }
+  .idt .badges{ margin-top:14px; display:flex; flex-wrap:wrap; gap:9px; justify-content:center; }
+  /* ocultos por defecto: solo se muestran cuando el evento realmente pasó (ver refresh() en el JS) */
+  #badges .chip{ display:none; }
+
+  .chip{ display:inline-flex; align-items:center; gap:7px; font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.05em;
+    text-transform:uppercase; padding:6px 13px; color:var(--cream);
+    background:color-mix(in srgb, var(--chipc, var(--gold)) 16%, #0A0E1A);
+    border:1px solid color-mix(in srgb, var(--chipc, var(--gold)) 55%, transparent); border-radius:999px; }
+  .chip .ic{ font-size:15px; color:var(--chipc, var(--gold)); }
+  .chip.blood{ --chipc:var(--lose); box-shadow:0 0 16px color-mix(in srgb, var(--lose) 40%, transparent); }
+  .chip.triple{ --chipc:#F5A623; box-shadow:0 0 16px rgba(245,166,35,.3); }
+  .chip.ace{ --chipc:var(--cyan); box-shadow:0 0 16px color-mix(in srgb, var(--cyan) 40%, transparent); }
+
+  .respawn{ display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:8px; }
+  .rsp-label{ font-family:var(--mono); font-size:12px; letter-spacing:.1em; color:var(--lose); text-transform:uppercase; font-weight:600; text-shadow:0 0 12px color-mix(in srgb, var(--lose) 45%, transparent); }
+  .rsp-core{ position:relative; width:230px; height:230px; display:flex; align-items:center; justify-content:center; }
+  .rsp-num{ font-family:var(--numfont); font-weight:700; color:var(--cream); line-height:1;
+    font-size:132px; letter-spacing:-.02em; text-shadow:0 0 34px rgba(62,107,255,.4), 0 4px 10px rgba(0,0,0,.6); }
+  .rsp-num small{ font-size:40px; color:var(--gold); }
+  .rsp-ring{ position:absolute; inset:0; transform:rotate(-90deg); }
+  .rsp-ring circle{ fill:none; }
+  .rsp-ring .track{ stroke:rgba(62,107,255,.16); stroke-width:6; }
+  .rsp-ring .prog{ stroke:url(#ggold); stroke-width:7; stroke-linecap:round; filter:drop-shadow(0 0 8px rgba(62,107,255,.7)); }
+  #respawnLine{ font-family:var(--mono); font-size:12px; color:var(--gold-dim); letter-spacing:.03em; }
+
+  /* estilo del contador: ring (default) muestra el SVG de arriba; bar/plain lo ocultan y ajustan el número */
+  .respawn[data-style="bar"] .rsp-ring, .respawn[data-style="plain"] .rsp-ring{ display:none; }
+  .respawn[data-style="bar"] .rsp-num, .respawn[data-style="plain"] .rsp-num{ font-size:150px; }
+  .respawn[data-style="plain"] .rsp-num{ font-size:170px; }
+  .rsp-bar{ display:none; width:190px; height:10px; border-radius:999px; background:rgba(62,107,255,.18); overflow:hidden; }
+  .respawn[data-style="bar"] .rsp-bar{ display:block; }
+  .rsp-bar .fill{ height:100%; border-radius:999px; background:linear-gradient(90deg, var(--gold), var(--gold-bright)); transition:width .3s linear; }
+
+  .stats{ display:grid; grid-template-columns:1fr 1fr; gap:12px; align-content:center; }
+  .tile{ position:relative; padding:1px; background:var(--border); border-radius:16px; }
+  .tile > .in{ background:linear-gradient(180deg, rgba(18,24,38,.9), rgba(12,16,28,.92)); padding:14px 18px; min-height:88px;
+    border-radius:15px; display:flex; align-items:center; gap:16px; }
+  .tile .tic{ font-size:32px; color:var(--gold); flex:none; filter:drop-shadow(0 0 8px rgba(62,107,255,.3)); }
+  .tile .tx{ min-width:0; }
+  .tile .tlbl{ font-family:var(--mono); font-size:11px; letter-spacing:.06em; color:var(--gold-dim); text-transform:uppercase; font-weight:600; }
+  .tile .tval{ font-family:var(--numfont); font-size:28px; color:var(--cream); line-height:1.12; font-weight:700; letter-spacing:-.01em; white-space:nowrap; }
+  .tile .tsub{ font-size:13px; color:var(--cyan); letter-spacing:.02em; white-space:nowrap; font-family:var(--mono); }
+  .tile.wide{ grid-column:1 / -1; }
+
+  .objrow{ display:flex; gap:18px; align-items:center; }
+  .obj{ display:flex; align-items:center; gap:6px; font-family:var(--numfont); font-size:21px; font-weight:700; color:var(--cream); }
+  .obj.zero{ color:var(--gold-dim); }
+  .obj img{ width:27px; height:27px; object-fit:contain; filter:drop-shadow(0 1px 3px rgba(0,0,0,.55)); }
+  .obj.zero img{ opacity:.35; filter:grayscale(1); }
+  .cd-tic{ width:38px; height:38px; object-fit:contain; flex:none; filter:drop-shadow(0 0 7px rgba(0,0,0,.45)); }
+  .drakes{ display:flex; gap:3px; margin-left:2px; align-items:center; }
+  .drakes img{ width:22px; height:22px; object-fit:contain; filter:drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
+  /* sin etiqueta ni ícono guía: la tile es puro item, lo más grande posible */
+  .items-tile > .in{ padding:12px; }
+  #itemsRow{ display:flex; gap:12px; flex-wrap:wrap; width:100%; align-items:flex-start; }
+  #itemsRow .empty{ font-family:var(--numfont); font-size:15px; color:var(--gold-dim); }
+  .itemEntry{ display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .itemEntry img{ width:58px; height:58px; border-radius:9px; border:1px solid var(--border-strong);
+    box-shadow:0 2px 6px rgba(0,0,0,.5); }
+  .itemEntry .itime{ font-family:var(--mono); font-size:12px; font-weight:600; color:var(--gold-dim); letter-spacing:.02em; }
+
+  /* ======================  MINI CARD — crest suelto + píldora + campeones  ========================== */
+  /* --wx/--wy/--ws: mismo mecanismo que el dead card, ancladas a la esquina inferior-izq de siempre. */
+  #miniCard{ position:absolute; left:calc(32px + var(--wx,0px)); bottom:calc(32px - var(--wy,0px));
+    opacity:0; display:none; transform:scale(var(--ws,1)); transform-origin:bottom left; }
+  #miniCard .fill{ display:none; } /* el nuevo layout no usa el .fill del panel, cada parte tiene su propio fondo */
+  .mini-row{ display:flex; align-items:center; gap:14px; }
+  #miniFrameSlot{ position:relative; flex:none; filter:drop-shadow(0 4px 10px rgba(0,0,0,.6)); }
+  .mc-col{ display:flex; flex-direction:column; gap:7px; }
+
+  /* el fondo/opacidad de la píldora usan los colores del panel (--mc-bg/--mc-bg-alpha), con el
+     valor Hextech por defecto si no se eligió nada. */
+  .mc-pill{ position:relative; display:flex; align-items:center; justify-content:space-between; gap:22px; width:460px; box-sizing:border-box;
+    padding:9px 24px; border-radius:999px;
+    background:color-mix(in srgb, var(--mc-bg, #0B0E16) calc(var(--mc-bg-alpha, .92) * 100%), transparent);
+    border:1px solid rgba(90,110,150,.24); box-shadow:0 10px 26px rgba(0,0,0,.5); }
+  .mc-id{ min-width:0; }
+  .mc-name{ display:flex; align-items:baseline; gap:7px; white-space:nowrap; }
+  #miniName{ font-size:19px; font-weight:800; color:var(--cream); letter-spacing:-.01em; line-height:1.1; }
+  .mc-tag{ font-size:12px; font-weight:600; color:#7E8AA6; }
+  .mc-rank{ display:flex; align-items:baseline; gap:8px; margin-top:2px; white-space:nowrap; }
+  .mc-tier{ font-family:var(--mono); font-size:13px; font-weight:700; color:#C77DFF; letter-spacing:.01em; }
+  .mc-lp{ font-family:var(--mono); font-size:13px; font-weight:700; color:#E9C46A; }
+  #miniRankNum{ font-family:var(--mono); font-size:11px; font-weight:500; color:#7E8AA6; letter-spacing:.02em; white-space:nowrap; }
+
+  .mc-score{ text-align:right; flex:none; }
+  .mc-score .sv{ font-family:var(--numfont); font-size:23px; font-weight:700; color:var(--cream); line-height:1; letter-spacing:.01em; white-space:nowrap; }
+  .mc-score .sv .w{ color:color-mix(in srgb, var(--win) 65%, white); } .mc-score .sv .l{ color:color-mix(in srgb, var(--lose) 55%, white); }
+  .mc-score .slbl{ font-family:var(--mono); font-size:9px; font-weight:600; color:#7E8AA6; letter-spacing:.16em; text-transform:uppercase; margin-top:4px; }
+
+  #miniMatches{ display:flex; gap:6px; padding-left:6px; }
+  .match{ width:39px; display:flex; flex-direction:column; align-items:center; gap:3px; }
+  .match .mimg{ width:39px; height:39px; padding:1.5px; border-radius:6px; box-shadow:0 2px 5px rgba(0,0,0,.5); }
+  .match .mimg img{ width:100%; height:100%; object-fit:cover; display:block; border-radius:5px; }
+  .match.win .mimg{ background:linear-gradient(150deg, var(--win), color-mix(in srgb, var(--win) 55%, white)); }
+  .match.lose .mimg{ background:linear-gradient(150deg, var(--lose), color-mix(in srgb, var(--lose) 45%, black)); }
+  .match .cap{ font-family:var(--mono); font-size:9px; font-weight:600; color:#95A0BC; letter-spacing:.01em; white-space:nowrap; }
+  .match.win .cap{ color:color-mix(in srgb, var(--win) 65%, white); } .match.lose .cap{ color:color-mix(in srgb, var(--lose) 55%, white); }
+
+  /* ==============  PANEL DE COMANDO: RUNAS (!runas)  ==============
+     Ancla arriba a la derecha. --wx/--wy/--ws son los mismos de todos los widgets, así que se
+     arrastra y escala con el mismo código genérico que las tarjetas. */
+  #cmdRunes{ position:absolute; left:calc(1450px + var(--wx,0px)); top:calc(110px + var(--wy,0px));
+    width:400px; transform:scale(var(--ws,1)); transform-origin:top left; opacity:0; display:none; }
+  #cmdRunes .fill{ padding:18px 24px 20px; }
+  .cr-head{ display:flex; align-items:center; gap:10px; margin-bottom:16px; color:var(--cyan);
+    font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; }
+  .cr-head .dot{ width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan); }
+  .cr-head .hline{ flex:1; height:1px; background:linear-gradient(90deg,var(--border-strong),transparent); }
+  .cr-head .champ{ color:var(--cream); letter-spacing:.02em; text-transform:none; font-family:var(--ui); font-weight:700; font-size:13px; }
+
+  /* Dos filas: arriba la rama principal (keystone grande + sus 3), abajo la secundaria (2) con los
+     3 fragmentos al costado. Cada runa es icono + nombre en columna; ocultando el nombre
+     (data-part="runeNames") la runa se encoge sola al tamaño del icono, sin CSS aparte. */
+  .cr-row{ display:flex; align-items:flex-start; gap:10px; }
+  .cr-rune{ display:flex; flex-direction:column; align-items:center; gap:6px; flex:none; }
+  /* el hueco del icono mide lo mismo para toda la fila (lo marca el más grande) y centra el suyo
+     dentro: así los nombres arrancan todos a la misma altura aunque los iconos midan distinto */
+  .cr-slot{ display:flex; align-items:center; justify-content:center; height:64px; }
+  .cr-row2 .cr-slot{ height:44px; }
+  .cr-ic{ border-radius:50%; overflow:hidden; flex:none; }
+  .cr-ic img{ width:100%; height:100%; display:block; }
+  .cr-name{ font-family:var(--mono); font-size:9px; line-height:1.3; letter-spacing:.01em;
+    color:var(--gold-dim); text-align:center; width:72px; padding:0 4px; }
+
+  .cr-key .cr-ic{ width:64px; height:64px; background:rgba(62,107,255,.14);
+    border:2px solid var(--border-strong); box-shadow:0 0 18px rgba(62,107,255,.35); }
+  .cr-key .cr-name{ width:82px; color:var(--cream); font-weight:600; }
+  .cr-minor .cr-ic{ width:44px; height:44px; background:rgba(255,255,255,.04); border:1px solid var(--border); }
+  .cr-shard .cr-ic{ width:28px; height:28px; background:rgba(255,255,255,.05); border:1px solid var(--border); }
+
+  .cr-sep{ height:1px; border:0; margin:16px 0;
+    background:linear-gradient(90deg, var(--border-strong), var(--border) 65%, transparent); }
+  /* los fragmentos ocupan todo el hueco que sobra a la derecha de la rama secundaria y se centran
+     dentro de él (flex:1 + center, no margin-left:auto, que los pegaría al borde). No llevan nombre:
+     son tres puntos ("Fuerza adaptativa" dos veces solo hacía ruido); el nombre sigue en el title. */
+  .cr-shards{ display:flex; gap:8px; flex:1; justify-content:center; }
+  .cr-empty{ font-family:var(--mono); font-size:12px; color:var(--gold-dim); }
+
+  /* =============  PANEL DE COMPOSICIÓN (!comp)  =============
+     Dos columnas de 5. Por jugador: campeón, su nombre, la keystone y los dos árboles — que es
+     justo lo que la Live Client API da de los demás. Nunca nombres de invocador. */
+  #cmdComp{ position:absolute; left:calc(660px + var(--wx,0px)); top:calc(160px + var(--wy,0px));
+    width:600px; transform:scale(var(--ws,1)); transform-origin:top left; opacity:0; display:none; }
+  #cmdComp .fill{ padding:18px 20px 20px; }
+  .cp-grid{ display:flex; gap:20px; }
+  .cp-col{ flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:7px; }
+  .cp-team{ font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--gold-dim); margin-bottom:3px; }
+  .cp-col.mine .cp-team{ color:var(--cyan); }
+  .cp-row{ display:flex; align-items:center; gap:8px; }
+  .cp-champ{ width:38px; height:38px; border-radius:9px; flex:none; overflow:hidden;
+    border:1px solid var(--border); background:rgba(255,255,255,.04); }
+  .cp-champ img{ width:100%; height:100%; display:block; }
+  .cp-name{ flex:1; min-width:0; font-size:12px; font-weight:600; color:var(--cream);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cp-key{ width:30px; height:30px; flex:none; border-radius:50%; overflow:hidden;
+    background:rgba(62,107,255,.14); border:1px solid var(--border-strong); }
+  .cp-key img{ width:100%; height:100%; display:block; }
+  .cp-trees{ display:flex; gap:3px; flex:none; }
+  .cp-trees img{ width:17px; height:17px; opacity:.85; }
+
+  /* =============  PANEL DE BUILD (!build)  ============= */
+  #cmdBuild{ position:absolute; left:calc(690px + var(--wx,0px)); top:calc(760px + var(--wy,0px));
+    width:520px; transform:scale(var(--ws,1)); transform-origin:top left; opacity:0; display:none; }
+  #cmdBuild .fill{ padding:18px 20px 20px; }
+  .bd-row{ display:flex; gap:12px; flex-wrap:wrap; }
+  .bd-item{ display:flex; flex-direction:column; align-items:center; gap:5px; }
+  .bd-item img{ width:56px; height:56px; border-radius:10px; border:1px solid var(--border-strong);
+    box-shadow:0 2px 6px rgba(0,0,0,.5); display:block; }
+  .bd-time{ font-family:var(--mono); font-size:11px; font-weight:600; color:var(--gold-dim); }
+
+  /* =============  PANEL DE RANGO (!rank / !hoy)  ============= */
+  #cmdRank{ position:absolute; left:calc(1490px + var(--wx,0px)); top:calc(680px + var(--wy,0px));
+    width:340px; transform:scale(var(--ws,1)); transform-origin:top left; opacity:0; display:none; }
+  #cmdRank .fill{ padding:16px 20px 18px; }
+  .rk-row{ display:flex; align-items:center; gap:14px; }
+  .rk-emblem{ width:62px; height:62px; flex:none; object-fit:contain;
+    filter:drop-shadow(0 0 10px rgba(62,107,255,.4)); }
+  .rk-tier{ font-size:20px; font-weight:800; color:var(--cream); letter-spacing:-.01em; line-height:1.15; }
+  .rk-lp{ font-family:var(--mono); font-size:13px; font-weight:600; color:var(--cyan); }
+  .rk-title{ font-size:12px; color:var(--gold-dim); margin-top:3px; }
+  .rk-today{ display:flex; align-items:baseline; gap:8px; margin-top:14px; padding-top:12px;
+    border-top:1px solid var(--border); }
+  .rk-today .lb{ font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--gold-dim); }
+  .rk-today .vl{ font-family:var(--numfont); font-size:19px; font-weight:700; color:var(--cream); }
+  .rk-today .w{ color:color-mix(in srgb, var(--win) 70%, white); }
+  .rk-today .l{ color:color-mix(in srgb, var(--lose) 60%, white); }
+
+  /* =============  DUELO DE CARRIL (!matchup)  =============
+     Pantalla de "VS": tú a la izquierda, tu rival de carril a la derecha, partidos por una diagonal.
+     Arriba el icono del rol, abajo el winrate como diferencia contra el 50%. */
+  #cmdMatchup{ position:absolute; left:calc(1300px + var(--wx,0px)); top:calc(640px + var(--wy,0px));
+    width:560px; transform:scale(var(--ws,1)); transform-origin:top left; opacity:0; display:none; }
+  #cmdMatchup .fill{ padding:0; overflow:hidden; }
+  .vs{ position:relative; height:250px; }
+
+  /* Tres costuras seleccionables (vsStyle en el panel). Solo cambia cómo se juntan los dos artes:
+        A = diagonal   B = corte recto   C = fundido (sin línea, se mezclan)                  */
+  .vs-side{ position:absolute; inset:0; overflow:hidden; z-index:2; }
+  .vs-edge{ position:absolute; inset:0; z-index:1; pointer-events:none;
+    background:linear-gradient(180deg, var(--gold-bright), var(--gold)); opacity:.85; }
+  /* la mitad derecha arranca 3px más allá de la costura, y por ese hueco asoma .vs-edge: así la
+     línea se dibuja sola, sin rotar nada, y aguanta cualquier tamaño del panel */
+  .vs[data-vs="a"] .vs-side.l{ clip-path:polygon(0 0, 58% 0, 42% 100%, 0 100%); }
+  .vs[data-vs="a"] .vs-side.r{ clip-path:polygon(calc(58% + 3px) 0, 100% 0, 100% 100%, calc(42% + 3px) 100%); }
+  .vs[data-vs="a"] .vs-edge{ clip-path:polygon(58% 0, 100% 0, 100% 100%, 42% 100%); }
+  .vs[data-vs="b"] .vs-side.l{ clip-path:polygon(0 0, 46% 0, 46% 100%, 0 100%); }
+  .vs[data-vs="b"] .vs-side.r{ clip-path:polygon(54% 0, 100% 0, 100% 100%, 54% 100%); }
+  .vs[data-vs="b"] .vs-edge{ clip-path:polygon(46% 0, 54% 0, 54% 100%, 46% 100%);
+    background:linear-gradient(180deg, #0A0E1A, #060910); opacity:1;
+    box-shadow:inset 1px 0 0 rgba(62,107,255,.5), inset -1px 0 0 rgba(62,107,255,.5); z-index:3; }
+  /* C: sin recorte ni línea. Cada arte se desvanece hacia el centro con una máscara, y al
+     solaparse en la zona media se funden el uno con el otro. */
+  /* Solo se enmascara el arte de arriba (el derecho). Si se difuminaran los dos, en la zona de
+     solape ambos quedarían medio transparentes y asomaría el fondo: el centro se ve lavado.
+     Con el izquierdo opaco debajo, la suma de opacidades es siempre 1 y el fundido es limpio. */
+  /* El fundido va del 44% al 56%: estrecho a propósito. Con una franja ancha, ese cuarto central
+     queda en tierra de nadie y se lo queda el arte más claro (el blanco de Akali se comía a Lux),
+     así que la mitad se percibe desplazada aunque la costura esté centrada. */
+  .vs[data-vs="c"] .vs-side.r{ -webkit-mask-image:linear-gradient(90deg,transparent 44%,#000 56%);
+    mask-image:linear-gradient(90deg,transparent 44%,#000 56%); }
+  .vs[data-vs="c"] .vs-edge{ display:none; }
+  .vs-side img{ position:absolute; top:0; height:100%; width:86%; object-fit:cover; }
+  /* El arte "centered" ya trae al campeón centrado, así que solo hay que encuadrar la altura.
+     El ancho y el desplazamiento no son a ojo: cada campeón debe quedar en el 25% / 75% del ancho
+     (el centro de su zona, no de la tarjeta) y su imagen tiene que llegar hasta donde acaba la
+     costura. De ahí salen ancho = 50 + 2·desp, y desp = lo que mida el solape de cada estructura. */
+  .vs-side.l img{ left:-18%; object-position:50% 24%; }
+  .vs-side.r img{ right:-18%; object-position:50% 24%; }
+  .vs[data-vs="b"] .vs-side.l img{ left:-20%; }
+  .vs[data-vs="b"] .vs-side.r img{ right:-20%; }
+  .vs[data-vs="c"] .vs-side img{ width:78%; }
+  .vs[data-vs="c"] .vs-side.l img{ left:-14%; }
+  .vs[data-vs="c"] .vs-side.r img{ right:-14%; }
+  /* velo para que el nombre y el porcentaje se lean sobre cualquier splash */
+  .vs-side::after{ content:""; position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(6,9,18,.30) 0%, rgba(6,9,18,.10) 42%, rgba(6,9,18,.88) 100%); }
+  .vs-side.l{ box-shadow:inset -1px 0 0 rgba(255,255,255,.05); }
+
+  /* Pastillas centradas justo encima de la barra, en vez de dos nombres grandes en las esquinas:
+     el arte se ve entero y la identificación sigue estando. La izquierda es el campeón izquierdo. */
+  /* dos columnas iguales con el contenido centrado: cada pastilla queda en el 25% y el 75%,
+     que es justo donde está su campeón */
+  .vs-names{ position:absolute; left:0; right:0; bottom:70px; z-index:3; pointer-events:none;
+    display:grid; grid-template-columns:1fr 1fr; justify-items:center; }
+  .vs-pill{ font-family:var(--vsfont, 'Bebas Neue'), var(--ui); font-size:18px; font-weight:600;
+    letter-spacing:.06em; text-transform:uppercase; line-height:1; color:#fff;
+    padding:6px 15px 5px; border-radius:999px; white-space:nowrap;
+    background:rgba(6,9,18,.82); border:1px solid rgba(62,107,255,.38);
+    box-shadow:0 3px 12px rgba(0,0,0,.55); }
+
+  /* Columna central: rol arriba, VS debajo, los dos sobre la costura. El velo vertical detrás es
+     lo que los hace legibles sin necesidad de una chapa que parezca pegada encima. */
+  .vs-mid{ position:absolute; top:0; bottom:0; left:50%; transform:translateX(-50%); z-index:4;
+    width:88px; display:flex; flex-direction:column; align-items:center; padding-top:14px; gap:6px;
+    pointer-events:none; }
+  /* Cada pieza lleva su propio velo en vez de uno común en la columna: así, si se apaga el "VS",
+     no queda una mancha oscura flotando en el centro sin nada dentro. */
+  .vs-bolt{ position:relative; font-family:var(--vsfont,'Bebas Neue'), var(--ui); font-size:34px; letter-spacing:.06em;
+    color:var(--cyan); line-height:1; text-shadow:0 0 18px rgba(54,210,255,.85), 0 2px 0 rgba(0,0,0,.85); }
+  .vs-bolt::before{ content:""; position:absolute; left:50%; top:50%; z-index:-1; width:110px; height:110px;
+    transform:translate(-50%,-50%);
+    background:radial-gradient(closest-side, rgba(4,7,14,.78), transparent 76%); }
+  /* en B la columna ya es una banda sólida, así que los velos sobran */
+  .vs[data-vs="b"] .vs-mid{ width:8%; }
+  .vs[data-vs="b"] .vs-bolt::before{ display:none; }
+  /* en C no hay insignia arriba: el rol baja junto a los datos y el VS manda solo */
+  .vs-mid{ padding-top:20px; }
+
+  /* Barra sólida abajo: cuadrito con el rol + caja larga con los datos. El arte se corta aquí,
+     así que el texto no compite nunca con el splash — es el único sitio donde va información. */
+  .vs-foot{ position:absolute; left:0; right:0; bottom:0; z-index:5; height:60px;
+    display:flex; align-items:center; gap:9px; padding:9px 11px;
+    background:#070A12; border-top:1px solid rgba(62,107,255,.28); }
+  .vs-rolebox{ width:42px; height:42px; flex:none; display:flex; align-items:center; justify-content:center;
+    border:1px solid rgba(62,107,255,.34); border-radius:9px; background:rgba(62,107,255,.07); }
+  .vs-role-foot{ width:24px; height:24px; }
+  .vs-info{ flex:1; min-width:0; height:42px; display:flex; align-items:center; justify-content:center;
+    gap:13px; padding:0 15px; border:1px solid rgba(62,107,255,.34); border-radius:9px;
+    background:rgba(62,107,255,.05); }
+  .vs-delta{ font-family:var(--vsinfofont, var(--numfont)); font-size:27px; font-weight:700;
+    line-height:1; flex:none; letter-spacing:.01em; }
+  .vs-meta{ font-family:var(--vsinfofont, var(--mono)); font-size:12.5px; font-weight:500;
+    color:#B9C6E4; letter-spacing:.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .vs-meta b{ color:#fff; font-weight:700; }
+
+  @keyframes cmdIn{ from{opacity:0; transform:scale(calc(var(--ws,1)*.92)) translateY(-14px)}
+    to{opacity:1; transform:scale(var(--ws,1)) translateY(0)} }
+  @keyframes cmdOut{ from{opacity:1; transform:scale(var(--ws,1)) translateY(0)}
+    to{opacity:0; transform:scale(calc(var(--ws,1)*.96)) translateY(-10px)} }
+
+  /* ======================  TRANSITIONS  ======================== */
+  @keyframes pulse{ 0%,100%{opacity:1} 50%{opacity:.35} }
+  .shimmer{ position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:6; clip-path:inherit; opacity:0; }
+  .shimmer::before{ content:""; position:absolute; top:-60%; bottom:-60%; width:45%; left:-60%;
+    background:linear-gradient(105deg, transparent, rgba(62,107,255,.45), rgba(54,210,255,.3), transparent); transform:skewX(-18deg); }
+  .sweep .shimmer{ opacity:1; }
+  .sweep .shimmer::before{ animation: sweepX .8s var(--fx); }
+  @keyframes sweepX{ from{left:-60%} to{left:130%} }
+
+  @keyframes bigIn_A{ 0%{opacity:0; transform:translate(calc(-50% + var(--wx,0px)),calc(-50% + var(--wy,0px))) scale(calc(var(--ws,1)*.82)) perspective(900px) rotateX(14deg); filter:blur(6px)}
+    60%{opacity:1} 100%{opacity:1; transform:translate(calc(-50% + var(--wx,0px)),calc(-50% + var(--wy,0px))) scale(var(--ws,1)) perspective(900px) rotateX(0); filter:blur(0)} }
+  @keyframes bigOut_A{ 0%{opacity:1; transform:translate(calc(-50% + var(--wx,0px)),calc(-50% + var(--wy,0px))) scale(var(--ws,1))} 100%{opacity:0; transform:translate(calc(-50% + var(--wx,0px)),calc(-50% + var(--wy,0px))) scale(calc(var(--ws,1)*.9)) perspective(900px) rotateX(-12deg); filter:blur(5px)} }
+  @keyframes miniIn_A{ 0%{opacity:0; transform:scale(var(--ws,1)) translateY(130%) skewY(3deg)} 100%{opacity:1; transform:scale(var(--ws,1)) translateY(0) skewY(0)} }
+  @keyframes miniOut_A{ 0%{opacity:1; transform:scale(var(--ws,1)) translateY(0)} 100%{opacity:0; transform:scale(var(--ws,1)) translateY(130%) skewY(3deg)} }
+
+  @keyframes bigIn_B{ 0%{opacity:0; transform:translate(calc(-50% + var(--wx,0px)),calc(-50% + var(--wy,0px))) scale(calc(var(--ws,1)*1.35))} 30%{opacity:1}
+    45%{transform:translate(calc(-50% + var(--wx,0px)),calc(-50% + var(--wy,0px))) scale(calc(var(--ws,1)*.97))} 60%{transform:translate(calc(-51% + var(--wx,0px)),calc(-49% + var(--wy,0px))) scale(calc(var(--ws,1)*1.02))}
+    72%{transform:translate(calc(-49.5% + var(--wx,0px)),calc(-50.5% + var(--wy,0px))) scale(var(--ws,1))} 100%{opacity:1; transform:translate(calc(-50% + var(--wx,0px)),calc(-50% + var(--wy,0px))) scale(var(--ws,1))} }
+  @keyframes bigOut_B{ 0%{opacity:1; transform:translate(calc(-50% + var(--wx,0px)),calc(-50% + var(--wy,0px))) scale(var(--ws,1))} 30%{transform:translate(calc(-50% + var(--wx,0px)),calc(-50% + var(--wy,0px))) scale(calc(var(--ws,1)*1.08))}
+    100%{opacity:0; transform:translate(calc(-50% + var(--wx,0px)),calc(-50% + var(--wy,0px))) scale(calc(var(--ws,1)*1.5)) rotate(3deg); filter:blur(7px)} }
+  @keyframes miniIn_B{ 0%{opacity:0; transform:scale(calc(var(--ws,1)*.4)) translateY(40px)} 60%{opacity:1; transform:scale(calc(var(--ws,1)*1.08))} 100%{opacity:1; transform:scale(var(--ws,1))} }
+  @keyframes miniOut_B{ 0%{opacity:1; transform:scale(var(--ws,1))} 100%{opacity:0; transform:scale(calc(var(--ws,1)*.4)) translateY(40px)} }
+
+  @keyframes bigIn_C{ 0%{opacity:0; clip-path:inset(0 100% 0 0)} 1%{opacity:1} 100%{opacity:1; clip-path:inset(0 0 0 0)} }
+  @keyframes bigOut_C{ 0%{opacity:1; clip-path:inset(0 0 0 0)} 100%{opacity:1; clip-path:inset(0 0 0 100%)} }
+  @keyframes miniIn_C{ 0%{opacity:0; clip-path:inset(0 100% 0 0)} 1%{opacity:1} 100%{opacity:1; clip-path:inset(0 0 0 0)} }
+  @keyframes miniOut_C{ 0%{opacity:1; clip-path:inset(0 0 0 0)} 100%{opacity:1; clip-path:inset(0 100% 0 0)} }
+
+  #flash{ position:absolute; inset:0; pointer-events:none; opacity:0; z-index:40; mix-blend-mode:screen; }
+  #flash.red{ background:radial-gradient(circle at 50% 50%, rgba(240,72,62,.5), transparent 60%); animation:flash .55s ease-out; }
+  #flash.cyan{ background:radial-gradient(circle at 50% 50%, rgba(54,210,255,.5), transparent 60%); animation:flash .55s ease-out; }
+  @keyframes flash{ 0%{opacity:0} 15%{opacity:1} 100%{opacity:0} }
+
+  #vignette{ position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity .5s ease; z-index:1;
+    background:radial-gradient(120% 90% at 50% 50%, transparent 30%, rgba(10,14,26,.6) 100%); }
+  #stage[data-state="dead"] #vignette{ opacity:1; }
+
+  /* ===== modo edición (solo activo con ?edit=1 en la URL, nunca en el overlay real de OBS) ===== */
+  [data-widget]{ pointer-events:none; }
+  .resize-handle{ display:none; }
+  body[data-edit="1"] [data-widget]{ pointer-events:auto; cursor:move;
+    outline:1px dashed rgba(54,210,255,.5); outline-offset:4px; }
+  body[data-edit="1"] .resize-handle{ display:block; position:absolute; right:-9px; bottom:-9px; width:22px; height:22px;
+    border-radius:50%; background:var(--gold-bright); border:3px solid #0A0E1A; cursor:nwse-resize; z-index:50;
+    box-shadow:0 0 10px rgba(54,210,255,.7); }
+
+  /* captura del juego de fondo: solo se pinta en la vista previa del panel. En OBS el body nunca
+     lleva data-preview, así que el fondo no existe y el canvas sigue 100% transparente. */
+  #editBg{ display:none; position:absolute; inset:0; z-index:0;
+    background-size:cover; background-position:center; background-repeat:no-repeat; }
+  body[data-preview="1"] #editBg{ display:block; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="ggold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F0E0B0"/><stop offset="1" stop-color="#C8AA6E"/></linearGradient>
+    <symbol id="i-swords" viewBox="0 0 24 24"><path d="M3 3l7.5 7.5M4 6l-.5-3 3 .5M14.5 14.5L21 21M20 6l1-3-3 1M5 21l4-4M19 21l-4-4M9.5 13.5L3 20"/><path d="M21 3l-7.5 7.5"/></symbol>
+    <symbol id="i-coin" viewBox="0 0 24 24"><ellipse cx="10" cy="8" rx="7" ry="4.5"/><path d="M3 8v4c0 2.5 3.1 4.5 7 4.5s7-2 7-4.5V8"/><ellipse cx="15" cy="14" rx="6" ry="4"/><path d="M9 14v3c0 2.2 2.7 4 6 4s6-1.8 6-4v-3"/></symbol>
+    <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 2c1 3-2 4.5-2 7.5C10 12 11 13 12 13s3-1.5 2-5c2 1.5 4 4 4 7a6 6 0 1 1-12 0c0-3.5 2.5-5.5 4-8 .8-1.3 1.6-3 2-5z"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-blood" viewBox="0 0 24 24"><path d="M12 3c3 4.5 6 8 6 11a6 6 0 1 1-12 0c0-3 3-6.5 6-11z"/></symbol>
+    <symbol id="i-triple" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7M5 20l7-7 7 7"/></symbol>
+    <symbol id="i-ace" viewBox="0 0 24 24"><path d="M12 2l2.6 6.3 6.8.5-5.2 4.4 1.7 6.6L12 16.8 6.3 20.3 8 13.7 2.8 9.3l6.8-.5z"/></symbol>
+  </defs>
+</svg>
+
+<div id="stage" data-state="dead" data-anim="A">
+  <div id="editBg"></div>
+  <div id="vignette"></div>
+  <div id="flash"></div>
+
+  <!-- ==================== BIG CARD (muerto) ==================== -->
+  <div id="deadView" class="panel bevel" data-widget="dead">
+    <div class="fill">
+      <div id="champBg"><img id="champBgImg" src="" alt=""></div>
+      <div class="champ-scrim"></div>
+      <div class="shimmer"></div>
+
+      <div class="dv-head" data-part="gameHeader">
+        <span class="dot"></span>
+        <span id="gameHeader">Partida actual · En curso</span>
+        <span class="hline"></span>
+        <span class="clock"><svg class="ic" style="font-size:15px"><use href="#i-clock"/></svg> <span id="gameClock">0:00</span></span>
+      </div>
+
+      <div class="dv-grid">
+        <div class="idt">
+          <div class="rfwrap" data-part="crest">
+            <div id="rankFrame">
+              <img id="pic" src="" alt="">
+              <div id="rankFrameArt"></div>
+            </div>
+          </div>
+          <div id="name" data-part="name">—</div>
+          <div id="titleLine" data-part="title"></div>
+          <div id="rankLine" data-part="rankLine"></div>
+          <div class="badges" id="badges" data-part="badges">
+            <span class="chip blood" data-badge="blood"><svg class="ic f"><use href="#i-blood"/></svg><span>Primera sangre</span></span>
+            <span class="chip triple" data-badge="multi"><svg class="ic"><use href="#i-triple"/></svg><span>Triple kill</span></span>
+            <span class="chip ace" data-badge="ace"><svg class="ic f"><use href="#i-ace"/></svg><span>¡Ace!</span></span>
+          </div>
+        </div>
+
+        <div class="vdiv" data-part="respawn"></div>
+
+        <div class="respawn" id="respawnBlock" data-style="ring" data-part="respawn">
+          <div class="rsp-label">Muerto — reaparece en</div>
+          <div class="rsp-core">
+            <svg class="rsp-ring" viewBox="0 0 100 100">
+              <circle class="track" cx="50" cy="50" r="45"/>
+              <circle class="prog" id="rspProg" cx="50" cy="50" r="45"/>
+            </svg>
+            <div class="rsp-num"><span id="rspNum">0</span><small>s</small></div>
+          </div>
+          <div class="rsp-bar"><div class="fill" id="rspBarFill"></div></div>
+          <div id="respawnLine"></div>
+        </div>
+
+        <div class="vdiv" data-part="stats"></div>
+
+        <div class="stats" id="statsCol" data-part="stats">
+          <div class="tile" data-part="kda"><div class="in"><svg class="ic tic"><use href="#i-swords"/></svg>
+            <div class="tx"><div class="tlbl">KDA</div><div class="tval" id="kda">0 / 0 / 0</div></div></div></div>
+          <div class="tile" data-part="farm"><div class="in"><svg class="ic tic"><use href="#i-coin"/></svg>
+            <div class="tx"><div class="tlbl">Farm</div><div class="tval" id="farm">0 CS</div></div></div></div>
+          <div class="tile" data-part="streak"><div class="in"><svg class="ic tic"><use href="#i-flame"/></svg>
+            <div class="tx"><div class="tlbl">Racha</div><div class="tval" id="streak">0</div></div></div></div>
+          <div class="tile" data-part="dragons"><div class="in"><img class="cd-tic" src="https://raw.communitydragon.org/latest/game/assets/ux/minimap/icons/dragon.png" alt="">
+            <div class="tx"><div class="tlbl">Dragones</div><div class="tval" id="dragons" style="display:flex;align-items:center;gap:8px">0</div></div></div></div>
+          <div class="tile wide" data-part="objectives"><div class="in"><img class="cd-tic" src="https://raw.communitydragon.org/latest/game/assets/ux/minimap/icons/riftherald.png" alt="">
+            <div class="tx" style="flex:1"><div class="tlbl">Objetivos</div><div class="objrow" id="objectives"></div></div></div></div>
+          <div class="tile wide items-tile" data-part="items"><div class="in"><div id="itemsRow"></div></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="resize-handle"></div>
+  </div>
+
+  <!-- ==================== MINI CARD (vivo) — crest suelto + píldora + campeones ==================== -->
+  <div id="miniCard" data-widget="alive">
+    <div class="mini-row">
+      <div id="miniFrameSlot" data-part="miniCrest">
+        <div class="rf">
+          <img id="picMini" src="" alt="">
+          <div class="art"></div>
+        </div>
+      </div>
+      <div class="mc-col">
+        <div class="mc-pill">
+          <div class="shimmer"></div>
+          <div class="mc-id">
+            <div class="mc-name"><span id="miniName">—</span><span class="mc-tag" id="miniTag"></span></div>
+            <div class="mc-rank" data-part="miniRank"><span class="mc-tier" id="miniTier"></span><span class="mc-lp" id="miniLp"></span><span id="miniRankNum"></span></div>
+          </div>
+          <div class="mc-score" data-part="miniSession">
+            <div class="sv" id="miniScore"></div>
+            <div class="slbl" id="miniSessionLbl"></div>
+          </div>
+        </div>
+        <div id="miniMatches" data-part="matches"></div>
+      </div>
+    </div>
+    <div class="resize-handle"></div>
+  </div>
+
+  <!-- ============ PANEL DE RUNAS — lo dispara !runas en el chat de Kick ============ -->
+  <div id="cmdRunes" class="panel bevel" data-widget="cmdRunes">
+    <div class="fill">
+      <div class="cr-head">
+        <span class="dot"></span><span>Runas</span>
+        <span class="hline"></span>
+        <span class="champ" id="crChamp"></span>
+      </div>
+      <div id="crBody"></div>
+    </div>
+    <div class="resize-handle"></div>
+  </div>
+
+  <!-- ============ COMPOSICIÓN — !comp ============ -->
+  <div id="cmdComp" class="panel bevel" data-widget="cmdComp">
+    <div class="fill">
+      <div class="cr-head"><span class="dot"></span><span>Composición</span><span class="hline"></span></div>
+      <div id="cpBody"></div>
+    </div>
+    <div class="resize-handle"></div>
+  </div>
+
+  <!-- ============ BUILD — !build ============ -->
+  <div id="cmdBuild" class="panel bevel" data-widget="cmdBuild">
+    <div class="fill">
+      <div class="cr-head"><span class="dot"></span><span>Build</span><span class="hline"></span></div>
+      <div id="bdBody"></div>
+    </div>
+    <div class="resize-handle"></div>
+  </div>
+
+  <!-- ============ ENFRENTAMIENTOS — !matchup / !counter ============ -->
+  <div id="cmdMatchup" class="panel bevel" data-widget="cmdMatchup">
+    <div class="fill"><div id="muBody" class="vs"></div></div>
+    <div class="resize-handle"></div>
+  </div>
+
+  <!-- ============ RANGO — !rank / !hoy ============ -->
+  <div id="cmdRank" class="panel bevel" data-widget="cmdRank">
+    <div class="fill">
+      <div class="cr-head"><span class="dot"></span><span>Rango</span><span class="hline"></span></div>
+      <div id="rkBody"></div>
+    </div>
+    <div class="resize-handle"></div>
+  </div>
+</div>
+
+<script src="/widgets.js"></script>
+<script>
+(function(){
+  const stage = document.getElementById('stage');
+  const big = document.getElementById('deadView');
+  const mini = document.getElementById('miniCard');
+  const flash = document.getElementById('flash');
+  const $ = (id) => document.getElementById(id);
+
+  /* ---------- widgets: cada [data-widget] se mueve y se escala solo con ?edit=1 (preview del panel).
+     En el overlay real de OBS (sin ese parámetro) la posición guardada se APLICA pero nunca se arrastra.
+     Agregar un widget nuevo = ponerle data-widget + .resize-handle en el HTML; esto no se toca. ---------- */
+  // Dos banderas distintas, las dos ausentes en la fuente de OBS:
+  //   ?preview=1 -> es la vista previa del panel: puede pintar el fondo de referencia y "mostrar todo".
+  //   ?edit=1    -> además se pueden arrastrar y escalar los widgets.
+  const params = new URLSearchParams(location.search);
+  const preview = params.get('preview') === '1';
+  const editMode = params.get('edit') === '1';
+  if (preview) document.body.dataset.preview = '1';
+  if (editMode) document.body.dataset.edit = '1';
+
+  const WEL = {}; // id -> elemento
+  document.querySelectorAll('[data-widget]').forEach((el) => { WEL[el.dataset.widget] = el; });
+  const DEFAULT_W = { x:0, y:0, scale:1, on:true };
+  const wCache = {};
+  for (const id in WEL) wCache[id] = { ...DEFAULT_W };
+  let dragging = null; // { id, mode:'move'|'resize', startX, startY, start:{x,y,scale} }
+
+  function applyWidgetVars(id){
+    const el = WEL[id], p = wCache[id];
+    el.style.setProperty('--wx', p.x+'px');
+    el.style.setProperty('--wy', p.y+'px');
+    el.style.setProperty('--ws', p.scale);
+  }
+
+  if (editMode) {
+    const startDrag = (id, mode, e) => { e.preventDefault(); dragging = { id, mode, startX:e.clientX, startY:e.clientY, start:{...wCache[id]} }; };
+    window.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - dragging.startX, dy = e.clientY - dragging.startY;
+      const p = wCache[dragging.id];
+      if (dragging.mode === 'move') { p.x = dragging.start.x + dx; p.y = dragging.start.y + dy; }
+      else { p.scale = Math.max(.3, Math.min(3, dragging.start.scale + (dx+dy)/2/200)); }
+      applyWidgetVars(dragging.id);
+    });
+    window.addEventListener('mouseup', () => {
+      if (!dragging) return;
+      const id = dragging.id; dragging = null;
+      fetch('/config', { method:'POST', body: JSON.stringify({ widgets: { [id]: wCache[id] } }) });
+    });
+    for (const [id, el] of Object.entries(WEL)) {
+      el.addEventListener('mousedown', (e) => { if (!e.target.closest('.resize-handle')) startDrag(id, 'move', e); });
+      el.querySelector('.resize-handle')?.addEventListener('mousedown', (e) => { e.stopPropagation(); startDrag(id, 'resize', e); });
+    }
+  }
+
+  /* ---------- comandos del chat de Kick ----------
+     La conexión la abre esta página, no el servidor: el WebSocket de chat de Kick (Pusher) es
+     público y anónimo, y el navegador ya trae WebSocket nativo. Lo único que el servidor tiene que
+     resolver es el id del chatroom, porque kick.com no manda cabeceras CORS.
+     ponytail: el cooldown vive en la página, así que un refresco de la fuente de OBS lo reinicia.
+     Si eso llega a molestar, se mueve a /status con el mismo patrón de seq que testCommand. */
+  const CMDS = window.OVERLAY_COMMANDS || {};
+  const CMD_WIDGETS = new Set(Object.values(CMDS));
+
+  /* Paneles automáticos: no los pide nadie, salen solos cuando se cumple su condición. El duelo de
+     carril aparece al arrancar la partida, dentro de la ventana de segundos que fija el panel —
+     es cuando la información sirve, y nadie va a escribir un comando justo en ese momento. */
+  const AUTO_PANELS = {
+    cmdMatchup: (s) => {
+      const t = s.game?.gameTime;
+      return s.matchups?.enemy && t != null && t >= (s.vsFrom ?? 5) && t <= (s.vsTo ?? 25);
+    },
+  };
+  const PANEL_WIDGETS = new Set([...CMD_WIDGETS, ...Object.keys(AUTO_PANELS)]);
+  const STATE_WIDGETS = ['dead', 'alive']; // los que dependen de estar vivo o muerto
+  const KICK_PUSHER_KEY = '32cbd69e4b950bf97679';
+
+  const cmdQueue = [];      // comandos aceptados esperando turno
+  let cmdActive = null;     // { wid, until } — solo un panel en pantalla a la vez
+  const cmdCooldown = {};   // id de widget -> hasta cuándo se ignora (los sinónimos lo comparten)
+  let cmdCfg = { durationMs: 10000, cooldownMs: 60000 };
+  let lastStatus = null;
+  const QUEUE_MAX = 3;
+
+  // Qué necesita cada comando para tener algo que enseñar. Sin esto, pedirlo fuera de partida
+  // sacaría un panel vacío en el stream; así no hace nada y tampoco gasta la espera, para que
+  // funcione en cuanto empiece la partida.
+  const CMD_READY = {
+    cmdRunes: (s) => !!s?.runes,
+    cmdComp:  (s) => !!s?.comp?.length,
+    cmdBuild: (s) => !!s?.build?.length,
+    cmdRank:  () => true, // el balance del día existe siempre, aunque no haya rango ni partida
+    cmdMatchup: (s) => !!s?.matchups?.enemy,
+  };
+
+  /* Forzado a mano desde el panel de control: salta la cola, la espera y la ventana de tiempo —
+     lo pediste tú, no el chat. Lo único que sigue respetando es que haya datos que enseñar y que
+     el elemento no esté apagado, porque un panel vacío en pantalla no le sirve a nadie. */
+  const forcedUntil = {}; // id de widget -> hasta cuándo se muestra a la fuerza
+  function forcePanel(id) {
+    const wid = CMDS[id] || id; // acepta el nombre del comando o el del widget
+    if (!WEL[wid] || wCache[wid]?.on === false) return;
+    if (CMD_READY[wid] && !CMD_READY[wid](lastStatus)) return;
+    forcedUntil[wid] = Date.now() + cmdCfg.durationMs;
+  }
+
+  // Aceptar (o no) un comando. Aceptar solo encola: quién y cuándo aparece lo decide pumpQueue.
+  function requestCommand(name) {
+    const wid = CMDS[name];
+    if (!wid || !WEL[wid] || wCache[wid]?.on === false) return;
+    if (CMD_READY[wid] && !CMD_READY[wid](lastStatus)) return;   // todavía no hay datos que mostrar
+    if (Date.now() < (cmdCooldown[wid] || 0)) return;            // en espera
+    if (cmdActive?.wid === wid || cmdQueue.includes(wid)) return; // ya en pantalla o ya encolado
+    if (cmdQueue.length >= QUEUE_MAX) return;                     // cola llena: se descarta
+    cmdQueue.push(wid);
+  }
+
+  // Un solo panel a la vez, y ninguno mientras estás muerto: ahí manda la tarjeta de muerte, que
+  // ya lleva la build. Lo pedido durante la muerte espera en la cola y sale al revivir.
+  function pumpQueue(isDead) {
+    const now = Date.now();
+    if (cmdActive && now >= cmdActive.until) cmdActive = null;
+    if (cmdActive || isDead || !cmdQueue.length) return;
+    const wid = cmdQueue.shift();
+    if (wCache[wid]?.on === false) return; // lo apagaron mientras esperaba
+    cmdActive = { wid, until: now + cmdCfg.durationMs };
+    cmdCooldown[wid] = now + cmdCfg.cooldownMs; // la espera cuenta desde que se ve, no desde que se pide
+  }
+
+  // "!Runas algo" -> "runas". Minúsculas y sin tildes para que no falle por cómo lo escriban.
+  function parseCommand(text) {
+    const first = (text || '').trim().split(/\s+/)[0];
+    if (!first.startsWith('!')) return null;
+    return first.slice(1).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  }
+
+  let kickWs = null, kickRoom = null, kickRetry = 0;
+  function connectKick(chatroomId) {
+    if (kickRoom === chatroomId && kickWs && kickWs.readyState <= 1) return; // ya conectado a ese canal
+    kickRoom = chatroomId;
+    if (kickWs) { try { kickWs.close(); } catch {} kickWs = null; }
+    if (!chatroomId) return;
+
+    const ws = new WebSocket(`wss://ws-us2.pusher.com/app/${KICK_PUSHER_KEY}?protocol=7&client=js&version=8.4.0&flash=false`);
+    kickWs = ws;
+    ws.onopen = () => { kickRetry = 0; };
+    ws.onmessage = (ev) => {
+      let m; try { m = JSON.parse(ev.data); } catch { return; }
+      if (m.event === 'pusher:connection_established') {
+        ws.send(JSON.stringify({ event: 'pusher:subscribe', data: { auth: '', channel: `chatrooms.${chatroomId}.v2` } }));
+        return;
+      }
+      if (!m.event || !m.event.includes('ChatMessage')) return;
+      let d; try { d = JSON.parse(m.data); } catch { return; }
+      const cmd = parseCommand(d.content);
+      if (cmd) requestCommand(cmd);
+    };
+    ws.onclose = () => {
+      if (kickWs !== ws) return; // ya lo reemplazó otra conexión, no reconectar esta
+      kickWs = null;
+      // backoff exponencial con techo de 30 s: la fuente de OBS puede quedarse días abierta
+      setTimeout(() => connectKick(kickRoom), Math.min(30000, 1000 * 2 ** kickRetry++));
+    };
+  }
+
+  /* ---------- dibujo del panel de runas ---------- */
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  function renderRunes(r) {
+    if (!r) { $('crBody').innerHTML = '<div class="cr-empty">Sin partida en curso</div>'; return; }
+    const rune = (x, cls, named = true) => x ? `<div class="cr-rune ${cls}">
+        <div class="cr-slot"><div class="cr-ic">${x.iconUrl ? `<img src="${esc(x.iconUrl)}" alt="" title="${esc(x.name)}">` : ''}</div></div>
+        ${named ? `<div class="cr-name" data-part="runeNames">${esc(x.name)}</div>` : ''}
+      </div>` : '';
+    const perks = r.perks || [];
+    $('crBody').innerHTML =
+      `<div class="cr-row">${rune(r.keystone, 'cr-key')}${perks.slice(0, 3).map((p) => rune(p, 'cr-minor')).join('')}</div>` +
+      `<hr class="cr-sep">` +
+      `<div class="cr-row cr-row2">${perks.slice(3).map((p) => rune(p, 'cr-minor')).join('')}` +
+        `<div class="cr-shards">${(r.shards || []).map((s) => rune(s, 'cr-shard', false)).join('')}</div></div>`;
+  }
+
+  function renderComp(comp) {
+    if (!comp?.length) { $('cpBody').innerHTML = '<div class="cr-empty">Sin partida en curso</div>'; return; }
+    const row = (p) => `<div class="cp-row">
+        <div class="cp-champ">${p.championIconUrl ? `<img src="${esc(p.championIconUrl)}" alt="" title="${esc(p.champion)}">` : ''}</div>
+        <div class="cp-name" data-part="compNames">${esc(p.champion)}</div>
+        <div class="cp-key">${p.keystone?.iconUrl ? `<img src="${esc(p.keystone.iconUrl)}" alt="" title="${esc(p.keystone.name)}">` : ''}</div>
+        <div class="cp-trees" data-part="compTrees">
+          ${[p.primary, p.secondary].map((t) => t?.iconUrl ? `<img src="${esc(t.iconUrl)}" alt="" title="${esc(t.name)}">` : '').join('')}
+        </div>
+      </div>`;
+    const col = (list, mine) => `<div class="cp-col${mine ? ' mine' : ''}">
+        <div class="cp-team">${mine ? 'Tu equipo' : 'Enemigo'}</div>${list.map(row).join('')}</div>`;
+    $('cpBody').innerHTML = `<div class="cp-grid">
+        ${col(comp.filter((p) => p.mine), true)}${col(comp.filter((p) => !p.mine), false)}</div>`;
+  }
+
+  function renderBuild(build) {
+    if (!build?.length) { $('bdBody').innerHTML = '<div class="cr-empty">Todavía sin ítems</div>'; return; }
+    $('bdBody').innerHTML = `<div class="bd-row">${build.map((it) => `
+      <div class="bd-item">
+        <img src="${esc(it.iconUrl)}" alt="" title="${esc(it.displayName)} · ${esc(it.atStr)}">
+        <div class="bd-time" data-part="buildTimes">${esc(it.atStr)}</div>
+      </div>`).join('')}</div>`;
+  }
+
+  const ROL_ES = { 1: 'jungla', 2: 'soporte', 3: 'tirador', 4: 'superior', 5: 'central' };
+
+  function renderMatchups(m) {
+    if (!m?.me || !m?.enemy) { $('muBody').innerHTML = '<div class="cr-empty" style="padding:18px">Sin duelo que mostrar</div>'; return; }
+    // el signo es lo que se lee de un golpe: +2,1 es matchup favorable, -1,8 desfavorable
+    const signo = m.delta >= 0 ? '+' : '−';
+    $('muBody').dataset.vs = ['a','b','c'].includes(m.vsStyle) ? m.vsStyle : 'a';
+    $('muBody').innerHTML = `
+      <div class="vs-side l"><img src="${esc(m.me.splashUrl)}" alt=""></div>
+      <div class="vs-edge"></div>
+      <div class="vs-side r"><img src="${esc(m.enemy.splashUrl)}" alt=""></div>
+      <div class="vs-mid"><div class="vs-bolt" data-part="vsBolt">VS</div></div>
+      <div class="vs-names" data-part="vsNames">
+        <span class="vs-pill">${esc(m.me.champion)}</span>
+        <span class="vs-pill">${esc(m.enemy.champion)}</span>
+      </div>
+      <div class="vs-foot">
+        <div class="vs-rolebox">${m.roleIconUrl ? `<img class="vs-role-foot" src="${esc(m.roleIconUrl)}" alt="${esc(ROL_ES[m.role] || '')}">` : ''}</div>
+        <div class="vs-info">
+          <span class="vs-delta" style="color:${esc(m.color)}">${signo}${Math.abs(m.delta).toFixed(1)}%</span>
+          <span class="vs-meta"><b data-part="muGrade">${esc(m.tier)}</b> · ${m.wr.toFixed(1)}% de victorias<span data-part="muGames"> · ${m.games.toLocaleString('es')} partidas</span></span>
+        </div>
+      </div>`;
+
+    // Los cromas no tienen arte propio en DDragon (dan 403): si la skin no carga, se cae a la base.
+    $('muBody').querySelectorAll('.vs-side img').forEach((img) => {
+      img.addEventListener('error', function once() {
+        this.removeEventListener('error', once);
+        this.src = this.src.replace(/_\d+\.jpg$/, '_0.jpg');
+      });
+    });
+  }
+
+  function renderRank(s) {
+    const r = s.rank || {};
+    const tier = r.tier ? `${r.tier[0].toUpperCase()}${r.tier.slice(1)}${r.division ? ' ' + r.division : ''}` : 'Sin clasificar';
+    $('rkBody').innerHTML = `
+      <div class="rk-row">
+        ${r.emblemUrl ? `<img class="rk-emblem" src="${esc(r.emblemUrl)}" alt="">` : ''}
+        <div>
+          <div class="rk-tier">${esc(tier)} ${r.lp != null && r.tier ? `<span class="rk-lp">${r.lp} LP</span>` : ''}</div>
+          ${r.title ? `<div class="rk-title" data-part="rankTitle">${esc(r.title)}</div>` : ''}
+        </div>
+      </div>
+      <div class="rk-today" data-part="rankToday">
+        <span class="lb">Hoy</span>
+        <span class="vl"><span class="w">${s.session.wins}V</span> · <span class="l">${s.session.losses}D</span></span>
+      </div>`;
+  }
+
+  const CDRAGON = 'https://raw.communitydragon.org/latest/game/assets/ux/minimap/icons/';
+  // etiqueta española de dragón -> ícono elemental de CommunityDragon
+  const DRAKE_ICON = { Infernal:'dragon_infernal', Montaña:'dragon_mountain', Océano:'dragon_ocean',
+    Nube:'dragon_cloud', Hextech:'dragon_hextech', Chemtech:'dragon_chemtech', Ancestral:'dragon_elder' };
+
+  /* ---------- marco compuesto: aplica la calibración del panel (iconFit) ----------
+     mini=true usa la calibración independiente (miniRanked/miniPrestige) salvo que
+     linkMini esté activo, en cuyo caso reusa la misma que la tarjeta grande. */
+  function applyFrame(pic, art, s, mini) {
+    const src = s.rank?.profileIconUrl;
+    if (src) pic.src = src;
+    // automático: usa la preferencia real del jugador (crestBorder de challenges-v1: "2" = rango,
+    // cualquier otro valor = nivel/prestigio), igual que decide el cliente de League — un Oro I
+    // puede preferir mostrar su borde de nivel igual, así que no basta con "¿tiene rango?".
+    // Si no llegó el dato de preferencia, cae al viejo criterio (rango si existe, si no nivel).
+    const cb = s.rank?.crestBorder;
+    let styleKey;
+    if (cb === '2' || cb === 2) styleKey = s.rank?.rankBorderUrl ? 'ranked' : 'prestige';
+    else if (cb !== null && cb !== undefined) styleKey = 'prestige';
+    else styleKey = s.rank?.tier ? 'ranked' : 'prestige';
+    const borderUrl = styleKey === 'prestige' ? s.rank?.prestigeBorderUrl : s.rank?.rankBorderUrl;
+    art.style.backgroundImage = borderUrl ? `url('${borderUrl}')` : 'none';
+    const linked = s.iconFit?.linkMini ?? true;
+    const key = mini && !linked ? (styleKey === 'prestige' ? 'miniPrestige' : 'miniRanked') : styleKey;
+    const fit = s.iconFit?.[key] || { size:46, x:50, y:50, zoom:100, borderX:50, borderY:50 };
+    pic.style.width = fit.size + '%'; pic.style.height = fit.size + '%';
+    pic.style.top = fit.y + '%'; pic.style.left = fit.x + '%';
+    art.style.backgroundSize = `auto ${fit.zoom}%`;
+    art.style.backgroundPosition = `${fit.borderX}% ${fit.borderY}%`;
+
+    // tamaño del conjunto completo (marco+ícono) — el contenedor que envuelve a pic+art.
+    const frameSize = (mini ? s.iconFit?.frameMini : s.iconFit?.frameBig) || (mini ? 64 : 130);
+    const frameEl = art.parentElement; // #rankFrame (grande) o .rf (mini)
+    frameEl.style.width = frameSize + 'px';
+    frameEl.style.height = frameSize + 'px';
+    if (mini) {
+      // el slot que contiene a .rf también está fijado por CSS; hay que agrandarlo con ella.
+      const slot = frameEl.parentElement;
+      slot.style.width = frameSize + 'px';
+      slot.style.height = frameSize + 'px';
+    }
+  }
+
+  /* ---------- respawn: total = máximo visto desde que murió; anillo se vacía ---------- */
+  const R=45, C=2*Math.PI*R;
+  const prog=$('rspProg'); prog.style.strokeDasharray=C;
+  let respTotal=0;
+  function renderRespawn(g){
+    const left = g?.respawnTimer ?? 0;
+    if (!g?.isDead) respTotal = 0;
+    else if (left > respTotal) respTotal = left;
+    $('rspNum').textContent = left;
+    const frac = respTotal ? left/respTotal : 0;
+    prog.style.strokeDashoffset = C*(1-frac);
+    $('rspBarFill').style.width = (frac*100) + '%';
+    $('respawnLine').textContent = g?.isDead ? `llevas ${g.deathElapsedStr} muerto` : '';
+  }
+
+  /* ---------- transiciones (del diseño: A Hextech / B Impacto / C Energía) ---------- */
+  const DUR = { A:850, B:800, C:750 };
+  const cap = s => s[0].toUpperCase()+s.slice(1);
+  function playAnim(el, kind, dir){
+    const a=stage.dataset.anim;
+    el.style.display='block';
+    el.classList.remove('sweep'); void el.offsetWidth;
+    el.style.animation = `${kind}${cap(dir)}_${a} ${DUR[a]}ms var(--fx) forwards`;
+    if(dir==='in') el.classList.add('sweep');
+    if(dir==='out'){
+      const done=()=>{ el.style.display='none'; el.style.animation=''; el.removeEventListener('animationend',done); };
+      el.addEventListener('animationend',done);
+    }
+  }
+  function doFlash(color){ flash.className=''; void flash.offsetWidth; flash.classList.add(color); }
+
+  let state=null;
+  function setState(next, animate){
+    if(next===state) return;
+    const first = state===null;
+    state=next; stage.dataset.state=next;
+    const a=stage.dataset.anim;
+    if(first || !animate){
+      big.style.animation=''; mini.style.animation='';
+      big.style.display = next==='dead'?'block':'none';
+      mini.style.display = next==='alive'?'block':'none';
+      big.style.opacity = next==='dead'?1:0; mini.style.opacity = next==='alive'?1:0;
+      (next==='dead'?big:mini).classList.add('sweep');
+      return;
+    }
+    if(next==='dead'){ if(a==='B') doFlash('red'); playAnim(mini,'mini','out'); playAnim(big,'big','in'); }
+    else{ if(a==='B') doFlash('cyan'); playAnim(big,'big','out'); playAnim(mini,'mini','in'); }
+  }
+
+  /* ---------- datos en vivo ---------- */
+  let lastPreviewSeq=null, previewUntil=0, previewState=null, lastTestSeq=null, lastCmdJson=null;
+
+  const NUM_FONTS = {
+    jetbrains: "'JetBrains Mono', ui-monospace, monospace",
+    space: "'Space Mono', ui-monospace, monospace",
+    orbitron: "'Orbitron', ui-monospace, monospace",
+    rajdhani: "'Rajdhani', ui-monospace, monospace",
+    teko: "'Teko', ui-monospace, monospace",
+    bebas: "'Bebas Neue', ui-monospace, monospace",
+    chakra: "'Chakra Petch', ui-monospace, monospace",
+  };
+
+  // fuentes elegibles para la tarjeta de duelo: las mismas de los números más la de interfaz
+  const VS_FONTS = { ...NUM_FONTS, jakarta: "'Plus Jakarta Sans', system-ui, sans-serif" };
+
+  // etiquetas fijas del overlay (no los datos, esos siempre vienen de Riot) — se eligen desde el panel
+  const I18N = {
+    es: { session: 'Sesión', rank: 'Rango' },
+    en: { session: 'Session', rank: 'Rank' },
+  };
+
+  // Partida de mentira para colocar elementos sin estar jugando ("mostrar todo" del panel).
+  // Solo se usa en modo edición: el overlay real nunca la ve.
+  // ponytail: la versión del CDN de los íconos está fija; es arte de relleno del editor, no dato en vivo.
+  const DEMO_ITEM = (id, at) => ({ itemID:id, displayName:'Ítem de ejemplo', atStr:at, iconUrl:`https://ddragon.leagueoflegends.com/cdn/14.23.1/img/item/${id}.png` });
+  const DEMO_GAME = {
+    championName:'Miss Fortune', championSplashUrl:null,
+    kills:9, deaths:2, assists:16, gameTimeStr:'24:10', cs:182, csPerMin:'7.5', killStreak:3,
+    itemLog:[DEMO_ITEM('3089','8:40'), DEMO_ITEM('6653','15:10'), DEMO_ITEM('3157','21:05')],
+    objectives:{ towers:4, heralds:1, barons:1 },
+    dragons:{ Infernal:2, 'Montaña':1 },
+    tags:{ firstBlood:{mine:true}, multikill:{text:'Triple Kill'}, ace:{mine:true} },
+    isDead:true, respawnTimer:22, deathElapsedStr:'0:08',
+  };
+
+  async function refresh(){
+    // el ?chat= le cuenta al panel si el socket de Kick está realmente vivo, sin pedir nada aparte
+    const chatFlag = kickWs && kickWs.readyState === 1 ? '1' : '0';
+    let s; try { s = await (await fetch('/status?chat=' + chatFlag)).json(); } catch { return; }
+    lastStatus = s; // lo consulta requestCommand para no sacar un panel sin datos
+
+    const anim = ['A','B','C'].includes(s.animStyle) ? s.animStyle : 'A';
+    stage.dataset.anim = anim;
+    document.documentElement.style.setProperty('--numfont', NUM_FONTS[s.numFont] || NUM_FONTS.jetbrains);
+    document.documentElement.style.setProperty('--vsfont', VS_FONTS[s.vsFont] || "'Bebas Neue'");
+    document.documentElement.style.setProperty('--vsinfofont', VS_FONTS[s.vsInfoFont] || VS_FONTS.rajdhani);
+    $('respawnBlock').dataset.style = ['ring','bar','plain'].includes(s.respawnStyle) ? s.respawnStyle : 'ring';
+    if (s.game?.championSplashUrl) { $('champBgImg').src = s.game.championSplashUrl; big.dataset.theme = 'splash'; }
+    else big.dataset.theme = 'classic';
+
+    // "mostrar todo": solo en el editor. Fuerza que convivan los dos widgets y que las piezas
+    // condicionales (insignias, datos de partida) se vean aunque ahora mismo no esté pasando nada.
+    const showAll = preview && s.editShowAll;
+    const g = s.game || (showAll ? DEMO_GAME : null);
+
+    // fondo de referencia del editor (captura del juego). En OBS no se pinta nunca.
+    if (preview) $('editBg').style.backgroundImage = s.editBgPath ? `url('${s.editBgPath}')` : 'none';
+
+    // posición/tamaño de cada widget (config guardada) — no pisa el que se está arrastrando ahora
+    for (const id in WEL) {
+      if (dragging?.id === id) continue;
+      Object.assign(wCache[id], DEFAULT_W, s.widgets?.[id] || {});
+      applyWidgetVars(id);
+    }
+
+    // Los paneles de comando se redibujan solo cuando cambian sus datos (no 2 veces por segundo), y
+    // ANTES del barrido de piezas de abajo: si no, lo recién creado se vería un instante antes de
+    // ocultarse. El rango entra en la firma porque el balance del día sí cambia solo.
+    const cmdJson = JSON.stringify([s.runes, s.comp, s.build, s.matchups, s.rank, s.session]);
+    if (cmdJson !== lastCmdJson) {
+      lastCmdJson = cmdJson;
+      renderRunes(s.runes); renderComp(s.comp); renderBuild(s.build); renderMatchups(s.matchups); renderRank(s);
+    }
+
+    // piezas mostradas/ocultas. La clave ausente vale "visible", así un elemento nuevo aparece
+    // sin tener que tocar el config guardado de nadie.
+    for (const [part, on] of Object.entries(s.parts || {})) {
+      stage.querySelectorAll(`[data-part="${part}"]`).forEach((el) => { el.style.display = on === false ? 'none' : ''; });
+    }
+
+    // chat de Kick: el servidor resuelve el canal, esta página mantiene el socket abierto
+    cmdCfg = { durationMs: s.cmdDurationMs || 10000, cooldownMs: s.cmdCooldownMs || 60000 };
+    connectKick(s.kick?.chatroomId || null);
+
+    // botón "probar" del panel: dispara el comando como si lo hubiera pedido el chat
+    if (lastTestSeq === null) lastTestSeq = s.testCommand?.seq ?? 0;
+    else if ((s.testCommand?.seq ?? 0) !== lastTestSeq) {
+      lastTestSeq = s.testCommand.seq;
+      if (s.testCommand.id) forcePanel(s.testCommand.id);
+    }
+
+
+    const L = I18N[s.lang] || I18N.es;
+
+    // identidad (dos marcos independientes)
+    applyFrame($('pic'), $('rankFrameArt'), s, false);
+    applyFrame($('picMini'), mini.querySelector('.rf .art'), s, true);
+    const rankText = s.rank?.tier ? `${s.rank.tier.toUpperCase()} ${s.rank.division||''} · ${s.rank.lp} LP` : '';
+    $('name').textContent = s.displayName;
+    $('titleLine').textContent = s.rank?.title || '';
+    $('rankLine').textContent = rankText;
+
+    // identidad compacta: tier en un color, LP en otro, tag de Riot, línea de rango secundaria
+    const cap1 = str => str ? str[0].toUpperCase()+str.slice(1).toLowerCase() : '';
+    $('miniName').textContent = s.displayName;
+    $('miniTag').textContent = s.tagLine || '';
+    $('miniTier').textContent = cap1(s.rank?.tier || '');
+    $('miniLp').textContent = (s.rank?.tier && s.rank?.lp != null) ? `${s.rank.lp}LP` : '';
+    $('miniRankNum').textContent = s.rank?.division ? `${L.rank}: ${s.rank.division}` : '';
+    $('miniSessionLbl').textContent = L.session;
+    $('miniScore').innerHTML = `<span class="w">${s.session.wins}W</span>-<span class="l">${s.session.losses}L</span>`;
+
+    // partidas anteriores (últimas del historial): ícono con borde por resultado + KDA debajo
+    $('miniMatches').innerHTML = (s.matchHistory||[]).map(m => `
+      <div class="match ${m.win?'win':'lose'}">
+        <div class="mimg"><img src="${m.championIconUrl}" alt="${m.championName}" title="${m.championName} ${m.kills}/${m.deaths}/${m.assists}"></div>
+        <div class="cap">${m.kills}/${m.deaths}/${m.assists}</div>
+      </div>`).join('');
+
+    // datos de la partida en curso (o la de ejemplo, si el editor pidió "mostrar todo")
+    if (g) {
+      $('gameHeader').textContent = s.game ? 'Partida actual · En curso' : 'Vista de ejemplo · Editor';
+      $('gameClock').textContent = g.gameTimeStr;
+      $('kda').textContent = `${g.kills} / ${g.deaths} / ${g.assists}`;
+      $('farm').innerHTML = `${g.cs} CS <span class="tsub">${g.csPerMin}/min</span>`;
+      const streakWord = g.killStreak>=5?'¡Imparable!':g.killStreak>=3?'¡En racha!':'';
+      $('streak').innerHTML = `${g.killStreak}${streakWord?` <span class="tsub">${streakWord}</span>`:''}`;
+
+      const drakes = Object.entries(g.dragons||{});
+      const total = drakes.reduce((a,[,v])=>a+v,0);
+      $('dragons').innerHTML = `${total}<span class="drakes">` +
+        drakes.flatMap(([el,v]) => Array(v).fill(`<img src="${CDRAGON}${DRAKE_ICON[el]||'dragon'}.png" alt="${el}">`)).join('') + `</span>`;
+
+      const o = g.objectives||{};
+      $('objectives').innerHTML = [
+        ['tower','Torres',o.towers], ['riftherald','Heraldo',o.heralds], ['baron','Barón',o.barons],
+      ].map(([ic,alt,n]) => `<span class="obj ${n?'':'zero'}"><img src="${CDRAGON}${ic}.png" alt="${alt}">${n||0}</span>`).join('');
+
+      // items completos/legendarios comprados, con el momento de partida en que se consiguieron
+      $('itemsRow').innerHTML = (g.itemLog||[]).length
+        ? g.itemLog.map(it => `
+            <div class="itemEntry"><img src="${it.iconUrl}" alt="${it.displayName}" title="${it.displayName} · ${it.atStr}"><div class="itime">${it.atStr}</div></div>`).join('')
+        : '<span class="empty">—</span>';
+
+      const t = g.tags||{};
+      $('badges').querySelector('[data-badge="blood"]').style.display = t.firstBlood?.mine ? 'inline-flex' : 'none';
+      const multi = $('badges').querySelector('[data-badge="multi"]');
+      multi.style.display = t.multikill ? 'inline-flex' : 'none';
+      if (t.multikill) multi.querySelector('span').textContent = t.multikill.text.replace(/[¡!]/g,'');
+      $('badges').querySelector('[data-badge="ace"]').style.display = t.ace?.mine ? 'inline-flex' : 'none';
+
+      renderRespawn(g);
+    }
+
+    // botón "Probar animación" del panel: fuerza una transición temporal
+    if (lastPreviewSeq===null) lastPreviewSeq=s.previewSeq;
+    else if (s.previewSeq!==lastPreviewSeq){
+      lastPreviewSeq=s.previewSeq;
+      previewState = (state==='dead')?'alive':'dead';
+      previewUntil = Date.now()+4000;
+    }
+
+    // "mostrar todo" (editor): los dos widgets conviven en pantalla para poder colocarlos juntos
+    // contra la captura de fondo. Fuera de eso manda el estado real: muerto -> grande, vivo -> mini,
+    // y forceView (del panel) pisa a los dos para poder calibrar una tarjeta sin que se alterne sola.
+    if (showAll) {
+      for (const id of STATE_WIDGETS) {
+        const el = WEL[id]; if (!el) continue;
+        el.style.animation = '';
+        el.style.display = wCache[id].on === false ? 'none' : 'block';
+        el.style.opacity = wCache[id].on === false ? 0 : 1;
+      }
+      state = null; // al salir del modo, la próxima transición vuelve a animar desde cero
+    } else {
+      const realState = s.game?.isDead ? 'dead' : 'alive';
+      const forced = s.forceView === 'dead' || s.forceView === 'alive' ? s.forceView : null;
+      const target = forced || ((Date.now()<previewUntil) ? previewState : realState);
+      setState(target, !forced);
+      // un widget apagado no se muestra nunca, gane quien gane arriba
+      for (const id of STATE_WIDGETS) if (wCache[id]?.on === false && WEL[id]) WEL[id].style.display = 'none';
+    }
+
+    // Paneles: los de chat solo se ven cuando la cola los activa; los automáticos salen solos en su
+    // ventana de tiempo. En el editor con "mostrar todo" se quedan todos fijos para poder colocarlos.
+    pumpQueue(!!s.game?.isDead);
+    const now = Date.now();
+    for (const wid of PANEL_WIDGETS) {
+      const el = WEL[wid]; if (!el) continue;
+      const visible = wCache[wid]?.on !== false &&
+        (showAll || now < (forcedUntil[wid] || 0) ||
+         (AUTO_PANELS[wid] ? AUTO_PANELS[wid](s) : cmdActive?.wid === wid));
+      if (visible === (el.dataset.shown === '1')) continue; // sin cambio: no reiniciar la animación
+      el.dataset.shown = visible ? '1' : '0';
+      if (visible) {
+        el.style.display = 'block';
+        el.style.animation = showAll ? '' : 'cmdIn .45s var(--fx) forwards';
+        el.style.opacity = 1;
+      } else {
+        // temporizador en vez de 'animationend': ese evento no siempre dispara (si la animación no
+        // llega a arrancar no hay evento, y el panel se quedaba en display:block invisible para
+        // siempre). Con el timeout el ocultado es determinista, y el clearTimeout evita que un
+        // ciclo mostrar/ocultar rápido deje temporizadores viejos apagando un panel ya visible.
+        el.style.animation = 'cmdOut .35s var(--fx) forwards';
+        clearTimeout(el._hideTimer);
+        el._hideTimer = setTimeout(() => { if (el.dataset.shown === '0') el.style.display = 'none'; }, 400);
+      }
+    }
+  }
+
+  refresh();
+  setInterval(refresh, 400);
+})();
+</script>
+</body>
+</html>

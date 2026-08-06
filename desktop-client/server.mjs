@@ -14,7 +14,7 @@ import { createServer } from "node:http";
 import { readFileSync, writeFileSync, existsSync, rmSync } from "node:fs";
 import { join, extname, dirname } from "node:path";
 import { randomUUID } from "node:crypto";
-import { exec } from "node:child_process";
+import { exec, spawn } from "node:child_process";
 import { request as httpsRequest } from "node:https";
 import { fileURLToPath } from "node:url";
 
@@ -87,6 +87,48 @@ async function api(ruta) {
   if (!t) return { status: 401, body: { error: "Sin sesión" } };
   const res = await fetch(`${API}${ruta}`, { headers: { Authorization: `Bearer ${t}` } });
   return { status: res.status, body: await res.json().catch(() => ({})) };
+}
+
+// ── Overlay de streamer ─────────────────────────────────────────────────────
+// Es el proyecto del overlay tal cual, corriendo como proceso hijo. No se
+// reescribe ni se porta: los comandos de Kick, la pantalla de enfrentamiento y
+// la tarjeta de muerte ya funcionan, y tocarlos solo podría romperlos.
+const PUERTO_OVERLAY = 8787;
+const OVERLAY_URL = `http://localhost:${PUERTO_OVERLAY}`;
+let overlay = null;
+
+/** Solo admins y quien tenga el distintivo. Lo decide el servidor, no el HTML. */
+async function esStreamer() {
+  const me = await api("/api/me");
+  if (me.status !== 200 || !me.body) return false;
+  return me.body.is_streamer === true || me.body.role === "admin";
+}
+
+async function arrancarOverlay() {
+  if (overlay && !overlay.killed) return { url: OVERLAY_URL, yaEstaba: true };
+
+  const script = join(RAIZ, "overlay", "server.mjs");
+  if (!existsSync(script)) return { error: "Falta desktop-client/overlay" };
+
+  overlay = spawn(process.execPath, [script], {
+    cwd: join(RAIZ, "overlay"),
+    // Su configuración —con la clave de Riot del streamer— vive fuera del
+    // programa, para que actualizar el cliente no la borre.
+    env: { ...process.env, LOL_OVERLAY_DATA_DIR: join(RAIZ, "overlay-datos") },
+    stdio: "ignore",
+  });
+  overlay.on("exit", () => { overlay = null; });
+
+  // El overlay tarda un momento en escuchar; sin esta espera el iframe carga
+  // antes de tiempo y muestra un error de conexión.
+  await new Promise((r) => setTimeout(r, 1200));
+  return { url: OVERLAY_URL, yaEstaba: false };
+}
+
+// Si se cierra el cliente, el overlay se va con él: dejarlo huérfano en segundo
+// plano ocupando el 8787 impide volver a arrancarlo.
+for (const señal of ["SIGINT", "SIGTERM", "exit"]) {
+  process.on(señal, () => { if (overlay && !overlay.killed) overlay.kill(); });
 }
 
 // ── Cliente de League ───────────────────────────────────────────────────────
@@ -233,7 +275,16 @@ const server = createServer(async (req, res) => {
 
   // La dirección de la web, para incrustarla sin tenerla escrita en el HTML.
   if (url.pathname === "/local/config") {
-    return json(200, { api: API });
+    return json(200, { api: API, overlay: OVERLAY_URL });
+  }
+
+  // Arranca el overlay de streamer. Se pide desde la interfaz al abrir esa
+  // pestaña, no al iniciar el cliente: quien no es streamer nunca levanta un
+  // servidor que no va a usar.
+  if (url.pathname === "/local/overlay" && req.method === "POST") {
+    const permitido = await esStreamer();
+    if (!permitido) return json(403, { error: "Necesitas el distintivo de streamer" });
+    return json(200, await arrancarOverlay());
   }
 
   // ── Estáticos ─────────────────────────────────────────────────────────────

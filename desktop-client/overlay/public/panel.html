@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Panel de control — Overlay LoL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@500;600;700;800&family=Fragment+Mono&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#0A0E1A; --bg-1:#121826; --accent:#3E6BFF; --cyan:#36D2FF;
+    --dim:#7E93C4; --cream:#F3F6FC; --win:#3E6BFF; --lose:#F0483E;
+    --border:rgba(62,107,255,.30); --border-strong:rgba(62,107,255,.5);
+    --ui:'Instrument Sans',system-ui,sans-serif; --mono:'Fragment Mono',ui-monospace,monospace;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; padding:28px 20px 60px; font-family:var(--ui); color:var(--cream);
+    background:
+      radial-gradient(1000px 500px at 20% -10%, rgba(62,107,255,.12), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(54,210,255,.08), transparent 55%),
+      linear-gradient(180deg,#0A0E1A,#070A12);
+    min-height:100vh; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{ max-width:1080px; margin:0 auto; }
+
+  .brand{ display:flex; align-items:center; gap:12px; margin-bottom:6px; }
+  .brand .mk{ width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(145deg,#3E6BFF,#36D2FF); color:#fff; font-weight:800; font-size:19px; box-shadow:0 0 18px rgba(62,107,255,.5); }
+  .brand h1{ font-size:20px; font-weight:800; letter-spacing:-.02em; margin:0; }
+  .brand .tag{ font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim); margin:0 0 26px 46px; }
+
+  .grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:18px; align-items:start; }
+  .card{ position:relative; padding:1px; border-radius:17px;
+    background:linear-gradient(150deg,var(--border-strong),var(--border) 55%,rgba(54,210,255,.2)); }
+  .card > .in{ border-radius:16px; padding:18px 20px 20px;
+    background:radial-gradient(120% 120% at 50% 0%,rgba(62,107,255,.08),transparent 60%),linear-gradient(180deg,rgba(18,24,38,.96),rgba(10,14,26,.96)); }
+  .card.span2{ grid-column:1 / -1; }
+  .card h2{ display:flex; align-items:center; gap:9px; font-family:var(--mono); font-size:11px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--cyan); font-weight:600; margin:0 0 16px; }
+  .card h2::after{ content:""; flex:1; height:1px; background:linear-gradient(90deg,var(--border),transparent); }
+
+  label{ display:block; font-family:var(--mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--dim); font-weight:600; margin:14px 0 6px; }
+  label:first-of-type{ margin-top:0; }
+  input[type=text], select{ width:100%; padding:9px 11px; font:inherit; font-size:13px; color:var(--cream);
+    background:#0A0E1A; border:1px solid var(--border); border-radius:10px; outline:none; transition:.15s; }
+  input[type=text]:focus, select:focus{ border-color:var(--accent); box-shadow:0 0 0 3px rgba(62,107,255,.18); }
+  input[type=text]::placeholder{ color:#4a5a80; }
+  select{ appearance:none; cursor:pointer;
+    background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),linear-gradient(135deg,var(--dim) 50%,transparent 50%);
+    background-position:calc(100% - 18px) 55%,calc(100% - 13px) 55%; background-size:5px 5px,5px 5px; background-repeat:no-repeat; padding-right:34px; }
+
+  input[type=range]{ width:100%; height:5px; border-radius:999px; appearance:none; margin:2px 0; cursor:pointer;
+    background:linear-gradient(90deg,var(--accent),var(--cyan)); }
+  input[type=range]::-webkit-slider-thumb{ appearance:none; width:15px; height:15px; border-radius:50%;
+    background:#F3F6FC; border:2px solid var(--accent); box-shadow:0 0 8px rgba(62,107,255,.6); }
+  input[type=color]{ width:44px; height:30px; padding:0; border:1px solid var(--border); border-radius:8px; background:#0A0E1A; cursor:pointer; }
+  input[type=file]{ font-size:12px; color:var(--dim); }
+  input[type=file]::file-selector-button{ font:inherit; font-size:12px; margin-right:10px; padding:7px 12px; cursor:pointer;
+    color:var(--cream); background:rgba(62,107,255,.12); border:1px solid var(--border); border-radius:8px; }
+
+  .row{ display:flex; gap:16px; flex-wrap:wrap; }
+  .row > div{ flex:1; min-width:130px; }
+  .valnum{ color:var(--cyan); font-family:var(--mono); }
+
+  button{ font:inherit; font-weight:700; font-size:13px; padding:10px 16px; cursor:pointer; color:var(--cream);
+    background:rgba(62,107,255,.1); border:1.5px solid var(--border); border-radius:10px; transition:.15s; }
+  button:hover{ border-color:var(--accent); background:rgba(62,107,255,.18); box-shadow:0 0 16px rgba(62,107,255,.25); }
+  button.primary{ background:linear-gradient(135deg,#3E6BFF,#36D2FF); border-color:transparent; color:#fff; box-shadow:0 0 18px rgba(62,107,255,.4); }
+  .btn-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
+
+  .hint{ font-family:var(--mono); font-size:11px; color:var(--dim); margin-top:8px; line-height:1.5; }
+
+  .rankStatus{ font-size:12px; margin-top:12px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .rankStatus.error{ color:#F0938B; }
+  #rankEmblem{ width:26px; height:26px; vertical-align:middle; }
+
+  .session-box{ display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:12px 16px; border:1px solid var(--border); border-radius:12px; background:#0A0E1A; }
+  .session-box .sv{ font-family:var(--mono); font-size:20px; font-weight:700; }
+
+  .overlay-link{ display:inline-flex; align-items:center; gap:8px; margin-top:8px; color:var(--cyan); text-decoration:none; font-weight:700; font-size:13px; }
+  .overlay-link:hover{ text-decoration:underline; }
+
+  .seg{ display:inline-flex; gap:3px; padding:3px; background:#0A0E1A; border:1px solid var(--border); border-radius:999px; }
+  .seg button{ border:0; background:transparent; color:var(--dim); font:inherit; font-size:12px; font-weight:700;
+    padding:8px 16px; border-radius:999px; cursor:pointer; transition:.15s; }
+  .seg button:hover{ color:var(--cream); }
+  .seg button.on{ background:linear-gradient(180deg,#3E6BFF,#2F55DB); color:#fff; box-shadow:0 0 12px rgba(62,107,255,.5); }
+  .fit-toolbar{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:18px; }
+  .linkrow{ display:flex; align-items:center; gap:9px; cursor:pointer; font-size:13px; color:var(--dim); font-weight:600; }
+  .linkrow input{ accent-color:#3E6BFF; width:16px; height:16px; flex:none; }
+  .fit-body{ display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap; }
+  .fit-preview-box{ flex:none; width:180px; height:180px; display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 50% 40%, rgba(62,107,255,.12), transparent 70%), #05070d;
+    border:1px solid var(--border); border-radius:14px; }
+  .rf-preview{ position:relative; }
+  .rf-preview img{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    object-fit:cover; border-radius:50%; box-shadow:0 0 0 2px #0A0E1A, 0 2px 8px rgba(0,0,0,.6); background:#0A0E1A; }
+  .rf-preview .art{ position:absolute; inset:0; background-repeat:no-repeat; background-position:center; pointer-events:none; }
+  .fit-sliders{ flex:1; min-width:260px; }
+
+  .live-preview-wrap{ position:relative; width:960px; height:540px; max-width:100%; overflow:hidden;
+    border-radius:12px; border:1px solid var(--border); background:#05070d; margin:0 auto; }
+  .live-preview-wrap iframe{ position:absolute; top:0; left:0; width:1920px; height:1080px; border:0;
+    transform:scale(.5); transform-origin:top left; pointer-events:none; }
+  .live-preview-wrap.editing iframe{ pointer-events:auto; }
+
+  /* lista de elementos: un grupo por widget, sus piezas debajo */
+  .wgroup{ margin-top:18px; padding-top:14px; border-top:1px solid var(--border); }
+  .wgroup:first-child{ margin-top:0; padding-top:0; border-top:0; }
+  .chk{ display:flex; align-items:center; gap:9px; font-size:13px; font-weight:600; color:var(--cream); cursor:pointer; }
+  .chk input{ accent-color:#3E6BFF; width:16px; height:16px; flex:none; }
+  .chk em{ font-style:normal; font-family:var(--mono); font-size:10px; letter-spacing:.06em;
+    text-transform:uppercase; color:var(--dim); font-weight:600; }
+  .wtitle{ font-size:14px; font-weight:800; }
+  .parts{ display:grid; grid-template-columns:repeat(auto-fill,minmax(215px,1fr)); gap:9px 18px; margin:12px 0 0 26px; }
+  .parts .chk{ font-weight:500; color:var(--dim); }
+  .parts .chk:has(input:checked){ color:var(--cream); }
+  .tools{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin:14px 0; }
+
+  @media(max-width:1100px){
+    .live-preview-wrap{ width:640px; height:360px; }
+    .live-preview-wrap iframe{ transform:scale(.33333); }
+  }
+  @media(max-width:720px){
+    .grid{ grid-template-columns:1fr; } .fit-body{ flex-direction:column; } .fit-preview-box{ width:100%; }
+    .live-preview-wrap{ width:320px; height:180px; }
+    .live-preview-wrap iframe{ transform:scale(.16667); }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="brand"><span class="mk">★</span><h1>Panel de control · Overlay de League</h1></div>
+  <p class="tag">S-Rank Arena · Hextech</p>
+
+  <div class="grid">
+
+    <!-- Vista previa en vivo -->
+    <div class="card span2"><div class="in">
+      <h2>Vista previa en vivo</h2>
+      <p class="hint" style="margin-top:0">Exactamente lo que ve OBS ahora mismo, a escala — se actualiza solo, no hace falta otra pestaña.</p>
+
+      <div class="tools">
+        <button id="editModeBtn">✥ Activar modo edición</button>
+        <label class="chk"><input type="checkbox" id="editShowAll"><span>Mostrar todos los elementos a la vez</span></label>
+      </div>
+
+      <div class="tools">
+        <div style="flex:1;min-width:240px">
+          <label style="margin-top:0">Fondo de referencia (captura del juego)</label>
+          <input type="file" id="editBgFile" accept="image/*">
+        </div>
+        <button id="editBgClear">Quitar fondo</button>
+      </div>
+      <p class="hint" style="margin-top:0">El fondo y el modo "mostrar todo" viven <strong>solo aquí</strong>: OBS sigue viendo el overlay transparente y con los elementos reales de la partida.</p>
+
+      <div class="live-preview-wrap" id="livePreviewWrap">
+        <iframe id="livePreview" src="/overlay.html?preview=1" scrolling="no" title="Vista previa del overlay"></iframe>
+      </div>
+      <p class="hint">En modo edición: arrastra un elemento para moverlo, o el punto celeste de su esquina para cambiar su tamaño. Se guarda solo al soltar.</p>
+    </div></div>
+
+    <!-- Bot de chat de Kick -->
+    <div class="card span2"><div class="in">
+      <h2>Bot de chat · Kick</h2>
+      <p class="hint" style="margin-top:0">Solo lectura y sin iniciar sesión: no hace falta contraseña, token ni dar permisos a nada. Escribe tu canal y listo.</p>
+      <div class="row">
+        <div style="flex:2">
+          <label>Tu canal de Kick</label>
+          <input type="text" id="kickChannel" placeholder="ej: micanal   (o pega kick.com/micanal)">
+        </div>
+        <div><label>Segundos en pantalla</label><input type="text" id="cmdDuration" placeholder="10"></div>
+        <div><label>Espera entre usos (s)</label><input type="text" id="cmdCooldown" placeholder="60"></div>
+      </div>
+      <div class="btn-row"><button class="primary" id="kickSaveBtn">Conectar</button></div>
+      <div id="kickStatus" class="rankStatus"></div>
+      <label>Mostrar un panel ahora mismo</label>
+      <div class="btn-row" id="testCmds" style="margin-top:0"></div>
+      <p class="hint" id="cmdList"></p>
+      <p class="hint">Los botones fuerzan el panel al instante, saltándose la espera y la ventana de tiempo. Solo salen si hay datos que enseñar: fuera de partida no hay runas, build ni duelo.</p>
+      <p class="hint">Solo se ve un panel a la vez. Lo que se pida mientras estás muerto espera en la cola y sale al revivir — ahí manda la tarjeta de muerte, que ya lleva tu build.</p>
+    </div></div>
+
+    <!-- Enfrentamientos -->
+    <div class="card span2"><div class="in">
+      <h2>Winrate de enfrentamiento</h2>
+      <p class="hint" style="margin-top:0">Datos agregados de u.gg: tu winrate con el campeón que juegas contra cada rival. No usa tu clave de Riot.</p>
+      <div class="row">
+        <div><label>Rango de la muestra</label>
+          <select id="uggRank">
+            <option value="overall">Todos los rangos</option>
+            <option value="platinum_plus">Platino +</option>
+            <option value="emerald_plus">Esmeralda +</option>
+            <option value="diamond_plus">Diamante +</option>
+            <option value="master_plus">Maestro +</option>
+          </select>
+        </div>
+        <div><label>Región</label>
+          <select id="uggRegion">
+            <option value="auto">La de mi cuenta</option>
+            <option value="world">Mundo</option>
+            <option value="la1">LAN</option><option value="la2">LAS</option>
+            <option value="na1">NA</option><option value="euw1">EUW</option>
+            <option value="eun1">EUNE</option><option value="kr">KR</option>
+            <option value="br1">BR</option>
+          </select>
+        </div>
+        <div><label>Mínimo de partidas</label><input type="text" id="uggMinGames" placeholder="50"></div>
+        <div><label>Sale del segundo</label><input type="text" id="vsFrom" placeholder="5"></div>
+        <div><label>hasta el segundo</label><input type="text" id="vsTo" placeholder="25"></div>
+        <div><label>Tipografía de los nombres</label><select id="vsFont"><option value="teko">Teko</option><option value="bebas">Bebas Neue</option><option value="orbitron">Orbitron</option><option value="rajdhani">Rajdhani</option><option value="chakra">Chakra Petch</option></select></div>
+        <div><label>Tipografía de la barra</label><select id="vsInfoFont"><option value="rajdhani">Rajdhani</option><option value="chakra">Chakra Petch</option><option value="jakarta">Plus Jakarta Sans</option><option value="jetbrains">JetBrains Mono</option><option value="orbitron">Orbitron</option><option value="teko">Teko</option></select></div>
+        <div><label>Costura entre los artes</label>
+          <select id="vsStyle">
+            <option value="c">Fundido (sin línea)</option>
+            <option value="a">Diagonal</option>
+            <option value="b">Corte recto</option>
+          </select>
+        </div>
+      </div>
+      <label class="linkrow" style="margin-top:16px">
+        <input type="checkbox" id="uggEnabled"><span>Activar (descarga ~2,5 MB por campeón, se guarda en caché)</span>
+      </label>
+      <div class="btn-row"><button class="primary" id="uggSaveBtn">Guardar</button> <span class="valnum" id="uggMsg"></span></div>
+      <p class="hint">El duelo <strong>no lo pide el chat</strong>: sale solo al empezar la partida, entre esos dos segundos, con animación de entrada y salida.</p>
+      <p class="hint">Por debajo del mínimo de partidas el enfrentamiento no se muestra: con 8 partidas un 70% no significa nada. Si u.gg no responde o cambia el formato, el panel simplemente no sale.</p>
+    </div></div>
+
+    <!-- Elementos del overlay -->
+    <div class="card span2"><div class="in">
+      <h2>Elementos del overlay</h2>
+      <p class="hint" style="margin-top:0">Todo lo que puede aparecer en pantalla. Destilda lo que no quieras mostrar; los cambios se aplican al instante, también en OBS.</p>
+      <div id="elements"></div>
+    </div></div>
+
+    <!-- Riot / Rango -->
+    <div class="card"><div class="in">
+      <h2>Cuenta de Riot · Rango</h2>
+      <label>Clave de desarrollador de Riot</label>
+      <input type="text" id="riotApiKey" placeholder="RGAPI-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+      <div class="row">
+        <div><label>Nombre de invocador</label><input type="text" id="riotGameName" placeholder="ej: Hydro"></div>
+        <div><label>Tag</label><input type="text" id="riotTagLine" placeholder="ej: LAN"></div>
+      </div>
+      <label>Región</label>
+      <select id="riotPlatform">
+        <option value="na1">NA</option><option value="euw1">EUW</option><option value="eun1">EUNE</option>
+        <option value="la1">LAN</option><option value="la2">LAS</option><option value="br1">BR</option>
+        <option value="kr">KR</option><option value="jp1">JP</option><option value="oc1">OCE</option>
+        <option value="tr1">TR</option><option value="ru">RU</option>
+      </select>
+      <div class="btn-row"><button class="primary" id="rankBtn">Guardar y buscar rango</button></div>
+      <div id="rankStatus" class="rankStatus"></div>
+    </div></div>
+
+    <!-- Estilo / Animación -->
+    <div class="card"><div class="in">
+      <h2>Estilo del overlay</h2>
+      <label>Animación de transición</label>
+      <select id="animStyle">
+        <option value="A">Hextech — ensamble con giro 3D y brillo</option>
+        <option value="B">Impacto — golpe con destello (rojo al morir, cian al revivir)</option>
+        <option value="C">Energía — barrido horizontal</option>
+      </select>
+      <label>Vista del overlay</label>
+      <select id="forceView">
+        <option value="auto">Automática (grande al morir, mini al vivir)</option>
+        <option value="dead">Fijar tarjeta grande (para calibrar)</option>
+        <option value="alive">Fijar tarjeta pequeña (para calibrar)</option>
+      </select>
+      <label>Contador de reaparición</label>
+      <select id="respawnStyle">
+        <option value="ring">Círculo (anillo de progreso)</option>
+        <option value="bar">Barra</option>
+        <option value="plain">Nada — solo el número</option>
+      </select>
+      <label>Fuente de números</label>
+      <select id="numFont">
+        <option value="jetbrains">JetBrains Mono (default)</option>
+        <option value="space">Space Mono</option>
+        <option value="orbitron">Orbitron</option>
+        <option value="rajdhani">Rajdhani</option>
+        <option value="teko">Teko</option>
+        <option value="bebas">Bebas Neue</option>
+        <option value="chakra">Chakra Petch</option>
+      </select>
+      <label class="linkrow" style="margin-top:16px">
+        <input type="checkbox" id="championSplash">
+        <span>Fondo con el splash art del campeón (tarjeta grande)</span>
+      </label>
+      <label>Idioma de las etiquetas</label>
+      <select id="lang">
+        <option value="es">Español</option>
+        <option value="en">English</option>
+      </select>
+      <div class="btn-row"><button id="previewAnimBtn">▶ Probar animación</button></div>
+      <p class="hint">Fija una tarjeta mientras calibras; vuelve a "Automática" para el stream. La animación de prueba solo corre en modo automático.</p>
+    </div></div>
+
+    <!-- Ajuste del marco -->
+    <div class="card span2"><div class="in">
+      <h2>Ajuste del marco + ícono</h2>
+      <p class="hint" style="margin-top:0">Los cambios se aplican al instante en el overlay — no hace falta guardar nada.</p>
+      <p class="hint" style="margin-top:0">Marco real detectado: <strong id="realStyleLabel">—</strong> (según la preferencia de borde del jugador, no editable a mano)</p>
+
+      <div class="fit-toolbar">
+        <div class="seg" id="fitCardSeg">
+          <button type="button" data-v="dead" class="on">Tarjeta grande</button>
+          <button type="button" data-v="alive">Tarjeta pequeña</button>
+        </div>
+        <label class="linkrow">
+          <input type="checkbox" id="lockFit">
+          <span>🔒 Mover ícono y marco juntos</span>
+        </label>
+      </div>
+
+      <div class="fit-body">
+        <div class="fit-preview-box"><div class="rf-preview" id="rfPreview">
+          <img id="prevPic" alt="">
+          <div id="prevArt" class="art"></div>
+        </div></div>
+
+        <div class="fit-sliders">
+          <label>Tamaño del conjunto (<span class="valnum" id="frameSizeVal"></span>px)</label>
+          <input type="range" id="frameSize" min="40" max="300">
+
+          <label class="linkrow" id="linkMiniRow" style="display:none;margin:16px 0">
+            <input type="checkbox" id="linkMini">
+            <span>Vincular con la tarjeta grande (misma calibración)</span>
+          </label>
+
+          <div>
+            <label>Tamaño ícono (<span class="valnum" id="f_sizeVal"></span>%)</label><input type="range" id="f_size" min="10" max="100">
+            <label>Posición ícono X (<span class="valnum" id="f_xVal"></span>%)</label><input type="range" id="f_x" min="0" max="100">
+            <label>Posición ícono Y (<span class="valnum" id="f_yVal"></span>%)</label><input type="range" id="f_y" min="0" max="100">
+            <label>Zoom del marco (<span class="valnum" id="f_zoomVal"></span>%)</label><input type="range" id="f_zoom" min="50" max="250">
+            <label>Posición marco X (<span class="valnum" id="f_borderXVal"></span>%)</label><input type="range" id="f_borderX" min="0" max="100">
+            <label>Posición marco Y (<span class="valnum" id="f_borderYVal"></span>%)</label><input type="range" id="f_borderY" min="0" max="100">
+          </div>
+        </div>
+      </div>
+    </div></div>
+
+    <!-- Sesión -->
+    <div class="card span2"><div class="in">
+      <h2>Sesión de hoy</h2>
+      <div class="session-box">
+        <span class="sv" id="sessionScore">— W · — L</span>
+        <button id="resetBtn">Reiniciar sesión</button>
+      </div>
+      <p class="hint">Solo suma partidas Ranked Solo/Duo o Flex, confirmadas contra la API de Riot cuando termina la partida (puede tardar uno o dos minutos en aparecer). Normales y personalizadas no cuentan.</p>
+      <div style="margin-top:14px"><a class="overlay-link" href="/overlay.html" target="_blank">Abrir vista previa del overlay →</a></div>
+    </div></div>
+
+  </div>
+</div>
+
+<script src="/widgets.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+
+let cfgCache = null; // último config completo conocido (fuente de verdad local para el ajuste)
+let selectedCard = "dead"; // "dead" = tarjeta grande, "alive" = tarjeta pequeña
+
+async function loadConfig() {
+  const c = await (await fetch("/config")).json();
+  cfgCache = c;
+  $("riotApiKey").value = c.riotApiKey || "";
+  $("riotGameName").value = c.riotGameName || "";
+  $("riotTagLine").value = c.riotTagLine || "";
+  $("riotPlatform").value = c.riotPlatform || "na1";
+  $("animStyle").value = c.animStyle || "A";
+  $("forceView").value = c.forceView || "auto";
+  $("respawnStyle").value = c.respawnStyle || "ring";
+  $("numFont").value = c.numFont || "jetbrains";
+  $("championSplash").checked = c.championSplash ?? false;
+  $("lang").value = c.lang || "es";
+  $("editShowAll").checked = c.editShowAll ?? false;
+  $("kickChannel").value = c.kickChannel || "";
+  $("cmdDuration").value = Math.round((c.cmdDurationMs ?? 10000) / 1000);
+  $("cmdCooldown").value = Math.round((c.cmdCooldownMs ?? 60000) / 1000);
+  $("uggRank").value = c.uggRank || "overall";
+  $("uggRegion").value = c.uggRegion || "auto";
+  $("uggMinGames").value = c.uggMinGames ?? 50;
+  $("uggEnabled").checked = c.uggEnabled ?? true;
+  $("vsStyle").value = c.vsStyle || "c";
+  $("vsFont").value = c.vsFont || "teko";
+  $("vsInfoFont").value = c.vsInfoFont || "rajdhani";
+  $("vsFrom").value = c.vsFrom ?? 5;
+  $("vsTo").value = c.vsTo ?? 25;
+  buildElementsUI();
+  buildCommandsUI();
+
+  // el selector Grande/Mini arranca reflejando qué tarjeta está fija ahora mismo (si alguna)
+  selectedCard = c.forceView === "alive" ? "alive" : "dead";
+  $("fitCardSeg").querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.v === selectedCard));
+  $("linkMini").checked = c.iconFit?.linkMini ?? true;
+  loadFitUI();
+}
+
+/* ---------- elementos del overlay: se dibujan desde el registro de /widgets.js ----------
+   Nada de esto está codificado a mano: agregar un elemento en widgets.js lo hace aparecer aquí.
+   La clave ausente en el config vale "encendido", así un elemento nuevo arranca visible. */
+function buildElementsUI() {
+  $("elements").innerHTML = window.OVERLAY_WIDGETS.map((w) => `
+    <div class="wgroup">
+      <label class="chk wtitle"><input type="checkbox" data-w="${w.id}"><span>${w.name}</span><em>${w.hint || ""}</em></label>
+      <div class="parts">
+        ${window.OVERLAY_PARTS.filter((p) => p.w === w.id).map((p) => `
+          <label class="chk"><input type="checkbox" data-p="${p.id}"><span>${p.name}</span></label>`).join("")}
+      </div>
+    </div>`).join("");
+
+  $("elements").querySelectorAll("input[data-w]").forEach((i) => {
+    i.checked = cfgCache.widgets?.[i.dataset.w]?.on !== false;
+    i.onchange = () => fetch("/config", { method: "POST", body: JSON.stringify({ widgets: { [i.dataset.w]: { on: i.checked } } }) });
+  });
+  $("elements").querySelectorAll("input[data-p]").forEach((i) => {
+    i.checked = cfgCache.parts?.[i.dataset.p] !== false;
+    i.onchange = () => fetch("/config", { method: "POST", body: JSON.stringify({ parts: { [i.dataset.p]: i.checked } }) });
+  });
+}
+
+const FIT_FIELDS = ["size", "x", "y", "zoom", "borderX", "borderY"];
+// candado: cada control del ícono se empareja con su equivalente del marco (y viceversa)
+const FIT_PAIR = { size: "zoom", x: "borderX", y: "borderY", zoom: "size", borderX: "x", borderY: "y" };
+const FIT_LIMITS = { size: [10, 100], x: [0, 100], y: [0, 100], zoom: [50, 250], borderX: [0, 100], borderY: [0, 100] };
+const DEFAULT_FIT = { size: 46, x: 50, y: 50, zoom: 100, borderX: 50, borderY: 50 };
+
+// mismo criterio que overlay.html: crestBorder ("2"=rango, cualquier otro valor=nivel) manda;
+// sin ese dato, cae a "¿tiene rango?". Nunca se elige a mano — si no calza con lo que se ve en
+// vivo, calibrarías el marco equivocado.
+let lastRank = null;
+let lastAppliedStyle = null;
+function realStyleKey() {
+  const cb = lastRank?.crestBorder;
+  if (cb === "2" || cb === 2) return lastRank?.rankBorderUrl ? "ranked" : "prestige";
+  if (cb !== null && cb !== undefined) return "prestige";
+  return lastRank?.tier ? "ranked" : "prestige";
+}
+
+// qué clave de iconFit gobierna los sliders ahora mismo, según tarjeta elegida + borde real + vínculo
+function activeStyleKey() {
+  const bs = realStyleKey();
+  if (selectedCard === "dead") return bs;
+  return $("linkMini").checked ? bs : (bs === "prestige" ? "miniPrestige" : "miniRanked");
+}
+
+function loadFitUI() {
+  const fit = cfgCache.iconFit[activeStyleKey()] || { ...DEFAULT_FIT };
+  for (const f of FIT_FIELDS) { $(`f_${f}`).value = fit[f]; $(`f_${f}Val`).textContent = fit[f]; }
+  const frameSize = selectedCard === "dead" ? cfgCache.iconFit.frameBig : cfgCache.iconFit.frameMini;
+  $("frameSize").value = frameSize; $("frameSizeVal").textContent = frameSize;
+  $("linkMiniRow").style.display = selectedCard === "alive" ? "flex" : "none";
+  applyPreviewFit(fit);
+  updatePreviewSize(frameSize);
+}
+
+function updatePreviewSize(frameSize) {
+  const box = 172; // tamaño interno de la caja de vista previa
+  const shown = Math.min(box, frameSize);
+  $("rfPreview").style.width = shown + "px";
+  $("rfPreview").style.height = shown + "px";
+}
+
+function applyPreviewFit(fit) {
+  $("prevPic").style.width = fit.size + "%"; $("prevPic").style.height = fit.size + "%";
+  $("prevPic").style.top = fit.y + "%"; $("prevPic").style.left = fit.x + "%";
+  $("prevArt").style.backgroundSize = `auto ${fit.zoom}%`;
+  $("prevArt").style.backgroundPosition = `${fit.borderX}% ${fit.borderY}%`;
+}
+
+function updatePreviewAssets(s) {
+  const pic = s.rank?.profileIconUrl;
+  if (pic) $("prevPic").src = pic;
+  const isPrestige = activeStyleKey().toLowerCase().includes("prestige");
+  const borderUrl = isPrestige ? s.rank?.prestigeBorderUrl : s.rank?.rankBorderUrl;
+  $("prevArt").style.backgroundImage = borderUrl ? `url('${borderUrl}')` : "none";
+}
+
+function wireIconFitSliders() {
+  $("frameSize").oninput = (e) => {
+    const v = +e.target.value;
+    $("frameSizeVal").textContent = v;
+    const field = selectedCard === "dead" ? "frameBig" : "frameMini";
+    cfgCache.iconFit[field] = v;
+    updatePreviewSize(v);
+    fetch("/config", { method: "POST", body: JSON.stringify({ iconFit: { [field]: v } }) });
+  };
+
+  for (const field of FIT_FIELDS) {
+    $(`f_${field}`).oninput = (e) => {
+      const key = activeStyleKey();
+      const v = +e.target.value;
+      const cur = { ...(cfgCache.iconFit[key] || DEFAULT_FIT) };
+      const old = cur[field];
+      cur[field] = v;
+      $(`f_${field}Val`).textContent = v;
+      const patch = { [field]: v };
+
+      if ($("lockFit").checked) {
+        const pf = FIT_PAIR[field];
+        const pOld = cur[pf];
+        // tamaño↔zoom escalan proporcional; posiciones se desplazan el mismo delta
+        let pNew = (field === "size" || field === "zoom")
+          ? Math.round(pOld * (v / (old || 1)))
+          : pOld + (v - old);
+        const [mn, mx] = FIT_LIMITS[pf];
+        pNew = Math.max(mn, Math.min(mx, pNew));
+        cur[pf] = pNew; patch[pf] = pNew;
+        $(`f_${pf}`).value = pNew; $(`f_${pf}Val`).textContent = pNew;
+      }
+
+      cfgCache.iconFit[key] = cur;
+      applyPreviewFit(cur);
+      fetch("/config", { method: "POST", body: JSON.stringify({ iconFit: { [key]: patch } }) });
+    };
+  }
+
+  $("linkMini").onchange = async (e) => {
+    const linked = e.target.checked;
+    if (!linked) {
+      // al desvincular, la mini arranca copiando la calibración actual de la grande
+      const bs = realStyleKey();
+      const miniKey = bs === "prestige" ? "miniPrestige" : "miniRanked";
+      cfgCache.iconFit[miniKey] = { ...cfgCache.iconFit[bs] };
+      await fetch("/config", { method: "POST", body: JSON.stringify({ iconFit: { [miniKey]: cfgCache.iconFit[miniKey], linkMini: false } }) });
+    } else {
+      await fetch("/config", { method: "POST", body: JSON.stringify({ iconFit: { linkMini: true } }) });
+    }
+    cfgCache.iconFit.linkMini = linked;
+    loadFitUI();
+  };
+
+  $("fitCardSeg").addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    $("fitCardSeg").querySelectorAll("button").forEach((x) => x.classList.remove("on"));
+    b.classList.add("on");
+    selectedCard = b.dataset.v;
+    loadFitUI();
+    // fija esa tarjeta en el overlay mientras se calibra, para verla sin que se alterne sola
+    $("forceView").value = selectedCard;
+    fetch("/config", { method: "POST", body: JSON.stringify({ forceView: selectedCard }) });
+  });
+}
+
+function showRank(rank) {
+  const box = $("rankStatus");
+  if (!rank || (!rank.tier && !rank.error && !rank.profileIconUrl)) { box.className = "rankStatus"; box.textContent = ""; return; }
+  box.className = "rankStatus" + (rank.error && !rank.tier ? " error" : "");
+  const icon = rank.profileIconUrl ? `<img id="rankProfileIcon" src="${rank.profileIconUrl}">` : "";
+  const emblem = rank.tier ? `<img id="rankEmblem" src="https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-${rank.tier}.png">` : "";
+  const rankText = rank.tier ? `${rank.tier.toUpperCase()} ${rank.division || ""} · ${rank.lp} LP` : (rank.error || "");
+  const titleText = rank.title ? ` · "${rank.title}"` : "";
+  box.innerHTML = `${icon}${emblem}<span>${rankText}${titleText}</span>`;
+
+  lastRank = rank;
+  const rsk = realStyleKey();
+  $("realStyleLabel").textContent = rsk === "prestige" ? "Nivel / prestigio" : "Rango";
+  // si el estilo real recién detectado cambió, los sliders visibles corresponden al viejo — recargar
+  if (cfgCache && rsk !== lastAppliedStyle) { lastAppliedStyle = rsk; loadFitUI(); }
+}
+
+// Ajustes de un solo campo: cambiar el control manda ese campo solo a /config.
+const bindConfig = (id, prop = "value") => {
+  $(id).onchange = () => fetch("/config", { method: "POST", body: JSON.stringify({ [id]: $(id)[prop] }) });
+};
+["animStyle", "forceView", "respawnStyle", "numFont", "lang"].forEach((id) => bindConfig(id));
+bindConfig("championSplash", "checked");
+$("previewAnimBtn").onclick = () => fetch("/preview-anim", { method: "POST" });
+
+let editMode = false;
+$("editModeBtn").onclick = () => {
+  editMode = !editMode;
+  $("livePreviewWrap").classList.toggle("editing", editMode);
+  $("livePreview").src = editMode ? "/overlay.html?preview=1&edit=1" : "/overlay.html?preview=1";
+  $("editModeBtn").textContent = editMode ? "✕ Salir del modo edición" : "✥ Activar modo edición";
+};
+
+$("editShowAll").onchange = () => fetch("/config", { method: "POST", body: JSON.stringify({ editShowAll: $("editShowAll").checked }) });
+
+$("editBgFile").onchange = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const img = new Image();
+  img.onload = () => {
+    // Se reescala a 1920 de ancho y se recodifica a JPEG antes de subir: una captura PNG en 4K
+    // supera el límite del cuerpo del POST y se perdería en silencio.
+    const w = Math.min(1920, img.width), h = Math.round(img.height * (w / img.width));
+    const canvas = Object.assign(document.createElement("canvas"), { width: w, height: h });
+    canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+    fetch("/config", { method: "POST", body: JSON.stringify({ editBgDataUrl: canvas.toDataURL("image/jpeg", 0.85) }) });
+    URL.revokeObjectURL(img.src);
+  };
+  img.onerror = () => alert("No se pudo leer esa imagen.");
+  img.src = URL.createObjectURL(file);
+};
+
+$("editBgClear").onclick = () => {
+  $("editBgFile").value = "";
+  fetch("/config", { method: "POST", body: JSON.stringify({ editBgPath: null }) });
+};
+
+// segundos en la UI, milisegundos en el config; un valor sin sentido cae al de siempre
+const secsToMs = (v, fallback) => {
+  const n = Math.round(parseFloat(v) * 1000);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+};
+
+// Tres estados distintos, porque fallan por motivos distintos: el canal no existe, el canal existe
+// pero no hay ningún overlay abierto que escuche, y todo funcionando.
+function showKick(k) {
+  const box = $("kickStatus");
+  if (!k || (!k.slug && !k.error)) { box.className = "rankStatus"; box.textContent = ""; return; }
+  if (k.error) { box.className = "rankStatus error"; box.textContent = k.error; return; }
+  box.className = "rankStatus";
+  box.textContent = k.connected
+    ? `✓ Escuchando el chat de kick.com/${k.slug}`
+    : `Canal kick.com/${k.slug} encontrado, pero nadie está escuchando todavía — abre el overlay en OBS (o activa la vista previa de arriba).`;
+}
+
+$("kickSaveBtn").onclick = async () => {
+  $("kickStatus").className = "rankStatus";
+  $("kickStatus").textContent = "Buscando el canal…";
+  const res = await (await fetch("/config", { method: "POST", body: JSON.stringify({
+    kickChannel: $("kickChannel").value,
+    cmdDurationMs: secsToMs($("cmdDuration").value, 10000),
+    cmdCooldownMs: secsToMs($("cmdCooldown").value, 60000),
+  }) })).json();
+  if (res.kick?.slug) $("kickChannel").value = res.kick.slug;
+  showKick(res.kick);
+};
+
+// Botones de prueba y lista de comandos: salen del registro, no escritos a mano. Un widget puede
+// tener varios nombres (sinónimos); el botón usa el primero y la lista los muestra todos.
+["vsStyle", "vsFont", "vsInfoFont"].forEach((id) => bindConfig(id));
+
+$("uggSaveBtn").onclick = async () => {
+  const n = parseInt($("uggMinGames").value, 10);
+  await fetch("/config", { method: "POST", body: JSON.stringify({
+    uggRank: $("uggRank").value, uggRegion: $("uggRegion").value,
+    uggMinGames: Number.isFinite(n) && n > 0 ? n : 50,
+    vsFrom: Math.max(0, parseInt($("vsFrom").value, 10) || 5),
+    vsTo: Math.max(1, parseInt($("vsTo").value, 10) || 25),
+    uggEnabled: $("uggEnabled").checked,
+  }) });
+  $("uggMinGames").value = Number.isFinite(n) && n > 0 ? n : 50;
+  $("uggMsg").textContent = "Guardado.";
+  setTimeout(() => ($("uggMsg").textContent = ""), 2000);
+};
+
+function buildCommandsUI() {
+  const names = Object.keys(window.OVERLAY_COMMANDS);
+  const byWidget = {};
+  for (const n of names) (byWidget[window.OVERLAY_COMMANDS[n]] ||= []).push(n);
+
+  // un botón por panel, salgan del chat o solos: el de control los fuerza igual
+  $("testCmds").innerHTML = window.OVERLAY_WIDGETS.filter((w) => w.id.startsWith("cmd"))
+    .map((w) => { const n = w.name.replace(/^Panel de /, ""); return `<button data-cmd="${w.id}">▶ ${n[0].toUpperCase()}${n.slice(1)}</button>`; }).join("");
+  $("testCmds").querySelectorAll("button").forEach((b) => {
+    b.onclick = () => fetch("/test-command", { method: "POST", body: JSON.stringify({ id: b.dataset.cmd }) });
+  });
+
+  $("cmdList").innerHTML = "Comandos: " + Object.entries(byWidget)
+    .map(([wid, ns]) => {
+      const w = window.OVERLAY_WIDGETS.find((x) => x.id === wid);
+      return `<strong>${ns.map((n) => "!" + n).join(" / ")}</strong> — ${(w?.name || wid).replace(/^Panel de /, "")}`;
+    }).join(" · ");
+}
+
+$("resetBtn").onclick = async () => { await fetch("/reset-session", { method: "POST" }); refreshStatus(); };
+
+$("rankBtn").onclick = async () => {
+  $("rankStatus").className = "rankStatus";
+  $("rankStatus").textContent = "Buscando…";
+  const body = {
+    riotApiKey: $("riotApiKey").value, riotGameName: $("riotGameName").value, riotTagLine: $("riotTagLine").value, riotPlatform: $("riotPlatform").value,
+  };
+  const res = await (await fetch("/config", { method: "POST", body: JSON.stringify(body) })).json();
+  showRank(res.rank);
+};
+
+async function refreshStatus() {
+  const s = await (await fetch("/status")).json();
+  $("sessionScore").textContent = `${s.session.wins} W · ${s.session.losses} L`;
+  showRank(s.rank);
+  showKick(s.kick);
+  if (cfgCache) updatePreviewAssets(s);
+}
+
+loadConfig();
+wireIconFitSliders();
+refreshStatus();
+setInterval(refreshStatus, 2000);
+</script>
+</body>
+</html>

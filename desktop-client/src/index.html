@@ -38,6 +38,13 @@
           <span id="castigo-estado" class="sub"></span>
         </div>
 
+        <nav class="pestanas">
+          <button class="pestana activa" data-vista="torneo">Torneo</button>
+          <!-- Solo con distintivo de streamer o siendo admin. Lo decide el
+               servidor; esconderlo aquí es cortesía, no seguridad. -->
+          <button class="pestana" data-vista="streamer" id="pestana-streamer" hidden>Streamer</button>
+        </nav>
+
         <div class="hueco"></div>
 
         <div class="cuenta">
@@ -50,6 +57,11 @@
       <!-- La web, tal cual. No se replica: cambia cada semana y mantener dos
            versiones las separa solas. -->
       <iframe id="web" title="S-Rank Arena"></iframe>
+
+      <!-- El panel del overlay, servido por su propio proceso. Se arranca al
+           abrir la pestaña, no al iniciar el cliente. -->
+      <iframe id="streamer" title="Overlay de streamer" hidden></iframe>
+      <div id="streamer-cargando" class="cargando" hidden>Arrancando el overlay…</div>
     </div>
 
     <script src="main.js"></script>

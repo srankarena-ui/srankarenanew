@@ -62,6 +62,11 @@ async function mostrarSesion({ email, perfil }) {
   $("account-email").textContent = perfil?.username || email || "";
   $("badge-streamer").hidden = !perfil?.is_streamer;
 
+  // Los admins también, para poder probarlo sin darse el distintivo. El
+  // servidor aplica la misma regla al arrancar el overlay: esconder el botón
+  // es comodidad, no seguridad.
+  $("pestana-streamer").hidden = !(perfil?.is_streamer || perfil?.role === "admin");
+
   // Se carga una sola vez: recargarla en cada sondeo perdería lo que el usuario
   // esté haciendo dentro.
   const marco = $("web");
@@ -69,6 +74,37 @@ async function mostrarSesion({ email, perfil }) {
     const { body } = await local("/local/config");
     marco.src = `${body.api}/es/tournaments`;
   }
+}
+
+// ── Pestañas ────────────────────────────────────────────────────────────────
+document.querySelectorAll(".pestana").forEach((boton) => {
+  boton.addEventListener("click", () => cambiarVista(boton.dataset.vista));
+});
+
+async function cambiarVista(vista) {
+  document.querySelectorAll(".pestana").forEach((b) => {
+    b.classList.toggle("activa", b.dataset.vista === vista);
+  });
+
+  $("web").hidden = vista !== "torneo";
+  $("streamer").hidden = vista !== "streamer";
+  $("streamer-cargando").hidden = true;
+
+  if (vista !== "streamer" || $("streamer").src) return;
+
+  // Se arranca al abrirla por primera vez, no al iniciar el cliente: quien no
+  // sea streamer nunca levanta un servidor que no va a usar.
+  $("streamer").hidden = true;
+  $("streamer-cargando").hidden = false;
+
+  const { body } = await local("/local/overlay", { method: "POST" });
+  if (body.error) {
+    $("streamer-cargando").textContent = body.error;
+    return;
+  }
+  $("streamer").src = `${body.url}/panel.html`;
+  $("streamer").hidden = false;
+  $("streamer-cargando").hidden = true;
 }
 
 async function refrescarCastigo() {

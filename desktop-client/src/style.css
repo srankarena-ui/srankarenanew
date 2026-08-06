@@ -136,3 +136,32 @@ iframe {
   border: 0;
   background: var(--fondo);
 }
+
+/* Pestañas de la barra. La de streamer solo existe con distintivo o siendo
+   admin, y quien la ve es porque el servidor ya lo ha permitido. */
+.pestanas { display: flex; gap: 4px; }
+
+.pestana {
+  margin: 0;
+  padding: 7px 14px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--apagado);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+.pestana:hover { color: var(--texto); }
+.pestana.activa {
+  color: #fff;
+  background: rgba(124, 92, 255, 0.14);
+  border-color: rgba(124, 92, 255, 0.45);
+}
+
+.cargando {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  color: var(--apagado);
+  font-size: 13px;
+}

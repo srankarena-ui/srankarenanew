@@ -48,3 +48,6 @@ next-env.d.ts
 
 # Sesion del cliente de escritorio: contiene el token del usuario.
 desktop-client/sesion.json
+
+# Configuracion del overlay: contiene la clave de Riot del streamer.
+desktop-client/overlay/data/
