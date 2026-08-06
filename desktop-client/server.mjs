@@ -13,6 +13,8 @@
 import { createServer } from "node:http";
 import { readFileSync, writeFileSync, existsSync, rmSync } from "node:fs";
 import { join, extname, dirname } from "node:path";
+import { randomUUID } from "node:crypto";
+import { exec } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const RAIZ = dirname(fileURLToPath(import.meta.url));
@@ -41,6 +43,11 @@ async function supabaseAuth(ruta, body) {
   });
   return { ok: res.ok, body: await res.json() };
 }
+
+// Nonce de un solo uso para el login por navegador. Sin él, cualquier página
+// podría mandar al usuario a http://127.0.0.1:8788/callback con tokens ajenos y
+// dejarle el cliente con la sesión de otra persona.
+let esperando = null;
 
 async function entrar(email, password) {
   const r = await supabaseAuth("token?grant_type=password", { email, password });
@@ -95,7 +102,44 @@ const server = createServer(async (req, res) => {
     if (!sesion) return json(200, { sesion: false });
     const me = await api("/api/me");
     if (me.status === 401) { guardar(null); return json(200, { sesion: false }); }
-    return json(200, { sesion: true, email: sesion.email, perfil: me.body });
+    // Al entrar por navegador no llega el correo en la respuesta: se toma del
+    // perfil la primera vez y se guarda para los arranques siguientes.
+    if (!sesion.email && me.body?.email) guardar({ ...sesion, email: me.body.email });
+    return json(200, { sesion: true, email: sesion.email ?? me.body?.username, perfil: me.body });
+  }
+
+  // Abre el navegador en la web para que el usuario inicie sesión allí. Ni la
+  // contraseña ni el captcha pasan por el cliente.
+  if (url.pathname === "/local/abrir-login" && req.method === "POST") {
+    esperando = randomUUID();
+    const destino = `${API}/es/client-auth?port=${PUERTO}&state=${esperando}`;
+    // `start ""` para que cmd no interprete la URL como título de ventana.
+    exec(`start "" "${destino}"`, { shell: "cmd.exe" });
+    return json(200, { abierto: destino });
+  }
+
+  if (url.pathname === "/callback") {
+    const recibido = url.searchParams.get("state");
+    if (!esperando || recibido !== esperando) {
+      res.writeHead(400, { "Content-Type": "text/html; charset=utf-8" });
+      return res.end("<h2>Peticion no reconocida</h2><p>Vuelve a pulsar Entrar en el cliente.</p>");
+    }
+    esperando = null; // un solo uso
+
+    guardar({
+      token: url.searchParams.get("access_token"),
+      refresh: url.searchParams.get("refresh_token"),
+      expira: Number(url.searchParams.get("expires_at")) * 1000,
+      email: null, // lo rellena /api/me en el primer estado
+    });
+
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    return res.end(
+      '<!doctype html><meta charset="utf-8">' +
+        '<body style="font:15px system-ui;background:#0b0e14;color:#e8ecf4;display:grid;place-items:center;height:100vh;margin:0">' +
+        "<div style=\"text-align:center\"><h2>Sesion conectada</h2>" +
+        "<p>Ya puedes cerrar esta pestana y volver al cliente.</p></div>"
+    );
   }
 
   if (url.pathname === "/local/entrar" && req.method === "POST") {

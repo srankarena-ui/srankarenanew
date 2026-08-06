@@ -14,25 +14,36 @@ async function local(ruta, opciones) {
 }
 
 // ── Sesión ──────────────────────────────────────────────────────────────────
-$("login-form").addEventListener("submit", async (event) => {
-  event.preventDefault();
+// El login ocurre en el navegador, no aquí: Supabase exige captcha fuera de la
+// web, y así la contraseña nunca pasa por el cliente. Al volver, el servidor
+// local ya tiene la sesión guardada, así que basta con ir preguntando.
+let sondeoLogin = null;
+
+$("login-button").addEventListener("click", async () => {
   const boton = $("login-button");
   boton.disabled = true;
-  boton.textContent = "Entrando…";
+  boton.textContent = "Abriendo el navegador…";
   $("login-error").textContent = "";
+  $("login-hint").hidden = false;
 
-  const { body } = await local("/local/entrar", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: $("email").value, password: $("password").value }),
-  });
+  const { body } = await local("/local/abrir-login", { method: "POST" });
+  if (body.error) {
+    boton.disabled = false;
+    boton.textContent = "Entrar";
+    $("login-error").textContent = body.error;
+    return;
+  }
 
-  boton.disabled = false;
-  boton.textContent = "Entrar";
-  if (body.error) { $("login-error").textContent = body.error; return; }
-
-  $("password").value = "";
-  arrancar();
+  clearInterval(sondeoLogin);
+  sondeoLogin = setInterval(async () => {
+    const { body } = await local("/local/estado");
+    if (!body.sesion) return;
+    clearInterval(sondeoLogin);
+    boton.disabled = false;
+    boton.textContent = "Entrar";
+    $("login-hint").hidden = true;
+    arrancar();
+  }, 1500);
 });
 
 $("logout").addEventListener("click", async () => {

@@ -9,12 +9,14 @@
     <h1>S-Rank Arena</h1>
 
     <section id="login">
-      <p class="hint">Inicia sesión con tu cuenta de S-Rank Arena.</p>
-      <form id="login-form">
-        <input id="email" type="email" placeholder="Email" autocomplete="username" required />
-        <input id="password" type="password" placeholder="Contraseña" autocomplete="current-password" required />
-        <button type="submit" id="login-button">Entrar</button>
-      </form>
+      <p class="hint">
+        Se abrirá S-Rank Arena en tu navegador para que inicies sesión. Tu
+        contraseña no pasa por aquí.
+      </p>
+      <button type="button" id="login-button">Entrar</button>
+      <p id="login-hint" class="hint" hidden>
+        Termina en el navegador y vuelve a esta ventana.
+      </p>
       <p id="login-error" class="error" role="alert"></p>
     </section>
 
