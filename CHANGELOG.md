@@ -2,6 +2,20 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-08-06 — El cliente de escritorio existe y se instala
+
+**Se abandona Tauri.** Necesita el SDK de Windows para enlazar, no está instalado, y el cliente llevaba meses sin poder compilarse ni una vez. Pasa a **Electron**, que es lo que ya usaba el overlay de streamer —cadena probada en la máquina— y que empaqueta Node dentro: el streamer no instala nada aparte. Salen instalador NSIS y portable, 89 MB.
+
+**Un solo programa.** El overlay de streamer vive ahora en `desktop-client/overlay` y lo arranca el cliente como proceso hijo, sin portar ni una línea: su `server.mjs` ya era Node puro. La pestaña Streamer solo aparece con distintivo o siendo admin, y el servidor comprueba lo mismo antes de arrancar nada.
+
+**Login por navegador.** Supabase tiene captcha activo, así que el login por contraseña desde fuera de la web está prohibido. El cliente abre `/es/client-auth` en el navegador y la sesión vuelve por bucle invertido. El destino no sale de la URL —solo un número de puerto, validado— o sería un redirector abierto; y lleva nonce de un solo uso, o cualquier página podría dejar el cliente con la sesión de otro.
+
+**El overlay usa la clave de la plataforma.** Fuera el campo de clave de desarrollador, que caducaba cada 24 h. No se reparte la clave: va por pasarela (`/api/riot/proxy`) con lista blanca de host y ruta. Bastó cambiar `riotGet()`, por donde pasan todas sus llamadas.
+
+**Distintivo de streamer** (migración 037): columna propia y no un valor de `role`, porque es ortogonal a admin u organizador. Protegida con trigger como `role`.
+
+Cuatro trampas del empaquetado, resueltas: la carpeta del programa no es escribible instalada (datos a `userData`); no se puede lanzar un proceso desde `app.asar` (`asarUnpack` + reescritura de ruta); `process.execPath` dentro de Electron es Electron y no node (`ELECTRON_RUN_AS_NODE`); e instancia única, porque dos procesos peleando por el puerto se ven como "no abre".
+
 ## 2026-08-06 — Castigos: imponerlos, decidirlos y verificarlos solos
 
 **Imponer.** Con un sello le impones un castigo a otro participante. Lo sortea el servidor —el giro del modal es adorno; si decidiera el navegador, cualquiera recargaría hasta sacar el más suave— filtrando por el rol del castigado y pesando por dureza, así que los duros salen a un tercio de los suaves. Un castigo a la vez por persona: mientras tenga uno sin resolver no puede recibir otro. No es enfriamiento por tiempo sino por estado, sin temporizador ni tabla nueva.
