@@ -1,14 +1,41 @@
 {
-  "name": "srank-arena-desktop-client",
+  "name": "srank-arena-desktop",
+  "productName": "S-Rank Arena",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
+  "description": "Cliente de S-Rank Arena: torneo, avisos de castigo y overlay de streamer.",
+  "main": "main.js",
   "scripts": {
-    "dev": "tauri dev",
-    "build": "tauri build",
-    "tauri": "tauri"
+    "start": "electron .",
+    "servidor": "node server.mjs",
+    "dist": "electron-builder --win"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2"
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.srankarena.desktop",
+    "productName": "S-Rank Arena",
+    "files": [
+      "main.js",
+      "server.mjs",
+      "src/**/*",
+      "overlay/**/*",
+      "!overlay/data/**",
+      "!overlay-datos/**",
+      "!sesion.json"
+    ],
+    "asarUnpack": [
+      "overlay/**/*"
+    ],
+    "win": {
+      "target": ["nsis", "portable"]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "S-Rank Arena"
+    }
   }
 }

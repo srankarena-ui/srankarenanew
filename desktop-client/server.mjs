@@ -11,8 +11,8 @@
 //
 // La sesión se guarda en disco para no pedir la contraseña en cada arranque.
 import { createServer } from "node:http";
-import { readFileSync, writeFileSync, existsSync, rmSync } from "node:fs";
-import { join, extname, dirname } from "node:path";
+import { readFileSync, writeFileSync, existsSync, rmSync, mkdirSync } from "node:fs";
+import { join, extname, dirname, sep } from "node:path";
 import { randomUUID } from "node:crypto";
 import { exec, spawn } from "node:child_process";
 import { request as httpsRequest } from "node:https";
@@ -21,7 +21,14 @@ import { fileURLToPath } from "node:url";
 const RAIZ = dirname(fileURLToPath(import.meta.url));
 const PUERTO = Number(process.env.SRANK_PORT ?? 8788);
 const API = process.env.SRANK_API ?? "https://www.srankarena.com";
-const SESION = join(RAIZ, "sesion.json");
+
+// Dónde se escriben sesión y configuración. Una vez instalado, la carpeta del
+// programa no es escribible, así que Electron pasa aquí la de datos de usuario.
+// Sin instalar, al lado del código y listo.
+const DATOS = process.env.SRANK_DATA_DIR ?? RAIZ;
+if (!existsSync(DATOS)) mkdirSync(DATOS, { recursive: true });
+
+const SESION = join(DATOS, "sesion.json");
 
 // Estas dos son públicas por diseño: la anon key va en el HTML de cualquier
 // página de Supabase. La service role no aparece aquí ni puede aparecer.
@@ -107,16 +114,26 @@ async function esStreamer() {
 async function arrancarOverlay() {
   if (overlay && !overlay.killed) return { url: OVERLAY_URL, yaEstaba: true };
 
-  const script = join(RAIZ, "overlay", "server.mjs");
-  if (!existsSync(script)) return { error: "Falta desktop-client/overlay" };
+  // Empaquetado, el código vive dentro de app.asar, que es un archivo: no se
+  // puede lanzar un proceso desde ahí. electron-builder deja el overlay fuera
+  // (asarUnpack) y esa copia es la que hay que ejecutar.
+  const script = join(RAIZ, "overlay", "server.mjs").replace(
+    `app.asar${sep}`,
+    `app.asar.unpacked${sep}`
+  );
+  if (!existsSync(script)) return { error: "Falta el overlay en la instalación" };
 
+  // ELECTRON_RUN_AS_NODE: dentro de Electron, `process.execPath` es el binario
+  // de Electron, no node. Sin esta variable intentaría abrir una ventana con el
+  // script en vez de ejecutarlo, y el overlay no arrancaría nunca.
   overlay = spawn(process.execPath, [script], {
-    cwd: join(RAIZ, "overlay"),
+    cwd: dirname(script),
     // Su configuración —con la clave de Riot del streamer— vive fuera del
     // programa, para que actualizar el cliente no la borre.
     env: {
       ...process.env,
-      LOL_OVERLAY_DATA_DIR: join(RAIZ, "overlay-datos"),
+      ELECTRON_RUN_AS_NODE: "1",
+      LOL_OVERLAY_DATA_DIR: join(DATOS, "overlay-datos"),
       // Para que sus llamadas a Riot vuelvan por aquí y lleguen a la web con
       // la clave puesta. Sin esto seguiría pidiendo una clave al streamer.
       SRANK_LOCAL: `http://127.0.0.1:${PUERTO}`,
@@ -334,5 +351,8 @@ server.listen(PUERTO, "127.0.0.1", () => {
   console.log(`\n  S-Rank Arena — cliente\n  http://localhost:${PUERTO}\n`);
   console.log(`  API: ${API}`);
   console.log(sesion ? `  Sesión guardada: ${sesion.email}` : "  Sin sesión iniciada");
-  console.log("\n  Deja esta ventana abierta. Ctrl+C para cerrar.\n");
 });
+
+// Lo importa main.js (la ventana de Electron) para esperar a que escuche antes
+// de cargar la interfaz: sin eso la ventana abre contra un puerto muerto.
+export default server;

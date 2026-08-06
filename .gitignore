@@ -52,3 +52,5 @@ desktop-client/sesion.json
 # Configuracion del overlay: contiene la clave de Riot del streamer.
 desktop-client/overlay/data/
 desktop-client/overlay-datos/
+desktop-client/dist/
+desktop-client/node_modules/
