@@ -5,7 +5,7 @@ import type { TrialsConfig } from "@/core/types";
 import { roleScore, SCORING_WEIGHTS, type RoleBaselines } from "@/core/lib/role-score";
 import { evaluateFeats, featPoints, type EarnedFeat } from "@/core/lib/tournament-feats";
 import { sealsForMatch, sealsForStreaks, SEAL_CAP } from "@/core/lib/seal-rules";
-import { REJECTION_PENALTY, verificarCastigo } from "@/core/lib/castigos";
+import { REJECTION_PENALTY, verificarCastigo, type CastigoParams } from "@/core/lib/castigos";
 import { itemCatalog } from "@/core/lib/ddragon-items";
 import baselines from "@/core/config/role-baselines.json";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -357,7 +357,8 @@ async function verificarCastigos(
   ) as { id: string; challenges: { conditions: unknown } | null } | undefined;
   if (!pendiente) return;
 
-  const key = (pendiente.challenges?.conditions as { key?: string } | null)?.key;
+  const cond = pendiente.challenges?.conditions as { key?: string; params?: Record<string, unknown> } | null;
+  const key = cond?.key;
   if (!key) return;
 
   const { botas, precio } = await itemCatalog();
@@ -378,7 +379,8 @@ async function verificarCastigos(
       .reduce((a, [, v]) => a + ((v as number) ?? 0), 0),
     comproBotas: items.some((id) => botas.has(id)),
     objetoMasCaro: items.reduce((max, id) => Math.max(max, precio.get(id) ?? 0), 0),
-  });
+    campeon: (player.championName as string) ?? "",
+  }, (cond?.params ?? {}) as CastigoParams);
 
   if (cumplio === null) return; // castigo antiguo sin forma de comprobarse
 

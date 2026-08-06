@@ -23,10 +23,33 @@ export function itemCatalog(): Promise<Catalogo> {
   return cache;
 }
 
+/** Id numérico de campeón → nombre tal y como lo devuelve match-v5 ("MonkeyKing"). */
+let campeones: Promise<Map<number, string>> | null = null;
+
+export function championCatalog(): Promise<Map<number, string>> {
+  campeones ??= (async () => {
+    const v = await version();
+    const data = await fetch(`https://ddragon.leagueoflegends.com/cdn/${v}/data/en_US/champion.json`)
+      .then((r) => r.json() as Promise<{ data: Record<string, { key: string; id: string }> }>)
+      .then((j) => j.data);
+
+    // `key` es el id numérico y `id` el nombre interno. Es al revés de lo que
+    // sugieren los nombres, y confundirlos deja el mapa vacío sin dar error.
+    return new Map(Object.values(data).map((c) => [Number(c.key), c.id]));
+  })();
+  return campeones;
+}
+
+let versionCache: Promise<string> | null = null;
+function version(): Promise<string> {
+  versionCache ??= fetch("https://ddragon.leagueoflegends.com/api/versions.json")
+    .then((r) => r.json() as Promise<string[]>)
+    .then((v) => v[0]);
+  return versionCache;
+}
+
 async function cargar(): Promise<Catalogo> {
-  const versiones = await fetch("https://ddragon.leagueoflegends.com/api/versions.json")
-    .then((r) => r.json() as Promise<string[]>);
-  const v = versiones[0];
+  const v = await version();
 
   const data = await fetch(`https://ddragon.leagueoflegends.com/cdn/${v}/data/en_US/item.json`)
     .then((r) => r.json() as Promise<{ data: Record<string, { tags?: string[]; gold: { total: number } }> }>)

@@ -27,6 +27,20 @@ export interface CastigoFacts {
   comproBotas: boolean;
   /** Oro del objeto más caro que terminó llevando. */
   objetoMasCaro: number;
+  /** Nombre interno del campeón que jugó, como lo da match-v5 ("MonkeyKing"). */
+  campeon: string;
+}
+
+/**
+ * Lo que se congela al imponer el castigo. Congelar es lo que lo hace
+ * verificable: la maestría sube al jugar, así que comprobarla después daría
+ * resultados distintos según cuándo se mire.
+ */
+export interface CastigoParams {
+  /** El campeón que salió en la segunda ruleta. */
+  campeon?: string;
+  /** Campeones que no puede jugar, congelados al imponerlo. */
+  vetados?: string[];
 }
 
 export interface Castigo {
@@ -39,7 +53,12 @@ export interface Castigo {
    * ruleta: imponer algo que no sabemos comprobar convierte el sistema en un
    * pacto de honor, y en directo eso no se sostiene.
    */
-  verify?: (f: CastigoFacts) => boolean;
+  verify?: (f: CastigoFacts, p: CastigoParams) => boolean;
+  /**
+   * Necesita consultar la maestría del castigado al imponerlo, para congelar
+   * qué campeones puede jugar o cuál le toca.
+   */
+  needsMastery?: boolean;
   /**
    * Roles a los que se le puede imponer. Ausente = a cualquiera.
    *
@@ -83,8 +102,10 @@ export const CASTIGOS: Castigo[] = [
   },
   {
     key: "campeon_aleatorio",
+    verify: (f, p) => !!p.campeon && f.campeon === p.campeon,
+    needsMastery: true,
     name: "Campeón aleatorio",
-    how: "Jugar el campeón que te toque en el sorteo, elegido solo entre los que ya tienes.",
+    how: "Jugar el campeón que te toque en la segunda ruleta. Solo entra en el sorteo lo que ya has jugado alguna vez, para que no te caiga uno que no tienes.",
     dureza: 3,
   },
   {
@@ -140,12 +161,16 @@ export const CASTIGOS: Castigo[] = [
   },
   {
     key: "campeon_bajo",
+    verify: (f, p) => !(p.vetados ?? []).includes(f.campeon),
+    needsMastery: true,
     name: "Fuera de tu zona",
-    how: "Jugar un campeón con menos de 5.000 puntos de maestría.",
+    how: "Jugar un campeón con menos de 5.000 puntos de maestría. La lista se congela al imponerte el castigo, así que jugar para subir maestría no la cambia.",
     dureza: 2,
   },
   {
     key: "sin_tus_tres",
+    verify: (f, p) => !(p.vetados ?? []).includes(f.campeon),
+    needsMastery: true,
     name: "Sin tus favoritos",
     how: "No jugar ninguno de tus tres campeones más jugados. Se congelan al imponerte el castigo, así que no vale cambiarlos después.",
     dureza: 2,
@@ -172,17 +197,26 @@ export function castigosParaRol(role: string | null): Castigo[] {
  * debería pasar, porque la ruleta solo reparte verificables, pero un castigo
  * antiguo guardado en base puede serlo.
  */
-export function verificarCastigo(key: string, f: CastigoFacts): boolean | null {
+export function verificarCastigo(
+  key: string,
+  f: CastigoFacts,
+  p: CastigoParams = {}
+): boolean | null {
   const c = castigo(key);
-  return c?.verify ? c.verify(f) : null;
+  return c?.verify ? c.verify(f, p) : null;
 }
 
 /**
  * Gira la ruleta. `random` se inyecta para poder comprobarlo: un sorteo que solo
  * se puede observar en producción no se puede verificar.
  */
-export function rollCastigo(role: string | null, random: () => number = Math.random): Castigo {
-  const pool = castigosParaRol(role);
+export function rollCastigo(
+  role: string | null,
+  random: () => number = Math.random,
+  /** Excluye los que necesitan consultar maestría, para cuando esa consulta falla. */
+  sinMaestria = false
+): Castigo {
+  const pool = castigosParaRol(role).filter((c) => !sinMaestria || !c.needsMastery);
   if (!pool.length) throw new Error(`Sin castigos aplicables al rol ${role}`);
 
   const total = pool.reduce((a, c) => a + peso(c), 0);

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { requireAuthedRequest } from "@/core/lib/require-auth";
-import { rollCastigo } from "@/core/lib/castigos";
+import { rollCastigo, type CastigoParams } from "@/core/lib/castigos";
+import { championCatalog } from "@/core/lib/ddragon-items";
 import { notify, NOTIFICATION_TYPES } from "@/core/lib/notify";
 import type { Database } from "@/core/types/database";
 
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
   // El objetivo tiene que estar inscrito en ESE torneo, no en cualquiera.
   const { data: target } = await admin
     .from("summoner_trials_enrollments")
-    .select("user_id, stats_snapshot")
+    .select("user_id, stats_snapshot, puuid, region")
     .eq("tournament_id", tournamentId)
     .eq("user_id", targetUserId)
     .maybeSingle();
@@ -59,7 +60,20 @@ export async function POST(request: NextRequest) {
   }
 
   const snapshot = target.stats_snapshot as { role?: string } | null;
-  const elegido = rollCastigo(snapshot?.role ?? null);
+
+  // Si el sorteo saca uno que necesita maestría y esa consulta falla, se vuelve
+  // a girar sin él: mejor otro castigo que uno que luego no se puede comprobar.
+  let elegido = rollCastigo(snapshot?.role ?? null);
+  let params: CastigoParams = {};
+
+  if (elegido.needsMastery) {
+    const apiKey = process.env.RIOT_API_KEY;
+    const congelado = apiKey
+      ? await congelarParams(target.region, target.puuid, apiKey, elegido.key)
+      : null;
+    if (congelado) params = congelado;
+    else elegido = rollCastigo(snapshot?.role ?? null, Math.random, true);
+  }
 
   const { data: challenge, error: challengeError } = await admin
     .from("challenges")
@@ -67,9 +81,9 @@ export async function POST(request: NextRequest) {
       tournament_id: tournamentId,
       title: elegido.name,
       description: elegido.how,
-      // El evaluador todavía no sabe comprobar los castigos; se guarda la clave
-      // para que cuando sepa, no haga falta migrar nada.
-      conditions: { type: "castigo", key: elegido.key },
+      // `params` guarda lo congelado al imponerlo —el campeón sorteado, los
+      // vetados por maestría—, que es lo que permite comprobarlo después.
+      conditions: { type: "castigo", key: elegido.key, params } as unknown as Database["public"]["Tables"]["challenges"]["Insert"]["conditions"],
       created_by: auth.userId,
     })
     .select("id")
@@ -113,7 +127,64 @@ export async function POST(request: NextRequest) {
     },
   ]);
 
-  return NextResponse.json({ castigo: elegido });
+  return NextResponse.json({ castigo: elegido, params });
+}
+
+/**
+ * Congela lo que el castigo necesite para poder comprobarse después.
+ *
+ * Una sola petición de maestría lo resuelve todo: da los campeones que ha
+ * jugado (para sortear uno), los que pasan de 5.000 puntos, y su top 3.
+ * Congelarlo aquí es lo que lo hace verificable — la maestría sube al jugar, y
+ * mirarla después daría un resultado distinto según cuándo se mire.
+ */
+async function congelarParams(
+  region: string,
+  puuid: string,
+  apiKey: string,
+  castigoKey: string
+): Promise<CastigoParams | null> {
+  const res = await fetch(
+    `https://${region}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/${puuid}`,
+    { headers: { "X-Riot-Token": apiKey } }
+  );
+  if (!res.ok) return null;
+
+  const masteries = (await res.json()) as Array<{ championId: number; championPoints: number }>;
+  const nombres = await championCatalog();
+  const nombre = (id: number) => nombres.get(id);
+
+  if (castigoKey === "campeon_aleatorio") {
+    // Solo entre los que ha jugado alguna vez: asignarle uno que no tiene
+    // convertiría el castigo en imposible.
+    const suyos = masteries
+      .filter((m) => m.championPoints > 0)
+      .map((m) => nombre(m.championId))
+      .filter((n): n is string => !!n);
+    if (!suyos.length) return null;
+    return { campeon: suyos[Math.floor(Math.random() * suyos.length)] };
+  }
+
+  if (castigoKey === "campeon_bajo") {
+    return {
+      vetados: masteries
+        .filter((m) => m.championPoints >= 5000)
+        .map((m) => nombre(m.championId))
+        .filter((n): n is string => !!n),
+    };
+  }
+
+  if (castigoKey === "sin_tus_tres") {
+    return {
+      vetados: [...masteries]
+        .sort((a, b) => b.championPoints - a.championPoints)
+        .slice(0, 3)
+        .map((m) => nombre(m.championId))
+        .filter((n): n is string => !!n),
+    };
+  }
+
+  return {};
 }
 
 /** Nombre para el texto del aviso; el id crudo no le dice nada a nadie. */

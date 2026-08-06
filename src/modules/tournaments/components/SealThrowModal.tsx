@@ -3,6 +3,49 @@
 import { useEffect, useRef, useState } from "react";
 import { CASTIGOS, castigosParaRol, type Castigo } from "@/core/lib/castigos";
 
+// Campeones para el giro de la segunda ruleta. No hace falta la lista real de
+// Data Dragon: son los que pasan borrosos durante segundo y medio, y el que de
+// verdad toca lo manda el servidor.
+const CARAS = [
+  "Ahri", "Darius", "Jinx", "Lee Sin", "Lux", "Thresh", "Yasuo", "Zed",
+  "Ekko", "Vi", "Kai'Sa", "Garen", "Morgana", "Riven", "Sett", "Ashe",
+];
+
+/**
+ * Segunda ruleta: solo aparece si el castigo es "campeón aleatorio". Gira sobre
+ * nombres cualesquiera y para en el que decidió el servidor, sorteado entre los
+ * campeones que el castigado ha jugado alguna vez.
+ */
+function RuletaCampeon({ campeon }: { campeon: string }) {
+  const [girando, setGirando] = useState(true);
+  const [cara, setCara] = useState(CARAS[0]);
+
+  useEffect(() => {
+    const t = setInterval(() => setCara(CARAS[Math.floor(Math.random() * CARAS.length)]), 70);
+    const fin = setTimeout(() => { clearInterval(t); setGirando(false); }, 1500);
+    return () => { clearInterval(t); clearTimeout(fin); };
+  }, []);
+
+  return (
+    <div className="mt-3 rounded-xl border border-gray-800 bg-[#0b0e14] px-4 py-4">
+      <p className="text-[9px] uppercase tracking-[0.2em] text-gray-600">Te toca jugar</p>
+      <div className="mt-2 flex items-center justify-center gap-2.5">
+        {!girando && (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={`https://cdn.communitydragon.org/latest/champion/${campeon}/square`}
+            alt=""
+            className="h-9 w-9 rounded"
+          />
+        )}
+        <p className={`text-lg font-bold ${girando ? "text-gray-500 blur-[1px]" : "text-white"}`}>
+          {girando ? cara : campeon}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Ruleta de castigo. Gira mientras el servidor decide, y para en el que ha
  * salido de verdad — el giro es adorno, el sorteo es del backend. Si se
@@ -23,6 +66,7 @@ export function SealThrowModal({
   const [visible, setVisible] = useState<Castigo>(CASTIGOS[0]);
   const [final, setFinal] = useState<Castigo | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [campeon, setCampeon] = useState<string | null>(null);
 
   // El nombre va cambiando mientras se espera. Solo entre los que le pueden
   // tocar a ese rol, para no enseñar uno que nunca podría salirle.
@@ -64,7 +108,7 @@ export function SealThrowModal({
         setTimeout(() => {
           setGirando(false);
           if (!res.ok) setError(body.error ?? "No se pudo lanzar el sello");
-          else { setFinal(body.castigo); onDone(); }
+          else { setFinal(body.castigo); setCampeon(body.params?.campeon ?? null); onDone(); }
         }, espera);
       })
       .catch(() => {
@@ -108,6 +152,10 @@ export function SealThrowModal({
               </p>
               {final && <p className="mt-2 text-xs leading-relaxed text-gray-400">{final.how}</p>}
             </div>
+
+            {/* Segunda ruleta: si el castigo es "campeón aleatorio", el que le
+                toca ya lo decidió el servidor; esto solo lo revela girando. */}
+            {final && campeon && <RuletaCampeon campeon={campeon} />}
 
             {girando && <p className="mt-4 text-[10px] text-gray-600">Girando…</p>}
             {final && (

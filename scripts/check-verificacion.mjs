@@ -10,6 +10,7 @@ import {
 // Partida "limpia": no lleva Destello ni Prender, no compró nada, no pingueó.
 // Cumple todos los castigos a la vez, que es el punto de partida útil.
 const LIMPIA = {
+  campeon: "Yorick",
   hechizos: [6, 12],          // Fantasma + Teleporte
   usosHechizos: [8, 8],
   usosUlti: 2,
@@ -23,7 +24,16 @@ const LIMPIA = {
 const con = (patch) => ({ ...LIMPIA, ...patch });
 
 // ── Cada castigo: se cumple en la limpia, se incumple con su infracción ──────
+const PARAMS = {
+  campeon_aleatorio: { campeon: "Yorick" },
+  campeon_bajo: { vetados: ["Darius", "Jhin"] },
+  sin_tus_tres: { vetados: ["Darius", "Jhin", "Lux"] },
+};
+
 const INFRACCIONES = {
+  campeon_aleatorio: { campeon: "Teemo" },
+  campeon_bajo: { campeon: "Darius" },
+  sin_tus_tres: { campeon: "Lux" },
   sin_flash: { hechizos: [4, 12] },
   sin_prender: { hechizos: [14, 12] },
   sin_botas: { comproBotas: true },
@@ -39,8 +49,9 @@ for (const c of CASTIGOS_VERIFICABLES) {
   const infraccion = INFRACCIONES[c.key];
   assert(infraccion, `"${c.key}" entra en la ruleta pero el check no lo cubre`);
 
-  assert.equal(verificarCastigo(c.key, LIMPIA), true, `"${c.key}" no da por cumplida la partida limpia`);
-  assert.equal(verificarCastigo(c.key, con(infraccion)), false, `"${c.key}" no detecta su infracción`);
+  const par = PARAMS[c.key] ?? {};
+  assert.equal(verificarCastigo(c.key, LIMPIA, par), true, `"${c.key}" no da por cumplida la partida limpia`);
+  assert.equal(verificarCastigo(c.key, con(infraccion), par), false, `"${c.key}" no detecta su infracción`);
 }
 
 // Lo que se comprueba son los objetos FINALES, no las compras: el texto de
@@ -59,7 +70,10 @@ assert.equal(verificarCastigo("sin_flash", con({ hechizos: [12, 4] })), false, "
 assert.equal(verificarCastigo("sin_prender", con({ hechizos: [12, 14] })), false, "Prender en la segunda ranura también incumple");
 
 // ── Nada sin comprobar puede llegar a un jugador ─────────────────────────────
-assert.equal(verificarCastigo("campeon_aleatorio", LIMPIA), null, "los no verificables devuelven null");
+// Sin params congelados no puede darse por cumplido: si no sabemos qué campeón
+// le tocó, dar el castigo por bueno sería regalar el cumplimiento.
+assert.equal(verificarCastigo("campeon_aleatorio", LIMPIA, {}), false, "sin campeón congelado no se da por cumplido");
+assert.equal(verificarCastigo("inventado", LIMPIA), null, "una clave desconocida devuelve null");
 
 for (const role of ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY", null]) {
   for (const c of castigosParaRol(role)) {
