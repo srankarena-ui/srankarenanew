@@ -6,6 +6,9 @@
 --
 -- Las políticas permisivas se suman (OR), así que basta con añadir esta; la de
 -- «los míos» sigue valiendo para quien no esté logueado en el navegador.
+-- `drop if exists` antes de crear: `create policy` no admite `if not exists`, y
+-- sin esto reejecutar la migración falla con 42710 en vez de no hacer nada.
+drop policy if exists "challenge_assignments_select_public" on public.challenge_assignments;
 create policy "challenge_assignments_select_public" on public.challenge_assignments
   for select using (true);
 
