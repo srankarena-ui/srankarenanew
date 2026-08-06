@@ -55,6 +55,13 @@ export interface Castigo {
    */
   verify?: (f: CastigoFacts, p: CastigoParams) => boolean;
   /**
+   * De dónde sale la comprobación. `api` se verifica sola con match-v5 y le
+   * puede tocar a cualquiera. `cliente` necesita el cliente de escritorio
+   * abierto, porque el dato no existe en ninguna API pública — a quien no lo
+   * tenga no se le puede comprobar, y cerrarlo sería una forma de librarse.
+   */
+  via?: "api" | "cliente";
+  /**
    * Necesita consultar la maestría del castigado al imponerlo, para congelar
    * qué campeones puede jugar o cuál le toca.
    */
@@ -85,7 +92,21 @@ const ALL_ROLES: Role[] = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"];
  */
 export const REJECTION_PENALTY = 100;
 
+/**
+ * Los castigos que dependen del cliente de escritorio no entran en la ruleta
+ * hasta que el cliente exista y se pueda saber quién lo tiene abierto. Poner
+ * esto en true sin eso repartiría castigos imposibles de comprobar.
+ */
+export const CLIENTE_DISPONIBLE = false;
+
 export const CASTIGOS: Castigo[] = [
+  {
+    key: "autofill",
+    via: "cliente",
+    name: "Rellenar",
+    how: "Buscar cola con Rellenar en vez de elegir tus dos posiciones. Se comprueba al entrar en cola, que es cuando la elección deja de poder cambiarse.",
+    dureza: 2,
+  },
   {
     key: "sin_flash",
     verify: (f) => !f.hechizos.includes(4),
@@ -181,7 +202,9 @@ export const CASTIGOS: Castigo[] = [
 const peso = (c: Castigo) => 4 - c.dureza;
 
 /** Los que sabemos comprobar. Solo estos entran en la ruleta. */
-export const CASTIGOS_VERIFICABLES = CASTIGOS.filter((c) => c.verify);
+export const CASTIGOS_VERIFICABLES = CASTIGOS.filter((c) =>
+  c.via === "cliente" ? CLIENTE_DISPONIBLE : !!c.verify
+);
 
 /** Los que se le pueden imponer a ese rol. Sin rol conocido, solo los de todos. */
 export function castigosParaRol(role: string | null): Castigo[] {
