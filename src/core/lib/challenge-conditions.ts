@@ -15,6 +15,12 @@ export type ChallengeCondition =
   | { type: "champion_mastery"; champion: string; min_points: number }
   | { type: "role_played"; role: Role }
   | { type: "queue_played"; queue_id: number }
+  // Castigo impuesto con un sello. No se evalúa aquí: lo comprueba
+  // `verificarCastigo` en castigos.ts, que necesita el participante entero de
+  // match-v5. Existe en este tipo para que `parseCondition` no lo dé por
+  // inválido — cuando lo hacía, el inbox descartaba en silencio todos los
+  // castigos y el cliente de escritorio no llegaba a verlos nunca.
+  | { type: "castigo"; key: string; params?: Record<string, unknown> }
   | { type: "and"; conditions: ChallengeCondition[] }
   | { type: "or"; conditions: ChallengeCondition[] };
 
@@ -37,6 +43,13 @@ export function evaluateCondition(condition: ChallengeCondition, facts: MatchFac
       return facts.role === condition.role;
     case "queue_played":
       return facts.queueId === condition.queue_id;
+    case "castigo":
+      // Aquí no. Un castigo necesita el participante entero de match-v5
+      // (hechizos, objetos, pings), y `MatchFacts` solo trae campeón, rol y
+      // cola. Lo comprueba `verificarCastigo` desde el sync. Devolver false
+      // significa "yo no puedo decirlo", y quien llama nunca debería llegar
+      // aquí con un castigo.
+      return false;
     case "and":
       return condition.conditions.every((c) => evaluateCondition(c, facts));
     case "or":
@@ -69,6 +82,9 @@ export function isPostGameVerifiable(condition: ChallengeCondition): boolean {
     case "champion_mastery":
     case "role_played":
     case "queue_played":
+    // Los castigos son justo lo contrario de transitorio: se comprueban con el
+    // historial y sin que el cliente de escritorio haya estado abierto.
+    case "castigo":
       return true;
     case "and":
     case "or":
@@ -100,6 +116,10 @@ export function parseCondition(raw: unknown, depth = 0): ChallengeCondition | nu
     case "queue_played":
       return isPositiveInt(c.queue_id)
         ? { type: "queue_played", queue_id: c.queue_id as number }
+        : null;
+    case "castigo":
+      return typeof c.key === "string" && c.key.trim() !== ""
+        ? { type: "castigo", key: c.key, params: (c.params ?? {}) as Record<string, unknown> }
         : null;
     case "and":
     case "or": {

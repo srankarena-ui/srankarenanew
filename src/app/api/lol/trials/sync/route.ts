@@ -5,7 +5,8 @@ import type { TrialsConfig } from "@/core/types";
 import { roleScore, SCORING_WEIGHTS, type RoleBaselines } from "@/core/lib/role-score";
 import { evaluateFeats, featPoints, type EarnedFeat } from "@/core/lib/tournament-feats";
 import { sealsForMatch, sealsForStreaks, SEAL_CAP } from "@/core/lib/seal-rules";
-import { REJECTION_PENALTY, verificarCastigo, type CastigoParams } from "@/core/lib/castigos";
+import { REJECTION_PENALTY, verificarCastigo, castigo, type CastigoParams } from "@/core/lib/castigos";
+import { notify, NOTIFICATION_TYPES } from "@/core/lib/notify";
 import { itemCatalog } from "@/core/lib/ddragon-items";
 import baselines from "@/core/config/role-baselines.json";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -384,7 +385,7 @@ async function verificarCastigos(
 
   if (cumplio === null) return; // castigo antiguo sin forma de comprobarse
 
-  await admin
+  const { data: resuelto } = await admin
     .from("challenge_assignments")
     .update({
       status: cumplio ? "completed" : "failed",
@@ -392,7 +393,25 @@ async function verificarCastigos(
       resolved_match_id: matchId,
     })
     .eq("id", pendiente.id)
-    .eq("status", "accepted");
+    .eq("status", "accepted")
+    .select("id");
+
+  // Incumplir cuesta 100 puntos: enterarse mirando la tabla no basta.
+  // Se avisa solo si el update llegó a cambiar algo, para no repetir el aviso
+  // si dos sincronizaciones se pisan.
+  if (!resuelto?.length) return;
+
+  const c = castigo(key);
+  await notify(admin, {
+    userId,
+    type: cumplio ? NOTIFICATION_TYPES.castigoCumplido : NOTIFICATION_TYPES.castigoIncumplido,
+    title: cumplio
+      ? `Castigo cumplido: ${c?.name ?? key}`
+      : `Castigo incumplido: ${c?.name ?? key} · −${REJECTION_PENALTY} puntos`,
+    body: cumplio
+      ? "Comprobado en tu última partida del torneo."
+      : `Comprobado en tu última partida del torneo. ${c?.how ?? ""}`,
+  });
 }
 
 /** Una ventana en la que las partidas del jugador no cuentan. `hasta` nulo = sigue abierta. */

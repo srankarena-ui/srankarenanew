@@ -46,4 +46,8 @@ export const NOTIFICATION_TYPES = {
   castigoRecibido: "castigo_recibido",
   /** Confirmación para quien lanzó el sello. */
   castigoLanzado: "castigo_lanzado",
+  /** Lo cumpliste: se comprobó contra tu partida. */
+  castigoCumplido: "castigo_cumplido",
+  /** No lo cumpliste. Cuesta puntos, así que tiene que llegarte. */
+  castigoIncumplido: "castigo_incumplido",
 } as const;
