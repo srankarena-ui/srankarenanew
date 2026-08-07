@@ -1581,10 +1581,16 @@
 
   function sortearEnPantalla(reto, castigos, para) {
     const CARTA = 154, HUECO = 6, PASO = CARTA + HUECO;
-    // Las dos van juntas: alargar el tiempo sin poner más cartas no hace que
-    // gire más, hace que gire lento. Son ~23.000 px en 18 s, así que arranca
-    // igual de rápido que antes y lo que se estira es la agonía del final.
-    const ANTES = 144, DURACION = 18000;
+
+    // Dos tramos, no una curva.
+    //
+    // Con una sola curva de frenada, el giro empieza a ralentizarse desde el
+    // primer instante: subir la duración solo alarga el rato que pasa yendo
+    // despacio. Aquí el primer tramo va a velocidad fija —lanzada, sin frenar—
+    // y el segundo es el que frena. Alargar LANZADA da más ruleta; alargar
+    // FRENADA da más agonía. Son cosas distintas y ahora se tocan por separado.
+    const LANZADA = 12000, FRENADA = 6000, DURACION = LANZADA + FRENADA;
+    const VELOCIDAD = 5;   // px/ms ≈ 31 cartas por segundo
 
     const caja = document.getElementById('ruleta');
     const pista = document.getElementById('ruPista');
@@ -1610,20 +1616,30 @@
       return (acumulado.find(([tope]) => r < tope) ?? acumulado[acumulado.length - 1])[1];
     };
 
-    const tira = Array.from({ length: ANTES }, alAzar);
+    const centro = caja.getBoundingClientRect().width / 2;
+
+    // Cuánto hay que recorrer: lo que da la lanzada a velocidad fija, más lo
+    // que cabe mientras frena. La frenada empieza al doble de la velocidad
+    // media del tramo, así que recorre la mitad de lo que recorrería sin
+    // frenar — de ahí el /2, y de ahí que el paso de un tramo al otro no se
+    // note: entra a la misma velocidad a la que venía.
+    const recorridoIdeal = VELOCIDAD * LANZADA + (VELOCIDAD * FRENADA) / 2;
+
+    // La ganadora tiene que caer centrada bajo la aguja, así que el recorrido
+    // se redondea a la carta más cercana en vez de al revés.
+    const indice = Math.round((recorridoIdeal + centro - CARTA / 2) / PASO);
+    // Un empujón corto al azar para que no pare siempre clavada en el centro:
+    // clavado se ve calculado, y calculado se ve amañado.
+    const desvio = (Math.random() - 0.5) * (CARTA * 0.5);
+    const recorrido = indice * PASO + CARTA / 2 - centro + desvio;
+
+    const tira = Array.from({ length: indice }, alAzar);
     tira.push(gana);                                    // la que para bajo la aguja
-    for (let i = 0; i < 6; i++) tira.push(alAzar());    // cola, o la aguja quedaría al borde
+    for (let i = 0; i < 8; i++) tira.push(alAzar());    // cola, o la aguja quedaría al borde
 
     document.getElementById('ruDe').textContent = reto.from ?? '';
     document.getElementById('ruPara').textContent = para ?? '';
     document.getElementById('ruTira').innerHTML = tira.map((c) => cartaHTML(c, pcts)).join('');
-
-    // La ganadora tiene que acabar centrada bajo la aguja, no en el borde.
-    const centro = caja.getBoundingClientRect().width / 2;
-    const destinoBase = ANTES * PASO + CARTA / 2 - centro;
-    // Un empujón corto al azar para que no pare siempre clavada en el centro:
-    // clavado se ve calculado, y calculado se ve amañado.
-    const destino = -(destinoBase + (Math.random() - 0.5) * (CARTA * 0.5));
 
     const tiraEl = document.getElementById('ruTira');
 
@@ -1631,23 +1647,30 @@
     resultado.style.display = 'none';
     caja.style.display = 'block';
 
-    // El carril vuelve al principio SIN transición, y hay que forzar el
-    // redibujado antes de volver a ponerla. Si no, el navegador junta las dos
-    // órdenes en un solo repintado, ve que la transición estaba apagada cuando
-    // cambió la posición, y la salta: la tira aparecía ya al final y el giro
-    // duraba lo que un parpadeo, dijera lo que dijera la duración.
-    tiraEl.style.transition = 'none';
-    tiraEl.style.transform = 'translateX(0)';
-    void tiraEl.offsetWidth;
-    avisarFallo(`ruleta: ${tira.length} cartas, gana ${gana.name}, destino ${Math.round(destino)}px, ancho ${Math.round(centro * 2)}`);
+    // Se anima con la API de animaciones y no con una transición porque hacen
+    // falta dos tramos con curvas distintas, y una transición solo admite una.
+    // De paso desaparece el baile de apagar la transición y forzar redibujados
+    // para que no se salte el giro.
+    tiraEl.getAnimations().forEach((a) => a.cancel());
+    const giro = tiraEl.animate(
+      [
+        { transform: 'translateX(0)', easing: 'linear' },
+        { transform: `translateX(${-VELOCIDAD * LANZADA}px)`,
+          offset: LANZADA / DURACION,
+          // Arranca a la velocidad de la lanzada (pendiente 0,66/0,33 = 2) y
+          // muere en cero. Es la frenada, y solo la frenada.
+          easing: 'cubic-bezier(.33,.66,.2,1)' },
+        { transform: `translateX(${-recorrido}px)` },
+      ],
+      { duration: DURACION, fill: 'forwards' }
+    );
+    avisarFallo(`ruleta: ${tira.length} cartas, gana ${gana.name}, ${Math.round(recorrido)}px en ${DURACION}ms`);
 
     return new Promise((listo) => {
-      // Salida muy larga: arranca disparado y llega arrastrándose, que es de
-      // donde sale la tensión. Una frenada corta no engancha a nadie.
-      tiraEl.style.transition = `transform ${DURACION}ms cubic-bezier(.08,.72,.12,1)`;
-      tiraEl.style.transform = `translateX(${destino}px)`;
-
-      setTimeout(() => {
+      // Se espera a que la animación termine de verdad, no a un reloj aparte:
+      // si el navegador va justo de cuadros, el reloj llegaría antes que la
+      // ruleta y el resultado saldría con la tira aún moviéndose.
+      giro.finished.catch(() => {}).then(() => {
         document.getElementById('ruNombre').textContent = gana.name;
         document.getElementById('ruDureza').innerHTML =
           [1, 2, 3].map((n) => (n <= (gana.dureza ?? 2) ? '<b>●</b>' : '●')).join('');
@@ -1659,7 +1682,7 @@
         // Se queda un rato en el resultado y se va: es un momento, no un panel
         // permanente. Para eso ya está la ficha del reto activo.
         setTimeout(() => { caja.style.display = 'none'; listo(); }, 7000);
-      }, DURACION + 250);
+      });
     });
   }
 
