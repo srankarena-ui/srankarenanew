@@ -1315,8 +1315,10 @@
     }
 
     // Nuevo y sin decidir: se sortea en pantalla. Uno ya aceptado no se sortea
-    // aunque sea la primera vez que lo vemos — el momento ya pasó.
-    if (reto.status === 'pending' && localStorage.getItem(VISTO) !== reto.id) {
+    // aunque sea la primera vez que lo vemos — el momento ya pasó. `sortear` es
+    // la repetición a mano, para poder verlo sin esperar a que te lancen uno.
+    const nuevo = reto.status === 'pending' && localStorage.getItem(VISTO) !== reto.id;
+    if (nuevo || datos.sortear) {
       localStorage.setItem(VISTO, reto.id);
       await sortearEnPantalla(caja, reto, datos.castigos ?? []);
     }

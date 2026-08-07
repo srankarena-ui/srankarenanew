@@ -306,6 +306,14 @@ const SRANK_LOCAL = process.env.SRANK_LOCAL ?? "http://127.0.0.1:8788";
  * veinte segundos junto al reto sería tráfico por nada. Se pierde al reiniciar
  * el overlay, que es justo lo que hace falta para que se refresque sola.
  */
+/**
+ * Repetir el sorteo a mano. Existe para poder verlo y afinarlo: en condiciones
+ * normales solo gira al recibir un castigo nuevo, y esperar a que alguien te
+ * lance uno para mirar si la animación quedó bien no es forma de trabajar.
+ * Se consume al leerlo, así que gira una vez por petición.
+ */
+let repetirSorteo = false;
+
 let catalogoCastigosCache = null;
 async function catalogoCastigos() {
   if (catalogoCastigosCache) return catalogoCastigosCache;
@@ -1155,6 +1163,12 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  if (url.pathname === "/reto/repetir") {
+    repetirSorteo = true;
+    res.writeHead(200, { "Content-Type": "application/json" });
+    return res.end('{"ok":true}');
+  }
+
   // El castigo que lleva encima el streamer. Mismo puente que /ladder: lo pide
   // el overlay a su servidor y este al cliente, que es quien tiene la sesión.
   if (req.method === "GET" && url.pathname === "/reto") {
@@ -1164,8 +1178,10 @@ const server = http.createServer(async (req, res) => {
       const reto = (j.retos ?? []).find((x) => x.key) ?? null;
       // Con el juego de caracteres puesto: los nombres llevan acentos y sin
       // esto quien lo lea sin suponer UTF-8 pinta «Campeón» hecho un cristo.
+      const sortear = repetirSorteo;
+      repetirSorteo = false;
       res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
-      return res.end(JSON.stringify({ reto, castigos: await catalogoCastigos() }));
+      return res.end(JSON.stringify({ reto, castigos: await catalogoCastigos(), sortear }));
     } catch {
       res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
       return res.end('{"reto":null,"castigos":[]}');
