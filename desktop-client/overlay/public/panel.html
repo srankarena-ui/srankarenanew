@@ -108,8 +108,24 @@
   .live-preview-wrap.editing iframe{ pointer-events:auto; }
 
   /* lista de elementos: un grupo por widget, sus piezas debajo */
-  .wgroup{ margin-top:18px; padding-top:14px; border-top:1px solid var(--border); }
-  .wgroup:first-child{ margin-top:0; padding-top:0; border-top:0; }
+  /* Cada elemento, una línea plegada. Las partes solo ocupan sitio al abrirlo. */
+  .wgroup{ border:1px solid var(--border); border-radius:10px; margin-bottom:6px; background:#0A0E1A; }
+  .wgroup > summary{ display:flex; align-items:center; gap:10px; padding:9px 12px; cursor:pointer; list-style:none; }
+  .wgroup > summary::-webkit-details-marker{ display:none; }
+  .wgroup > summary::before{ content:▸; color:var(--dim); font-size:11px; transition:transform .15s; }
+  .wgroup[open] > summary::before{ transform:rotate(90deg); }
+  .wgroup[open]{ border-color:var(--border-strong); }
+  .wgroup > summary em{ font-style:normal; font-family:var(--mono); font-size:10px; color:var(--dim); }
+  .wgroup .cuenta{ margin-left:auto; font-family:var(--mono); font-size:10px; color:var(--cyan); flex:none; }
+  .wgroup .parts{ display:flex; flex-wrap:wrap; gap:6px; padding:2px 12px 12px 30px; }
+
+  /* Las partes como etiquetas: entran seis por fila donde antes cabía una. */
+  .pill{ cursor:pointer; }
+  .pill input{ position:absolute; opacity:0; pointer-events:none; }
+  .pill span{ display:inline-block; padding:5px 11px; border-radius:999px; font-size:12px; font-weight:600;
+    color:var(--dim); border:1px solid var(--border); background:transparent; transition:.12s; }
+  .pill:hover span{ color:var(--cream); }
+  .pill input:checked + span{ color:#fff; background:rgba(62,107,255,.18); border-color:var(--accent); }
   .chk{ display:flex; align-items:center; gap:9px; font-size:13px; font-weight:600; color:var(--cream); cursor:pointer; }
   .chk input{ accent-color:#3E6BFF; width:16px; height:16px; flex:none; }
   .chk em{ font-style:normal; font-family:var(--mono); font-size:10px; letter-spacing:.06em;
@@ -411,15 +427,31 @@ async function loadConfig() {
 /* ---------- elementos del overlay: se dibujan desde el registro de /widgets.js ----------
    Nada de esto está codificado a mano: agregar un elemento en widgets.js lo hace aparecer aquí.
    La clave ausente en el config vale "encendido", así un elemento nuevo arranca visible. */
+/**
+ * Cada elemento va plegado en una línea; sus partes se despliegan al abrirlo.
+ *
+ * Antes eran 35 filas apiladas —7 elementos y 28 partes—, cada una a lo ancho.
+ * Un desplegable por elemento no arreglaba nada: serían siete menús con
+ * casillas dentro. Así son 7 líneas, y solo se abre lo que se está tocando.
+ */
 function buildElementsUI() {
-  $("elements").innerHTML = window.OVERLAY_WIDGETS.map((w) => `
-    <div class="wgroup">
-      <label class="chk wtitle"><input type="checkbox" data-w="${w.id}"><span>${w.name}</span><em>${w.hint || ""}</em></label>
+  $("elements").innerHTML = window.OVERLAY_WIDGETS.map((w) => {
+    const partes = window.OVERLAY_PARTS.filter((p) => p.w === w.id);
+    return `
+    <details class="wgroup">
+      <summary>
+        <label class="chk wtitle" onclick="event.stopPropagation()">
+          <input type="checkbox" data-w="${w.id}"><span>${w.name}</span>
+        </label>
+        <em>${w.hint || ""}</em>
+        <span class="cuenta" data-cuenta="${w.id}"></span>
+      </summary>
       <div class="parts">
-        ${window.OVERLAY_PARTS.filter((p) => p.w === w.id).map((p) => `
-          <label class="chk"><input type="checkbox" data-p="${p.id}"><span>${p.name}</span></label>`).join("")}
+        ${partes.map((p) => `
+          <label class="pill"><input type="checkbox" data-p="${p.id}"><span>${p.name}</span></label>`).join("")}
       </div>
-    </div>`).join("");
+    </details>`;
+  }).join("");
 
   $("elements").querySelectorAll("input[data-w]").forEach((i) => {
     i.checked = cfgCache.widgets?.[i.dataset.w]?.on !== false;
@@ -427,8 +459,27 @@ function buildElementsUI() {
   });
   $("elements").querySelectorAll("input[data-p]").forEach((i) => {
     i.checked = cfgCache.parts?.[i.dataset.p] !== false;
-    i.onchange = () => fetch("/config", { method: "POST", body: JSON.stringify({ parts: { [i.dataset.p]: i.checked } }) });
+    i.onchange = () => {
+      fetch("/config", { method: "POST", body: JSON.stringify({ parts: { [i.dataset.p]: i.checked } }) });
+      // También en la copia local: la cuenta se calcula de aquí, y sin esto no
+      // se movería hasta recargar el panel.
+      (cfgCache.parts ??= {})[i.dataset.p] = i.checked;
+      actualizarCuentas();
+    };
   });
+
+  actualizarCuentas();
+}
+
+/** "3 de 5" en cada elemento plegado: sin esto, cerrado no se sabe qué hay dentro. */
+function actualizarCuentas() {
+  for (const w of window.OVERLAY_WIDGETS) {
+    const partes = window.OVERLAY_PARTS.filter((p) => p.w === w.id);
+    if (!partes.length) continue;
+    const activas = partes.filter((p) => cfgCache.parts?.[p.id] !== false).length;
+    const etiqueta = $("elements").querySelector(`[data-cuenta="${w.id}"]`);
+    if (etiqueta) etiqueta.textContent = `${activas} de ${partes.length}`;
+  }
 }
 
 const FIT_FIELDS = ["size", "x", "y", "zoom", "borderX", "borderY"];
