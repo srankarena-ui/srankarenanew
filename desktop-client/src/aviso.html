@@ -148,6 +148,12 @@
 <script>
   const DURACION = 9000;
 
+  // Declarado aquí arriba a propósito: `pintar()` la usa y se llama unas líneas
+  // más abajo, antes de donde estaba antes. Con `let` eso no es `undefined`,
+  // es un error que corta el resto del script — y entonces ni se registran los
+  // clics ni se programa el cierre, que es como el aviso se quedaba clavado.
+  let cerrando = null;
+
   window.addEventListener("message", (e) => pintar(e.data));
 
   // Electron pasa los datos por la URL: es lo más simple que funciona sin
@@ -161,8 +167,6 @@
       accion: p.get("accion") === "1",
     });
   }
-
-  let cerrando = null;
 
   function pintar({ titulo, cuerpo, urgente, accion }) {
     const caja = document.getElementById("aviso");

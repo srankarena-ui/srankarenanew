@@ -502,6 +502,18 @@ const server = createServer(async (req, res) => {
     return json(200, { ok: true });
   }
 
+  // El catálogo, para la ruleta del overlay. Va por aquí y no directo a la web
+  // porque este es el único que tiene la sesión.
+  if (url.pathname === "/local/castigos") {
+    const r = await api("/api/castigos/catalogo");
+    return json(r.status, r.body);
+  }
+
+  if (url.pathname === "/local/probar-clic") {
+    const f = globalThis.__srankClicAviso;
+    return json(200, f ? f() : { error: "sin ventana" });
+  }
+
   if (url.pathname === "/local/juego") {
     return json(200, await estadoJuego());
   }

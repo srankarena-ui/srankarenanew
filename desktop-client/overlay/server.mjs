@@ -300,6 +300,25 @@ function normalizeRankEntry(entry) {
 const SRANK_LOCAL = process.env.SRANK_LOCAL ?? "http://127.0.0.1:8788";
 
 /**
+ * Los castigos que existen, para que la ruleta gire con nombres de verdad.
+ *
+ * Se guarda en memoria: la lista solo cambia con un despliegue, y pedirla cada
+ * veinte segundos junto al reto sería tráfico por nada. Se pierde al reiniciar
+ * el overlay, que es justo lo que hace falta para que se refresque sola.
+ */
+let catalogoCastigosCache = null;
+async function catalogoCastigos() {
+  if (catalogoCastigosCache) return catalogoCastigosCache;
+  try {
+    const r = await fetch(`${SRANK_LOCAL}/local/castigos`);
+    catalogoCastigosCache = (await r.json()).castigos ?? [];
+  } catch {
+    return [];   // sin catálogo la ruleta gira con lo que haya; no es motivo para fallar
+  }
+  return catalogoCastigosCache;
+}
+
+/**
  * Todas las llamadas a la API de Riot pasan por aquí, y por eso basta con
  * cambiar esta función: van a través del cliente, que las reenvía a la web,
  * que es la única que tiene la clave.
@@ -1144,10 +1163,10 @@ const server = http.createServer(async (req, res) => {
       const j = await r.json();
       const reto = (j.retos ?? []).find((x) => x.key) ?? null;
       res.writeHead(200, { "Content-Type": "application/json" });
-      return res.end(JSON.stringify({ reto }));
+      return res.end(JSON.stringify({ reto, castigos: await catalogoCastigos() }));
     } catch {
       res.writeHead(200, { "Content-Type": "application/json" });
-      return res.end('{"reto":null}');
+      return res.end('{"reto":null,"castigos":[]}');
     }
   }
 

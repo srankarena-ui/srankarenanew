@@ -457,6 +457,19 @@
     opacity:.55; margin-top:5px; }
   .reto-body .vacio{ font-size:16px; opacity:.45; }
 
+  /* Ruleta: al recibir un castigo nuevo, los nombres pasan a toda velocidad y
+     frenan sobre el que te ha tocado. Es el mismo hueco del reto activo, no un
+     bloque aparte: acaba justo donde se va a quedar. */
+  .reto-body .ruleta{ height:26px; overflow:hidden; position:relative; }
+  .reto-body .ruleta .tira{ position:absolute; left:0; right:0; }
+  .reto-body .ruleta .op{ height:26px; line-height:26px; font-size:18px; font-weight:800;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  /* El ganador se enciende al parar. Antes de eso todos van igual de apagados,
+     o se vería de lejos cuál va a salir. */
+  .reto-body .ruleta.parada .op.gana{ color:#ff6b81; }
+  .reto-body .sorteando{ font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    opacity:.55; margin-top:5px; }
+
   #ladder{ position:absolute; left:calc(1570px + var(--wx,0px)); top:calc(120px + var(--wy,0px));
     width:300px; transform:scale(var(--ws,1)); transform-origin:top left; display:none; }
   #ladder .fill{ padding:12px 14px 14px; }
@@ -1283,27 +1296,85 @@
 
   /* Reto activo. Mismo puente que la clasificación: al servidor del overlay, que
      habla con el cliente. Pedirlo al 8788 desde aquí lo bloquea el navegador. */
+  /* Cuál fue el último castigo que se sorteó en pantalla. Se guarda fuera de la
+     página para que recargar el overlay —o cambiar de escena en OBS— no vuelva
+     a sortear el mismo: el espectador lo vería girar dos veces por lo mismo. */
+  const VISTO = 'srank.reto.sorteado';
+
   async function pintarReto() {
     const caja = document.getElementById('retoBody');
     if (!caja) return;
 
-    let reto = null;
-    try { reto = (await (await fetch('/reto')).json()).reto; } catch { return; }
+    let datos;
+    try { datos = await (await fetch('/reto')).json(); } catch { return; }
+    const reto = datos.reto;
 
     if (!reto) {
       caja.innerHTML = '<div class="vacio">Sin retos activos</div>';
       return;
     }
 
-    const pendiente = reto.status === 'pending';
+    // Nuevo y sin decidir: se sortea en pantalla. Uno ya aceptado no se sortea
+    // aunque sea la primera vez que lo vemos — el momento ya pasó.
+    if (reto.status === 'pending' && localStorage.getItem(VISTO) !== reto.id) {
+      localStorage.setItem(VISTO, reto.id);
+      await sortearEnPantalla(caja, reto, datos.castigos ?? []);
+    }
+
+    pintarRetoFijo(caja, reto);
+  }
+
+  function pintarRetoFijo(caja, reto) {
     caja.innerHTML = `
       <div class="nom hay">${reto.title}</div>
       ${reto.description ? `<div class="desc">${reto.description}</div>` : ''}
-      <div class="estado">${pendiente ? 'Sin decidir' : 'Aceptado'}</div>`;
+      <div class="estado">${reto.status === 'pending' ? 'Sin decidir' : 'Aceptado'}</div>`;
+  }
+
+  /* La ruleta.
+     El resultado ya está decidido por el servidor: esto es la puesta en escena,
+     no el sorteo. Se monta una tira de nombres al azar con el que toca al final
+     y se desplaza hasta él frenando, que es lo que hace que parezca una ruleta
+     y no una lista pasando. */
+  function sortearEnPantalla(caja, reto, castigos) {
+    const ALTO = 26, VUELTAS = 22, DURACION = 2600;
+
+    // Sin catálogo se gira con lo único que hay, su propio nombre: no es gran
+    // espectáculo, pero es mejor que quedarse en blanco.
+    const nombres = castigos.length ? castigos.map((c) => c.name) : [reto.title];
+    const tira = [];
+    for (let i = 0; i < VUELTAS; i++) tira.push(nombres[Math.floor(Math.random() * nombres.length)]);
+    tira.push(reto.title);   // el último es el que se queda a la vista
+
+    caja.innerHTML = `
+      <div class="ruleta" id="ruleta">
+        <div class="tira" id="tira">
+          ${tira.map((n, i) => `<div class="op${i === tira.length - 1 ? ' gana' : ''}">${n}</div>`).join('')}
+        </div>
+      </div>
+      <div class="sorteando">Sorteando castigo…</div>`;
+
+    const t = document.getElementById('tira');
+    const destino = -(tira.length - 1) * ALTO;
+
+    return new Promise((listo) => {
+      requestAnimationFrame(() => {
+        // cubic-bezier con la salida muy larga: arranca disparado y llega
+        // arrastrándose, que es de donde sale la tensión.
+        t.style.transition = `transform ${DURACION}ms cubic-bezier(.12,.72,.16,1)`;
+        t.style.transform = `translateY(${destino}px)`;
+      });
+      setTimeout(() => {
+        document.getElementById('ruleta')?.classList.add('parada');
+        setTimeout(listo, 1400);   // un momento en el ganador antes de dejar la ficha
+      }, DURACION);
+    });
   }
 
   pintarReto();
-  setInterval(pintarReto, 20000);
+  /* Cinco segundos y no veinte: un castigo que tarda veinte en aparecer no se
+     sortea, se anuncia — el espectador ya lo ha visto en el chat. */
+  setInterval(pintarReto, 5000);
 
   pintarLadder();
   setInterval(pintarLadder, 20000);

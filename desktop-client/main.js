@@ -127,6 +127,13 @@ function mostrarAviso(titulo, cuerpo, urgente, destino = null) {
   // La propia página avisa por el hash: cuando termina de irse, y cuando la
   // pulsan. Un hash y no IPC porque no hay puente entre procesos montado para
   // esta ventana, y montarlo para dos mensajes sería más pieza que problema.
+  // Un error dentro del aviso lo deja mudo y clavado en pantalla, y sin esto no
+  // se ve por ningún lado: la ventana no tiene consola abierta.
+  aviso.webContents.removeAllListeners("console-message");
+  aviso.webContents.on("console-message", (_e, nivel, mensaje) => {
+    if (nivel >= 2) console.log(`  [aviso] error en la tarjeta: ${mensaje}`);
+  });
+
   aviso.webContents.removeAllListeners("did-navigate-in-page");
   aviso.webContents.on("did-navigate-in-page", (_e, url) => {
     if (!aviso || aviso.isDestroyed()) return;
@@ -229,6 +236,22 @@ if (!app.requestSingleInstanceLock()) {
     // La interfaz no puede hablar con Electron por su cuenta —no hay puente
     // entre procesos montado—, así que pasa por el servidor local, que sí. Es
     // el mismo camino que ya usan los avisos, en vez de un canal nuevo.
+    // Diagnóstico: pulsa el aviso desde dentro. Sirve para separar dos fallos
+    // que se ven igual — que el clic no llegue a la ventana, o que llegue y no
+    // haga nada.
+    globalThis.__srankClicAviso = () => {
+      if (!aviso || aviso.isDestroyed()) return { error: "no hay aviso" };
+      const punto = { x: Math.round(ANCHO_AVISO / 2), y: Math.round(ALTO_AVISO / 2) };
+      aviso.webContents.sendInputEvent({ type: "mouseDown", button: "left", clickCount: 1, ...punto });
+      aviso.webContents.sendInputEvent({ type: "mouseUp", button: "left", clickCount: 1, ...punto });
+      return {
+        enfocable: aviso.isFocusable(),
+        visible: aviso.isVisible(),
+        pulsable: aviso.__pulsable,
+        destino: destinoAviso,
+      };
+    };
+
     globalThis.__srankVista = {
       montar: (url) => montarVistaWeb(url),
       ver: (visible) => vistaWeb?.setVisible(visible),

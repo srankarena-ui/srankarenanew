@@ -2,6 +2,20 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-08-07 — La ruleta del castigo, en el overlay del streamer
+
+Cuando alguien te lanza un castigo, el overlay lo sortea en pantalla: los nombres pasan a toda velocidad y frenan sobre el que te ha tocado. Ocurre en el mismo hueco del reto activo, no en un bloque aparte, así que la ruleta acaba justo donde se va a quedar el resultado.
+
+El resultado ya venía decidido por el servidor — esto es la puesta en escena, no el sorteo. Si decidiera el navegador, cualquiera recargaría hasta sacar el castigo más suave.
+
+Solo se sortea lo que llega **sin decidir** y una sola vez: el último sorteado se guarda fuera de la página, así que recargar el overlay o cambiar de escena en OBS no lo repite. Un castigo ya aceptado no se sortea aunque sea la primera vez que se ve — ese momento ya pasó.
+
+El sondeo del reto baja de veinte segundos a cinco. Un castigo que tarda veinte en salir no se sortea, se anuncia: el espectador ya lo ha leído en el chat.
+
+Los nombres salen de `/api/castigos/catalogo`, no de una lista copiada dentro del overlay, que mentiría en cuanto se añada o se quite un castigo. El overlay lo guarda en memoria hasta que se reinicie: cambia con cada despliegue, no cada veinte segundos. Lleva `dureza` porque la ruleta pesará con ella.
+
+`desktop-client/overlay/public/overlay.html`, `desktop-client/overlay/server.mjs`, `desktop-client/server.mjs`, `src/app/api/castigos/catalogo/route.ts`.
+
 ## 2026-08-07 — Se acabó el doble inicio de sesión
 
 La web iba dentro de un `<iframe>`, y ahí es contenido de terceros: la página que lo contiene es localhost y la de dentro es srankarena.com, así que las cookies de sesión —`SameSite=Lax`, como debe ser— no se enviaban al servidor. Salía una sesión a medias: la barra de la web te reconocía, porque el navegador sí las lee desde su propio JavaScript, pero todo lo que se pinta en el servidor te veía desconectado. De ahí el «inicia sesión para unirte» con tu nombre arriba a la derecha, y el castigo sin botones para aceptarlo.
