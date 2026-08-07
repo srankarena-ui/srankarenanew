@@ -24,18 +24,26 @@
       "overlay/**/*",
       "!overlay/data/**",
       "!overlay-datos/**",
-      "!sesion.json"
+      "!sesion.json",
+      "build/icon.png"
     ],
     "asarUnpack": [
       "overlay/**/*"
     ],
     "win": {
-      "target": ["nsis", "portable"]
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icon.png"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "shortcutName": "S-Rank Arena"
-    }
+      "shortcutName": "S-Rank Arena",
+      "installerIcon": "build/icon.png",
+      "uninstallerIcon": "build/icon.png"
+    },
+    "icon": "build/icon.png"
   }
 }

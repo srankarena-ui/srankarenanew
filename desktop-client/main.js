@@ -76,6 +76,9 @@ function crearVentana() {
     backgroundColor: "#0b0e14",
     autoHideMenuBar: true,
     title: "S-Rank Arena",
+    // El de la ventana y la barra de tareas. Va aparte del que empaqueta
+    // electron-builder para el ejecutable y el instalador.
+    icon: path.join(__dirname, "build", "icon.png"),
     webPreferences: {
       // La interfaz no necesita Node: todo lo hace por HTTP contra el servidor
       // local. Dejarlo apagado evita que una web incrustada llegue al sistema.
