@@ -436,21 +436,17 @@
     background-size:cover; background-position:center; background-repeat:no-repeat; }
   body[data-preview="1"] #editBg{ display:block; }
 
-  /* Clasificación del torneo. Filas compactas: en un directo se lee de reojo,
-     así que manda el puesto, el nombre y los puntos; lo demás acompaña. */
-  .ladder-body{ display:flex; flex-direction:column; gap:3px; overflow:hidden; }
-  .lrow{ display:flex; align-items:center; gap:8px; padding:3px 6px; border-radius:6px;
-    background:rgba(255,255,255,.03); font-size:15px; }
-  .lrow.yo{ background:rgba(124,92,255,.18); box-shadow:inset 0 0 0 1px rgba(124,92,255,.45); }
-  .lrow .pos{ width:22px; text-align:right; opacity:.55; font-variant-numeric:tabular-nums; }
-  .lrow .nom{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:700; }
-  .lrow .emb{ width:18px; height:18px; flex:none; }
-  .lrow .vd{ opacity:.65; font-size:13px; font-variant-numeric:tabular-nums; }
+  /* Clasificación del torneo. Tres columnas y nada más: en un directo se lee de
+     reojo, así que el puesto y los puntos van alineados en columna —cifras de
+     ancho fijo— y el nombre se queda con lo que sobra. */
+  .ladder-body{ display:flex; flex-direction:column; gap:1px; overflow:hidden; }
+  .lrow{ display:flex; align-items:baseline; gap:10px; padding:2px 8px;
+    font-size:16px; line-height:1.35; }
+  .lrow:nth-child(odd){ background:rgba(255,255,255,.04); }
+  .lrow .pos{ width:16px; text-align:right; opacity:.5; font-variant-numeric:tabular-nums; }
+  .lrow .nom{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis;
+    white-space:nowrap; font-weight:700; }
   .lrow .pts{ font-weight:800; font-variant-numeric:tabular-nums; }
-  .lrow .sel{ display:flex; gap:2px; flex:none; }
-  .lrow .sel i{ width:6px; height:6px; border-radius:50%; background:#7c5cff; }
-  .lrow .cast{ font-size:12px; color:#ff8080; max-width:120px; overflow:hidden;
-    text-overflow:ellipsis; white-space:nowrap; }
 </style>
 </head>
 <body>
@@ -1226,8 +1222,6 @@
      Cada 20 s y no cada 400 ms como el resto: esto no cambia hasta que alguien
      sincroniza, y son 25 veces menos peticiones por cada streamer conectado. */
 
-  const EMBLEMA = (t) =>
-    `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${t.toLowerCase()}.svg`;
 
   async function pintarLadder() {
     const caja = document.getElementById('ladderBody');
@@ -1242,15 +1236,12 @@
     const nombreTorneo = document.getElementById('ladderNombre');
     if (nombreTorneo && d.torneo) nombreTorneo.textContent = d.torneo;
 
-    // Solo lo que cabe: en un directo, veinte filas no las lee nadie.
+    // Puesto, nombre y puntos. Nada más: en un directo esto se lee de reojo, y
+    // cada columna de más obliga a buscar la que importa.
     caja.innerHTML = d.jugadores.slice(0, 10).map((j) => `
-      <div class="lrow${j.esYo ? ' yo' : ''}">
+      <div class="lrow">
         <span class="pos">${j.puesto}</span>
-        ${j.tier ? `<img class="emb" data-part="ladderRango" src="${EMBLEMA(j.tier)}" alt="">` : ''}
         <span class="nom">${j.nombre}</span>
-        ${j.castigo ? `<span class="cast" data-part="ladderCastigo">${j.castigo}</span>` : ''}
-        ${j.sellos ? `<span class="sel" data-part="ladderSellos">${'<i></i>'.repeat(Math.min(j.sellos, 3))}</span>` : ''}
-        <span class="vd" data-part="ladderVD">${j.victorias}-${j.derrotas}</span>
         <span class="pts">${j.puntos}</span>
       </div>`).join('');
 

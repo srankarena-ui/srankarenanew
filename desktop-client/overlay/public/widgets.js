@@ -31,10 +31,6 @@ window.OVERLAY_COMMANDS = {
 
 window.OVERLAY_PARTS = [
   { w: "ladder", id: "ladderTitulo", name: "Título del torneo" },
-  { w: "ladder", id: "ladderRango", name: "Rango de cada jugador" },
-  { w: "ladder", id: "ladderVD",     name: "Victorias / derrotas" },
-  { w: "ladder", id: "ladderSellos", name: "Sellos" },
-  { w: "ladder", id: "ladderCastigo", name: "Castigo activo" },
   { w: "dead",  id: "gameHeader", name: "Encabezado + reloj" },
   { w: "dead",  id: "crest",      name: "Ícono + marco" },
   { w: "dead",  id: "name",       name: "Nombre" },
