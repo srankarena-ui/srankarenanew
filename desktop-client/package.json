@@ -40,9 +40,7 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "shortcutName": "S-Rank Arena",
-      "installerIcon": "build/icon.png",
-      "uninstallerIcon": "build/icon.png"
+      "shortcutName": "S-Rank Arena"
     },
     "icon": "build/icon.png"
   }
