@@ -16,16 +16,18 @@ assert.equal(problemaAutofill(null), null, "sin posición todavía no se avisa")
 assert.equal(problemaAutofill(""), null, "cadena vacía es lo mismo que sin posición");
 
 // ── La máquina de fases ────────────────────────────────────────────────────
-// Réplica de las guardas de vigilar(): avisar solo al cambiar el problema, y
-// reportar solo en el salto Lobby → Matchmaking. Es donde estaría el fallo:
-// avisar cada dos segundos, o reportar dos veces y resolver el castigo tarde.
+// Réplica de las guardas de vigilar(). Aquí es donde estaría el fallo: avisar
+// cada dos segundos, juzgar una búsqueda cancelada, o juzgar con la posición
+// de la partida anterior.
+//
+// Cada paso es [fase, posición-en-el-lobby].
 function recorrer(pasos) {
-  let anterior = null, ultimo = null, reportado = false;
+  let anterior = null, ultimo = null, reportado = false, enCola = null;
   const avisos = [], reportes = [];
 
   for (const [fase, posicion] of pasos) {
-    if (fase !== "Lobby" && fase !== "Matchmaking") {
-      ultimo = null; reportado = false; anterior = fase; continue;
+    if (!["Lobby", "Matchmaking", "ChampSelect"].includes(fase)) {
+      ultimo = null; reportado = false; enCola = null; anterior = fase; continue;
     }
     if (fase === "Lobby") {
       reportado = false;
@@ -33,9 +35,10 @@ function recorrer(pasos) {
       if (problema && problema !== ultimo) avisos.push(problema);
       ultimo = problema;
     }
-    if (fase === "Matchmaking" && anterior === "Lobby" && !reportado) {
+    if (fase === "Matchmaking" && anterior === "Lobby") enCola = posicion ?? null;
+    if (fase === "ChampSelect" && enCola && !reportado) {
       reportado = true;
-      if (posicion) reportes.push(posicion);
+      reportes.push(enCola);
     }
     anterior = fase;
   }
@@ -51,17 +54,38 @@ assert.equal(corrige.avisos.length, 1, "avisa una vez y calla cuando lo corrige"
 const recae = recorrer([["Lobby", "MIDDLE"], ["Lobby", "FILL"], ["Lobby", "TOP"]]);
 assert.equal(recae.avisos.length, 2, "si vuelve a cambiarlo, vuelve a avisar");
 
-const cola = recorrer([["Lobby", "FILL"], ["Matchmaking", "FILL"], ["Matchmaking", "FILL"]]);
-assert.deepEqual(cola.reportes, ["FILL"], "se reporta una sola vez al entrar en cola");
+// El veredicto no sale al buscar, sale al entrar en selección: es lo que
+// confirma que la búsqueda acabó en partida.
+const buscando = recorrer([["Lobby", "FILL"], ["Matchmaking", "FILL"], ["Matchmaking", "FILL"]]);
+assert.deepEqual(buscando.reportes, [], "buscar partida todavía no juzga nada");
+
+const juega = recorrer([
+  ["Lobby", "FILL"], ["Matchmaking", "FILL"], ["ChampSelect", null], ["ChampSelect", null],
+]);
+assert.deepEqual(juega.reportes, ["FILL"], "juzga una sola vez, con lo elegido en el lobby");
+
+// En selección el lobby ya se está deshaciendo: la posición tiene que venir de
+// lo guardado al buscar, no de lo que diga el cliente en ese momento.
+const desapareceLobby = recorrer([
+  ["Lobby", "TOP"], ["Matchmaking", "TOP"], ["ChampSelect", null],
+]);
+assert.deepEqual(desapareceLobby.reportes, ["TOP"], "se juzga lo que se pidió, no lo que quede");
 
 const cancela = recorrer([
-  ["Lobby", "FILL"], ["Matchmaking", "FILL"],   // busca
-  ["Lobby", "TOP"],  ["Matchmaking", "TOP"],    // cancela, cambia y vuelve a buscar
+  ["Lobby", "TOP"], ["Matchmaking", "TOP"],       // busca con rol, y cancela
+  ["Lobby", "FILL"], ["Matchmaking", "FILL"],     // lo corrige y vuelve a buscar
+  ["ChampSelect", null],
 ]);
-assert.deepEqual(cancela.reportes, ["FILL", "TOP"], "cancelar y rebuscar cuenta de nuevo");
+assert.deepEqual(cancela.reportes, ["FILL"], "cancelar antes de selección no se juzga");
 
-const suelto = recorrer([["Matchmaking", "TOP"]]);
-assert.deepEqual(suelto.reportes, [], "sin haber pasado por el lobby no se reporta");
+const suelto = recorrer([["ChampSelect", null]]);
+assert.deepEqual(suelto.reportes, [], "sin haber pasado por la cola no hay nada que juzgar");
+
+const partidaAnterior = recorrer([
+  ["Lobby", "TOP"], ["Matchmaking", "TOP"], ["ChampSelect", null], ["InProgress", null],
+  ["ChampSelect", null],  // la siguiente partida, entrada por invitación de otro
+]);
+assert.deepEqual(partidaAnterior.reportes, ["TOP"], "la posición no se arrastra a la partida siguiente");
 
 console.log("check-autofill: todo bien");
 

@@ -6,7 +6,9 @@ Resumen breve de cada implementación (feature, fix, refactor pedido). Una entra
 
 El aviso va en el **lobby**, no en selección de campeón: la posición se elige antes de buscar partida y al pulsar buscar queda congelada, así que avisar en selección llegaría tarde para lo único que se puede hacer, cambiarla. Si tiene un rol concreto puesto en vez de Autofill, salta el aviso; sin posición todavía no dice nada.
 
-El reporte a `/api/castigos/report` sale en el salto Lobby → Matchmaking, el instante en que la elección deja de poder cambiarse. `check-autofill.mjs` destapó que cancelar la cola y volver a buscar se colaba sin comprobar: el rearme solo ocurría al salir del lobby y de la cola, y entre esas dos fases se puede ir y venir.
+**El veredicto sale al entrar en selección de campeón, no al buscar partida.** Buscar y cancelar no es jugar, y juzgarlo ahí castigaría una cola que nunca llegó a nada. La posición se guarda al buscar —el instante en que se congela— y se juzga al llegar a selección: leerla entonces del cliente no vale, el lobby ya se está deshaciendo.
+
+`check-autofill.mjs` destapó que cancelar la cola y volver a buscar se colaba sin comprobar: el rearme solo ocurría al salir del lobby y de la cola, y entre esas dos fases se puede ir y venir.
 
 Sigue fuera de la ruleta (`CLIENTE_DISPONIBLE`): sin cliente abierto nadie reporta y el castigo se quedaría eterno.
 

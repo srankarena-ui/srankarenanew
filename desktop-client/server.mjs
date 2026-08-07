@@ -208,6 +208,7 @@ let faseAnterior = null;
 let avisadoEnCola = false;
 let ultimoProblema = null;
 let reportadoAutofill = false;
+let posicionEnCola = null;
 
 /**
  * ¿Está incumpliendo Autofill con lo que tiene elegido ahora mismo?
@@ -231,6 +232,7 @@ async function vigilar() {
     avisadoEnCola = false;
     ultimoProblema = null;
     reportadoAutofill = false;
+    posicionEnCola = null;
     return;
   }
 
@@ -239,9 +241,10 @@ async function vigilar() {
   if (!reto) return;
 
   // ── Autofill ──────────────────────────────────────────────────────────────
-  // Este va aparte del resto porque no se decide en selección sino antes: la
-  // posición se elige en el lobby y al pulsar buscar partida queda congelada.
-  // Avisar en selección no serviría de nada, ya no se puede cambiar.
+  // Va aparte del resto porque el aviso y el veredicto caen en momentos
+  // distintos: la posición se elige en el lobby, se congela al buscar partida,
+  // y solo cuenta si la búsqueda llega a selección de campeón. Buscar y
+  // cancelar no es jugar, así que no se juzga.
   if (reto.key === "autofill" && reto.status === "accepted") {
     if (fase === "Lobby") {
       // Volver al lobby es cancelar la cola: rearma el reporte, o cambiar la
@@ -256,16 +259,20 @@ async function vigilar() {
       ultimoProblema = problema;
     }
 
-    // Al pasar a Matchmaking la elección se congela: ese es el instante que
-    // vale, y el único en que el servidor acepta el reporte.
-    if (fase === "Matchmaking" && anterior === "Lobby" && !reportadoAutofill) {
-      reportadoAutofill = true;
+    // Se guarda al buscar partida, que es cuando la elección se congela. En
+    // selección ya no se puede leer de forma fiable: el lobby se está
+    // deshaciendo, y lo que diga entonces no es lo que se pidió.
+    if (fase === "Matchmaking" && anterior === "Lobby") {
       const lobby = await lcu("/lol-lobby/v2/lobby");
-      const primera = lobby?.localMember?.firstPositionPreference;
-      if (primera) {
-        await api("/api/castigos/report", { type: "queue_positions", firstPosition: primera })
-          .catch(() => {});  // el aviso de cumplido o incumplido lo manda el servidor
-      }
+      posicionEnCola = lobby?.localMember?.firstPositionPreference ?? null;
+    }
+
+    // El veredicto, al entrar en selección: es lo que confirma que la búsqueda
+    // acabó en partida.
+    if (fase === "ChampSelect" && posicionEnCola && !reportadoAutofill) {
+      reportadoAutofill = true;
+      await api("/api/castigos/report", { type: "queue_positions", firstPosition: posicionEnCola })
+        .catch(() => {});  // el aviso de cumplido o incumplido lo manda el servidor
     }
   }
 
