@@ -89,10 +89,17 @@ async function token() {
 }
 
 /** Proxy hacia la web con el token puesto: el navegador nunca lo ve. */
-async function api(ruta) {
+async function api(ruta, cuerpo) {
   const t = await token();
   if (!t) return { status: 401, body: { error: "Sin sesión" } };
-  const res = await fetch(`${API}${ruta}`, { headers: { Authorization: `Bearer ${t}` } });
+  const res = await fetch(`${API}${ruta}`, {
+    method: cuerpo ? "POST" : "GET",
+    headers: {
+      Authorization: `Bearer ${t}`,
+      ...(cuerpo ? { "Content-Type": "application/json" } : {}),
+    },
+    ...(cuerpo ? { body: JSON.stringify(cuerpo) } : {}),
+  });
   return { status: res.status, body: await res.json().catch(() => ({})) };
 }
 
@@ -200,20 +207,69 @@ $n.Dispose()`;
 let faseAnterior = null;
 let avisadoEnCola = false;
 let ultimoProblema = null;
+let reportadoAutofill = false;
+
+/**
+ * ¿Está incumpliendo Autofill con lo que tiene elegido ahora mismo?
+ *
+ * Sin posición devuelve null: el lobby recién abierto no trae ninguna y
+ * avisarle ahí sería gritarle por no haber hecho nada todavía. La comparación
+ * es la misma que aplica el servidor en /api/castigos/report — si un día deja
+ * de serlo, el aviso diría una cosa y el veredicto otra.
+ */
+export function problemaAutofill(primera) {
+  if (!primera) return null;
+  return primera.toUpperCase() === "FILL" ? null : `Tienes ${primera} elegido, no Autofill`;
+}
 
 async function vigilar() {
   const fase = await lcu("/lol-gameflow/v1/gameflow-phase");
+  const anterior = faseAnterior;
   if (fase !== faseAnterior) faseAnterior = fase;
 
-  if (fase !== "Matchmaking" && fase !== "ChampSelect") {
+  if (fase !== "Lobby" && fase !== "Matchmaking" && fase !== "ChampSelect") {
     avisadoEnCola = false;
     ultimoProblema = null;
+    reportadoAutofill = false;
     return;
   }
 
   const inbox = await api("/api/me/inbox");
   const reto = (inbox.body?.retos ?? []).find((r) => r.key);
   if (!reto) return;
+
+  // ── Autofill ──────────────────────────────────────────────────────────────
+  // Este va aparte del resto porque no se decide en selección sino antes: la
+  // posición se elige en el lobby y al pulsar buscar partida queda congelada.
+  // Avisar en selección no serviría de nada, ya no se puede cambiar.
+  if (reto.key === "autofill" && reto.status === "accepted") {
+    if (fase === "Lobby") {
+      // Volver al lobby es cancelar la cola: rearma el reporte, o cambiar la
+      // posición y volver a buscar pasaría sin comprobarse.
+      reportadoAutofill = false;
+
+      const lobby = await lcu("/lol-lobby/v2/lobby");
+      const problema = problemaAutofill(lobby?.localMember?.firstPositionPreference);
+      if (problema && problema !== ultimoProblema) {
+        avisar(`Vas a incumplir: ${reto.title}`, `${problema}. Cámbialo antes de buscar partida.`);
+      }
+      ultimoProblema = problema;
+    }
+
+    // Al pasar a Matchmaking la elección se congela: ese es el instante que
+    // vale, y el único en que el servidor acepta el reporte.
+    if (fase === "Matchmaking" && anterior === "Lobby" && !reportadoAutofill) {
+      reportadoAutofill = true;
+      const lobby = await lcu("/lol-lobby/v2/lobby");
+      const primera = lobby?.localMember?.firstPositionPreference;
+      if (primera) {
+        await api("/api/castigos/report", { type: "queue_positions", firstPosition: primera })
+          .catch(() => {});  // el aviso de cumplido o incumplido lo manda el servidor
+      }
+    }
+  }
+
+  if (fase === "Lobby") return;  // el resto de castigos no se ven hasta selección
 
   if (fase === "Matchmaking" && !avisadoEnCola) {
     avisadoEnCola = true;

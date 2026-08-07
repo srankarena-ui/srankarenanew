@@ -2,6 +2,16 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-08-07 — Autofill avisa como el resto de castigos
+
+El aviso va en el **lobby**, no en selección de campeón: la posición se elige antes de buscar partida y al pulsar buscar queda congelada, así que avisar en selección llegaría tarde para lo único que se puede hacer, cambiarla. Si tiene un rol concreto puesto en vez de Autofill, salta el aviso; sin posición todavía no dice nada.
+
+El reporte a `/api/castigos/report` sale en el salto Lobby → Matchmaking, el instante en que la elección deja de poder cambiarse.  destapó que cancelar la cola y volver a buscar se colaba sin comprobar: el rearme solo ocurría al salir del lobby y de la cola, y entre esas dos fases se puede ir y venir.
+
+Sigue fuera de la ruleta (): sin cliente abierto nadie reporta y el castigo se quedaría eterno.
+
+, .
+
 ## 2026-08-06 — El cliente de escritorio existe y se instala
 
 **Se abandona Tauri.** Necesita el SDK de Windows para enlazar, no está instalado, y el cliente llevaba meses sin poder compilarse ni una vez. Pasa a **Electron**, que es lo que ya usaba el overlay de streamer —cadena probada en la máquina— y que empaqueta Node dentro: el streamer no instala nada aparte. Salen instalador NSIS y portable, 89 MB.
