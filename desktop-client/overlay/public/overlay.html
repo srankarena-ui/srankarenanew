@@ -1626,21 +1626,26 @@
     const destino = -(destinoBase + (Math.random() - 0.5) * (CARTA * 0.5));
 
     const tiraEl = document.getElementById('ruTira');
-    tiraEl.style.transition = 'none';
-    tiraEl.style.transform = 'translateX(0)';
 
     pista.style.display = '';
     resultado.style.display = 'none';
     caja.style.display = 'block';
+
+    // El carril vuelve al principio SIN transición, y hay que forzar el
+    // redibujado antes de volver a ponerla. Si no, el navegador junta las dos
+    // órdenes en un solo repintado, ve que la transición estaba apagada cuando
+    // cambió la posición, y la salta: la tira aparecía ya al final y el giro
+    // duraba lo que un parpadeo, dijera lo que dijera la duración.
+    tiraEl.style.transition = 'none';
+    tiraEl.style.transform = 'translateX(0)';
+    void tiraEl.offsetWidth;
     avisarFallo(`ruleta: ${tira.length} cartas, gana ${gana.name}, destino ${Math.round(destino)}px, ancho ${Math.round(centro * 2)}`);
 
     return new Promise((listo) => {
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        // Salida muy larga: arranca disparado y llega arrastrándose, que es de
-        // donde sale la tensión. Una frenada corta no engancha a nadie.
-        tiraEl.style.transition = `transform ${DURACION}ms cubic-bezier(.08,.72,.12,1)`;
-        tiraEl.style.transform = `translateX(${destino}px)`;
-      }));
+      // Salida muy larga: arranca disparado y llega arrastrándose, que es de
+      // donde sale la tensión. Una frenada corta no engancha a nadie.
+      tiraEl.style.transition = `transform ${DURACION}ms cubic-bezier(.08,.72,.12,1)`;
+      tiraEl.style.transform = `translateX(${destino}px)`;
 
       setTimeout(() => {
         document.getElementById('ruNombre').textContent = gana.name;
