@@ -701,6 +701,25 @@
   };
   const PANEL_WIDGETS = new Set([...CMD_WIDGETS, ...Object.keys(AUTO_PANELS)]);
   const STATE_WIDGETS = ['dead', 'alive']; // los que dependen de estar vivo o muerto
+  // Siempre en pantalla: ni dependen de estar vivo o muerto, ni los pide el
+  // chat. Sin esta tercera lista nadie les daba orden de mostrarse y no salían
+  // nunca, tampoco en "mostrar todo".
+  const FIJOS = ['ladder'];
+
+  /**
+   * Filtro de la vista previa mientras se colocan los elementos.
+   *
+   * Con "mostrar todo" salen los siete a la vez y se pisan entre ellos, así que
+   * el panel puede acotar cuáles quiere ver. Solo afecta al editor: OBS ve el
+   * overlay real, con lo que toque en cada momento.
+   *
+   * Lista vacía o ausente = se ven todos, que es lo que había hasta ahora.
+   */
+  function enVistaPrevia(id, s) {
+    if (!preview) return true;
+    const solo = s.editShowOnly;
+    return !Array.isArray(solo) || solo.length === 0 || solo.includes(id);
+  }
   const KICK_PUSHER_KEY = '32cbd69e4b950bf97679';
 
   const cmdQueue = [];      // comandos aceptados esperando turno
@@ -1142,15 +1161,23 @@
       previewUntil = Date.now()+4000;
     }
 
+    // Los fijos se muestran siempre, salvo que estén apagados o que en el
+    // editor se haya acotado la vista previa a unos pocos.
+    for (const id of FIJOS) {
+      const el = WEL[id]; if (!el) continue;
+      el.style.display = (wCache[id]?.on !== false && enVistaPrevia(id, s)) ? 'block' : 'none';
+    }
+
     // "mostrar todo" (editor): los dos widgets conviven en pantalla para poder colocarlos juntos
     // contra la captura de fondo. Fuera de eso manda el estado real: muerto -> grande, vivo -> mini,
     // y forceView (del panel) pisa a los dos para poder calibrar una tarjeta sin que se alterne sola.
     if (showAll) {
       for (const id of STATE_WIDGETS) {
         const el = WEL[id]; if (!el) continue;
+        const visible = wCache[id].on !== false && enVistaPrevia(id, s);
         el.style.animation = '';
-        el.style.display = wCache[id].on === false ? 'none' : 'block';
-        el.style.opacity = wCache[id].on === false ? 0 : 1;
+        el.style.display = visible ? 'block' : 'none';
+        el.style.opacity = visible ? 1 : 0;
       }
       state = null; // al salir del modo, la próxima transición vuelve a animar desde cero
     } else {
@@ -1168,7 +1195,7 @@
     const now = Date.now();
     for (const wid of PANEL_WIDGETS) {
       const el = WEL[wid]; if (!el) continue;
-      const visible = wCache[wid]?.on !== false &&
+      const visible = wCache[wid]?.on !== false && enVistaPrevia(wid, s) &&
         (showAll || now < (forcedUntil[wid] || 0) ||
          (AUTO_PANELS[wid] ? AUTO_PANELS[wid](s) : cmdActive?.wid === wid));
       if (visible === (el.dataset.shown === '1')) continue; // sin cambio: no reiniciar la animación

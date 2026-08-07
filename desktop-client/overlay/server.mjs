@@ -44,6 +44,9 @@ const DEFAULT_CONFIG = {
   parts: {},
   editBgPath: null,   // captura del juego de fondo — SOLO en la vista previa del panel, jamás en OBS
   editShowAll: false, // mientras editas: mostrar todo junto aunque no esté pasando en la partida
+  // Acota qué elementos se ven en la vista previa mientras se colocan. Vacío =
+  // todos. Solo afecta al editor; OBS ve el overlay real.
+  editShowOnly: [],
   // Bot de chat: el canal de Kick del que se leen los comandos (solo el slug, kick.com/<slug>).
   kickChannel: "",
   kickChatroomId: null,   // id de chat resuelto, para no volver a pedirlo en cada arranque
@@ -1150,6 +1153,7 @@ const server = http.createServer(async (req, res) => {
       parts: config.parts,
       editBgPath: config.editBgPath,
       editShowAll: config.editShowAll,
+      editShowOnly: config.editShowOnly,
       kick: { ...kick, ...chatLiveNow() },
       cmdDurationMs: config.cmdDurationMs,
       cmdCooldownMs: config.cmdCooldownMs,

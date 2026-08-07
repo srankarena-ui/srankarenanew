@@ -70,6 +70,10 @@
   button.primary{ background:linear-gradient(135deg,#3E6BFF,#36D2FF); border-color:transparent; color:#fff; box-shadow:0 0 18px rgba(62,107,255,.4); }
   .btn-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
 
+  .solover{ display:flex; flex-wrap:wrap; gap:6px; margin:10px 0 4px; }
+  .solover .titulo{ width:100%; font-family:var(--mono); font-size:10px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--dim); margin-bottom:2px; }
+
   .hint{ font-family:var(--mono); font-size:11px; color:var(--dim); margin-top:8px; line-height:1.5; }
 
   .rankStatus{ font-size:12px; margin-top:12px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
@@ -164,6 +168,10 @@
         <button id="editModeBtn">✥ Activar modo edición</button>
         <label class="chk"><input type="checkbox" id="editShowAll"><span>Mostrar todos los elementos a la vez</span></label>
       </div>
+
+      <!-- Con "mostrar todo" salen los siete a la vez y se pisan. Esto acota
+           qué se ve mientras se colocan; no afecta a lo que ve OBS. -->
+      <div id="soloVer" class="solover"></div>
 
       <div class="tools">
         <div style="flex:1;min-width:240px">
@@ -416,6 +424,7 @@ async function loadConfig() {
   $("vsTo").value = c.vsTo ?? 25;
   buildElementsUI();
   buildCommandsUI();
+  buildSoloVerUI();
 
   // el selector Grande/Mini arranca reflejando qué tarjeta está fija ahora mismo (si alguna)
   selectedCard = c.forceView === "alive" ? "alive" : "dead";
@@ -434,6 +443,27 @@ async function loadConfig() {
  * Un desplegable por elemento no arreglaba nada: serían siete menús con
  * casillas dentro. Así son 7 líneas, y solo se abre lo que se está tocando.
  */
+function buildSoloVerUI() {
+  const caja = $("soloVer");
+  caja.innerHTML = '<span class="titulo">Ver en la vista previa</span>' +
+    window.OVERLAY_WIDGETS.map((w) =>
+      `<label class="pill"><input type="checkbox" data-solo="${w.id}"><span>${w.name}</span></label>`
+    ).join("");
+
+  // Ninguna marcada = se ven todas. Es el estado de partida y el más útil:
+  // acotar la vista es la excepción, no la norma.
+  const activas = new Set(Array.isArray(cfgCache.editShowOnly) ? cfgCache.editShowOnly : []);
+
+  caja.querySelectorAll("input[data-solo]").forEach((i) => {
+    i.checked = activas.has(i.dataset.solo);
+    i.onchange = () => {
+      const solo = [...caja.querySelectorAll("input[data-solo]:checked")].map((x) => x.dataset.solo);
+      cfgCache.editShowOnly = solo;
+      fetch("/config", { method: "POST", body: JSON.stringify({ editShowOnly: solo }) });
+    };
+  });
+}
+
 function buildElementsUI() {
   $("elements").innerHTML = window.OVERLAY_WIDGETS.map((w) => {
     const partes = window.OVERLAY_PARTS.filter((p) => p.w === w.id);
