@@ -10,9 +10,9 @@ Solo se puede pulsar el que está sin decidir. El resto siguen ignorando el rat�
 
 El clic viaja por el hash de la ventana, que es el canal que ya usaba para avisar de que se iba; montar un puente entre procesos para dos mensajes sería más pieza que problema. Y la interfaz no se recarga: expone una función que Electron llama, porque recargarla perdería lo que estuvieras haciendo dentro.
 
- devuelve ahora el torneo de cada reto — sin eso el aviso solo sabe abrir la lista.
+`/api/me/inbox` devuelve ahora el torneo de cada reto — sin eso el aviso solo sabe abrir la lista.
 
-, , , , .
+`desktop-client/main.js`, `desktop-client/src/aviso.html`, `desktop-client/src/main.js`, `desktop-client/server.mjs`, `src/app/api/me/inbox/route.ts`.
 
 ## 2026-08-07 — Autofill avisa como el resto de castigos
 
