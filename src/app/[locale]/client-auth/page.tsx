@@ -66,8 +66,12 @@ export default function ClientAuthPage() {
           <p className="mb-4 text-sm text-gray-400">
             Inicia sesión y vuelve a pulsar «Entrar» en el cliente.
           </p>
+          {/* Con el idioma delante: las rutas del sitio lo llevan, y sin él
+              esto no lleva a ninguna parte. Y `next` para volver aquí — antes
+              se iniciaba sesión y se acababa en la portada, con el cliente
+              esperando una sesión que no llegaba nunca. */}
           <a
-            href={`/login?next=${encodeURIComponent(`/client-auth?port=${puertoCrudo}&state=${state}`)}`}
+            href={`/es/login?next=${encodeURIComponent(`/es/client-auth?port=${puertoCrudo}&state=${state}`)}`}
             className="rounded-xl bg-[var(--color-accent)] px-5 py-2.5 text-[10px] uppercase tracking-[0.2em] text-white"
           >
             Iniciar sesión

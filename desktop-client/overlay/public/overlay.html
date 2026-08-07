@@ -1225,7 +1225,7 @@
 
      Cada 20 s y no cada 400 ms como el resto: esto no cambia hasta que alguien
      sincroniza, y son 25 veces menos peticiones por cada streamer conectado. */
-  const SRANK = 'http://127.0.0.1:8788';
+
   const EMBLEMA = (t) =>
     `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${t.toLowerCase()}.svg`;
 
@@ -1234,7 +1234,9 @@
     if (!caja) return;
 
     let d;
-    try { d = await (await fetch(`${SRANK}/local/leaderboard`)).json(); } catch { return; }
+    // Al propio servidor del overlay, que hace de puente con el cliente: pedirlo
+    // al 8788 desde aquí lo bloquea el navegador por ser otro origen.
+    try { d = await (await fetch('/ladder')).json(); } catch { return; }
     if (!d?.jugadores?.length) { caja.innerHTML = ''; return; }
 
     const nombreTorneo = document.getElementById('ladderNombre');

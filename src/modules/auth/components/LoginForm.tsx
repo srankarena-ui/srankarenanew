@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signInWithEmail } from "@/modules/auth/actions";
 import { Button } from "@/core/ui/Button";
 import { Input } from "@/core/ui/Input";
@@ -12,6 +12,9 @@ import { useTranslations } from "next-intl";
 export function LoginForm() {
   const t = useTranslations("auth");
   const router = useRouter();
+  // A dónde volver tras entrar. Lo usa el cliente de escritorio, que manda aquí
+  // con ?next=/es/client-auth&... y necesita que se vuelva allí.
+  const next = useSearchParams().get("next") ?? "";
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
@@ -20,6 +23,7 @@ export function LoginForm() {
     setIsLoading(true);
     setError(null);
     formData.set("captchaToken", captchaToken ?? "");
+    formData.set("next", next);
     const result = await signInWithEmail(formData);
     if (result?.error) {
       setError(result.error);

@@ -1119,6 +1119,23 @@ function fmtTime(sec) {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, "http://localhost");
 
+  // Clasificación del torneo. La pide el overlay a su propio servidor y este al
+  // cliente de S-Rank: si la pidiera la página directamente al 8788, el
+  // navegador la bloquearía por ser otro origen, y la tabla salía vacía sin
+  // decir nada.
+  if (req.method === "GET" && url.pathname === "/ladder") {
+    try {
+      const r = await fetch(`${SRANK_LOCAL}/local/leaderboard`);
+      const cuerpo = await r.text();
+      res.writeHead(200, { "Content-Type": "application/json" });
+      return res.end(cuerpo);
+    } catch {
+      // Sin cliente abierto no hay clasificación; la tabla se queda vacía y ya.
+      res.writeHead(200, { "Content-Type": "application/json" });
+      return res.end('{"jugadores":[]}');
+    }
+  }
+
   if (req.method === "GET" && url.pathname === "/status") {
     // el overlay cuelga su estado de chat del propio sondeo (?chat=1/0); el panel sondea sin el
     // parámetro, así que nunca pisa el dato del overlay con un "no conectado" falso.

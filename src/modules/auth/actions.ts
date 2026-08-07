@@ -42,7 +42,24 @@ export async function signInWithEmail(formData: FormData) {
     await logLogin(data.user.id, "email", { userAgent });
   }
 
-  redirect("/");
+  redirect(destinoSeguro(formData.get("next")));
+}
+
+/**
+ * A dónde mandar tras iniciar sesión.
+ *
+ * Solo rutas del propio sitio: si se aceptara una dirección completa, bastaría
+ * con mandar a alguien a `/login?next=https://malo.example` para llevárselo
+ * recién autenticado. Cualquier cosa que no empiece por una sola barra, fuera.
+ *
+ * Existe porque el cliente de escritorio manda al usuario a `/client-auth` y
+ * antes se le devolvía siempre a la portada: iniciaba sesión, no volvía, y el
+ * cliente se quedaba esperando una sesión que no llegaba nunca.
+ */
+function destinoSeguro(valor: FormDataEntryValue | null): string {
+  const destino = typeof valor === "string" ? valor : "";
+  if (!destino.startsWith("/") || destino.startsWith("//")) return "/";
+  return destino;
 }
 
 export async function signUpWithEmail(formData: FormData) {
