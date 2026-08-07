@@ -8,7 +8,7 @@ Era un encargo provisional para retransmitir partidos —con su propio panel de 
 
 Se van las cuatro rutas, el panel, las siete acciones de servidor y el tipo de la tabla. La migración 038 la retira de la base: era de una sola fila y se rellenaba a mano antes de cada partido, así que no hay nada que conservar.
 
-, , , , , , .
+`src/app/[locale]/admin/scoreboard/`, `src/app/overlay/football/`, `src/app/api/football-scoreboard/`, `FootballScoreboardPanel.tsx`, `admin/actions.ts`, `core/types/database.ts`, `supabase/migrations/038_drop_football_scoreboard.sql`.
 
 ## 2026-08-07 — La ruleta del castigo, en el overlay del streamer
 
