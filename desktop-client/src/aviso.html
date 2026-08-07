@@ -47,6 +47,23 @@
     box-shadow: 0 0 12px var(--color, #7c5cff);
   }
 
+  /* Pulsable: se levanta un poco al pasar por encima, para que se note que
+     lleva a algún sitio. Sin esto parece un cartel y nadie lo intenta. */
+  .aviso.pulsable { cursor: pointer; }
+  .aviso.pulsable:hover {
+    border-color: var(--color, #7c5cff);
+    background: linear-gradient(135deg, #1b2130, #11161f);
+  }
+  .accion {
+    display: none;
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--color, #7c5cff);
+  }
+  .aviso.pulsable .accion { display: block; }
+
   .icono { font-size: 22px; line-height: 1; flex: none; margin-top: 2px; }
 
   .texto { min-width: 0; flex: 1; }
@@ -104,6 +121,7 @@
     <div class="texto">
       <h1 id="titulo"></h1>
       <p id="cuerpo"></p>
+      <div class="accion">Pulsa para aceptar o rechazar →</div>
     </div>
     <div class="marca-agua">S-RANK</div>
     <div class="tiempo"><i></i></div>
@@ -122,25 +140,43 @@
       titulo: p.get("titulo"),
       cuerpo: p.get("cuerpo") ?? "",
       urgente: p.get("urgente") === "1",
+      accion: p.get("accion") === "1",
     });
   }
 
-  function pintar({ titulo, cuerpo, urgente }) {
+  let cerrando = null;
+
+  function pintar({ titulo, cuerpo, urgente, accion }) {
+    const caja = document.getElementById("aviso");
     document.getElementById("titulo").textContent = titulo;
     document.getElementById("cuerpo").textContent = cuerpo;
     document.getElementById("icono").textContent = urgente ? "⚠" : "◆";
     document.documentElement.style.setProperty("--color", urgente ? "#ff5470" : "#7c5cff");
-    document.documentElement.style.setProperty("--duracion", DURACION + "ms");
+    caja.classList.toggle("pulsable", !!accion);
+
+    // El que lleva a algún sitio dura el doble: nueve segundos dan para leerlo,
+    // no para leerlo, decidir que quieres ir, y llegar a pulsarlo.
+    const duracion = accion ? DURACION * 2 : DURACION;
+    document.documentElement.style.setProperty("--duracion", duracion + "ms");
 
     sonar(urgente);
 
     // Se avisa a Electron para que oculte la ventana cuando termine la
     // animación de salida, no antes: si no, se corta a media transición.
-    setTimeout(() => {
-      document.getElementById("aviso").classList.add("saliendo");
+    clearTimeout(cerrando);
+    cerrando = setTimeout(() => {
+      caja.classList.add("saliendo");
       setTimeout(() => { location.hash = "fin"; }, 300);
-    }, DURACION);
+    }, duracion);
   }
+
+  // El clic va por el hash, el canal que ya usa esta ventana para hablar con
+  // Electron. Se para la cuenta atrás: irse mientras lo pulsan sería perderlo.
+  document.getElementById("aviso").addEventListener("click", (e) => {
+    if (!e.currentTarget.classList.contains("pulsable")) return;
+    clearTimeout(cerrando);
+    location.hash = "abrir";
+  });
 
   /* Sonido generado, sin fichero: dos notas cortas. Meter un .wav obligaría a
      empaquetarlo y a elegir uno, y esto suena discreto y no depende de los

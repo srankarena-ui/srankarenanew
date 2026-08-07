@@ -169,14 +169,20 @@ for (const señal of ["SIGINT", "SIGTERM", "exit"]) {
  * El respaldo existe porque este servidor también se ejecuta suelto con node
  * durante el desarrollo, sin ninguna ventana alrededor.
  */
-function avisar(titulo, cuerpo, urgente = true) {
+function avisar(titulo, cuerpo, urgente = true, destino = null) {
   if (typeof globalThis.__srankAvisar === "function") {
-    globalThis.__srankAvisar(titulo, cuerpo, urgente);
+    globalThis.__srankAvisar(titulo, cuerpo, urgente, destino);
     console.log(`  [aviso] ${titulo}`);
     return;
   }
+  // El globo de Windows no lleva a ningún sitio: es del sistema y no se le
+  // puede colgar una acción. Fuera de Electron el destino se pierde.
   avisarConWindows(titulo, cuerpo);
 }
+
+/** La ficha donde se acepta o se rechaza. Sin torneo, la lista. */
+const fichaDelCastigo = (reto) =>
+  reto?.tournamentId ? `${API}/es/tournaments/${reto.tournamentId}?tab=leaderboard` : `${API}/es/tournaments`;
 
 function avisarConWindows(titulo, cuerpo) {
   const ps = `
@@ -284,7 +290,12 @@ async function vigilar() {
       reto.status === "pending" ? `Castigo sin decidir: ${reto.title}` : `Tienes un castigo: ${reto.title}`,
       reto.status === "pending"
         ? "Hasta que lo aceptes o lo rechaces, tus partidas no cuentan para el torneo."
-        : reto.description ?? ""
+        : reto.description ?? "",
+      true,
+      // Solo el que está sin decidir lleva a algún sitio: en el ya aceptado no
+      // hay nada que pulsar, y hacerlo pulsable sería prometer un botón que no
+      // existe.
+      reto.status === "pending" ? fichaDelCastigo(reto) : null
     );
     return;
   }
@@ -449,9 +460,24 @@ const server = createServer(async (req, res) => {
 
   // Estado del cliente de League. Es lo único que la web no puede saber, y por
   // tanto lo que justifica que esto sea una aplicación y no una pestaña.
+  // Para ver cómo queda un aviso sin tener que provocar la situación real:
+  // esperar a que alguien te lance un castigo para revisar el diseño no es
+  // manera de trabajar. Acepta título y cuerpo, o repite el de siempre.
   if (url.pathname === "/local/probar-aviso") {
-    avisar("Vas a incumplir: Sin Flash", "Llevas Destello. Cámbialo antes de que empiece la partida.", true);
-    return json(200, { ok: true });
+    // Con ?accion=1 sale pulsable y lleva al castigo que tengas ahora, para
+    // poder probar el recorrido entero sin que nadie te lance nada.
+    let destino = null;
+    if (url.searchParams.get("accion") === "1") {
+      const inbox = await api("/api/me/inbox");
+      destino = fichaDelCastigo((inbox.body?.retos ?? [])[0]);
+    }
+    avisar(
+      url.searchParams.get("titulo") || "Vas a incumplir: Sin Flash",
+      url.searchParams.get("cuerpo") ?? "Llevas Destello. Cámbialo antes de que empiece la partida.",
+      url.searchParams.get("urgente") !== "0",
+      destino
+    );
+    return json(200, { ok: true, destino });
   }
 
   if (url.pathname === "/local/juego") {

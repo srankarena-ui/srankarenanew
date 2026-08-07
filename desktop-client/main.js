@@ -12,6 +12,7 @@ const URL_LOCAL = `http://localhost:${PUERTO}`;
 
 let ventana = null;
 let aviso = null;
+let destinoAviso = null;
 
 const ANCHO_AVISO = 380;
 const ALTO_AVISO = 104;
@@ -23,9 +24,14 @@ const ALTO_AVISO = 104;
  * y encima de la partida no valen. Esto además es la base del aviso en juego:
  * con League en ventana sin bordes, se ve por encima.
  */
-function mostrarAviso(titulo, cuerpo, urgente) {
+function mostrarAviso(titulo, cuerpo, urgente, destino = null) {
   const { screen } = require("electron");
   const pantalla = screen.getPrimaryDisplay().workArea;
+
+  // El aviso sin nada que hacer no se puede pulsar: en partida, una ventana
+  // que traga clics encima del juego es peor que no tener aviso. Solo se
+  // vuelve pulsable cuando lleva un destino al que ir.
+  destinoAviso = destino;
 
   if (!aviso || aviso.isDestroyed()) {
     aviso = new BrowserWindow({
@@ -42,8 +48,8 @@ function mostrarAviso(titulo, cuerpo, urgente) {
     });
     // Por encima incluso de ventanas a pantalla completa sin bordes.
     aviso.setAlwaysOnTop(true, "screen-saver");
-    aviso.setIgnoreMouseEvents(true);
   }
+  aviso.setIgnoreMouseEvents(!destino);
 
   aviso.setBounds({
     x: pantalla.x + pantalla.width - ANCHO_AVISO - 18,
@@ -56,15 +62,40 @@ function mostrarAviso(titulo, cuerpo, urgente) {
     titulo,
     cuerpo: cuerpo ?? "",
     urgente: urgente ? "1" : "0",
+    accion: destino ? "1" : "0",
   });
   aviso.loadFile(path.join(__dirname, "src", "aviso.html"), { search: params.toString() });
   aviso.showInactive();  // se muestra sin quitar el foco al juego
 
-  // La propia página avisa por el hash cuando termina de irse.
+  // La propia página avisa por el hash: cuando termina de irse, y cuando la
+  // pulsan. Un hash y no IPC porque no hay puente entre procesos montado para
+  // esta ventana, y montarlo para dos mensajes sería más pieza que problema.
   aviso.webContents.removeAllListeners("did-navigate-in-page");
   aviso.webContents.on("did-navigate-in-page", (_e, url) => {
-    if (url.endsWith("#fin") && aviso && !aviso.isDestroyed()) aviso.hide();
+    if (!aviso || aviso.isDestroyed()) return;
+    if (url.endsWith("#fin")) aviso.hide();
+    if (url.endsWith("#abrir")) {
+      aviso.hide();
+      abrirEn(destinoAviso);
+    }
   });
+}
+
+/**
+ * Trae la aplicación al frente y la lleva a donde diga el aviso.
+ *
+ * Se llama a una función que expone la interfaz en vez de recargarla con otra
+ * URL: recargar perdería lo que el usuario estuviera haciendo, y el destino es
+ * la web incrustada, no la ventana.
+ */
+function abrirEn(destino) {
+  if (!ventana || ventana.isDestroyed() || !destino) return;
+  if (ventana.isMinimized()) ventana.restore();
+  ventana.show();
+  ventana.focus();
+  ventana.webContents
+    .executeJavaScript(`window.__irA && window.__irA(${JSON.stringify(destino)})`)
+    .catch(() => {});
 }
 
 function crearVentana() {

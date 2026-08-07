@@ -107,6 +107,24 @@ async function cambiarVista(vista) {
   $("streamer-cargando").hidden = true;
 }
 
+/**
+ * A dónde lleva el aviso al pulsarlo. La llama Electron desde el proceso
+ * principal — es la única forma que tiene de decirle algo a esta ventana sin
+ * recargarla, que perdería lo que el usuario estuviera haciendo dentro.
+ */
+window.__irA = (destino) => {
+  if (!destino) return;
+  cambiarVista("torneo");
+  // El iframe recuerda por dónde iba, así que un destino repetido no se
+  // recarga solo con asignar src. Se fuerza con un contentWindow.location.
+  const marco = $("web");
+  try {
+    marco.contentWindow.location.replace(destino);
+  } catch {
+    marco.src = destino;  // otro origen: no se puede tocar desde aquí
+  }
+};
+
 async function refrescarCastigo() {
   const { ok, body } = await local("/local/inbox");
   const caja = $("castigo");

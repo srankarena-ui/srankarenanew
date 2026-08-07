@@ -2,6 +2,18 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-08-07 — El aviso de castigo se pulsa y lleva a decidirlo
+
+Enterarse de que tienes un castigo sin decidir no servía de nada si luego había que buscar dónde aceptarlo. Ahora el aviso lleva a la ficha del torneo, en la pestaña de clasificación, que es donde están los botones.
+
+Solo se puede pulsar el que está sin decidir. El resto siguen ignorando el ratón, y no por descuido: encima de una partida, una ventana que traga clics es peor que no tener aviso. Y el pulsable dura el doble — nueve segundos dan para leerlo, no para leerlo, decidir y llegar a pulsarlo.
+
+El clic viaja por el hash de la ventana, que es el canal que ya usaba para avisar de que se iba; montar un puente entre procesos para dos mensajes sería más pieza que problema. Y la interfaz no se recarga: expone una función que Electron llama, porque recargarla perdería lo que estuvieras haciendo dentro.
+
+ devuelve ahora el torneo de cada reto — sin eso el aviso solo sabe abrir la lista.
+
+, , , , .
+
 ## 2026-08-07 — Autofill avisa como el resto de castigos
 
 El aviso va en el **lobby**, no en selección de campeón: la posición se elige antes de buscar partida y al pulsar buscar queda congelada, así que avisar en selección llegaría tarde para lo único que se puede hacer, cambiarla. Si tiene un rol concreto puesto en vez de Autofill, salta el aviso; sin posición todavía no dice nada.

@@ -56,12 +56,13 @@ export async function GET(request: NextRequest) {
   const retos: Array<{
     id: string; challengeId: string; title: string; description: string | null;
     key: string | null; params: Record<string, unknown>; status: string; assignedAt: string;
+    tournamentId: string | null;
   }> = [];
   const assignments = challenges.data ?? [];
   if (assignments.length) {
     const { data: defs } = await admin
       .from("challenges")
-      .select("id, title, description, is_active, starts_at, ends_at, conditions")
+      .select("id, title, description, is_active, starts_at, ends_at, conditions, tournament_id")
       .in("id", assignments.map((a) => a.challenge_id));
 
     const byId = new Map((defs ?? []).map((d) => [d.id, d]));
@@ -83,6 +84,9 @@ export async function GET(request: NextRequest) {
         params: cond.type === "castigo" ? (cond.params ?? {}) : {},
         status: a.status,
         assignedAt: a.assigned_at,
+        // Para que el cliente de escritorio sepa a qué ficha llevarte al pulsar
+        // el aviso: sin esto solo puede abrir la lista de torneos.
+        tournamentId: def.tournament_id,
       });
     }
   }
