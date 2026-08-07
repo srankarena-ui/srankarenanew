@@ -94,6 +94,19 @@ function crearVentana() {
     return { action: "deny" };
   });
 
+  // F5 y Ctrl+R. Hay que registrarlos a mano: al quitar el menú de la
+  // aplicación —para que no salga la barra de arriba— se van con él los atajos
+  // que trae de serie, recargar incluido.
+  ventana.webContents.on("before-input-event", (evento, entrada) => {
+    if (entrada.type !== "keyDown") return;
+    const recargar = entrada.key === "F5" || (entrada.control && entrada.key.toLowerCase() === "r");
+    if (!recargar) return;
+    evento.preventDefault();
+    // `reloadIgnoringCache` y no `reload`: si no, el navegador puede seguir
+    // sirviendo la versión anterior de la interfaz y parece que no ha pasado nada.
+    ventana.webContents.reloadIgnoringCache();
+  });
+
   ventana.on("closed", () => { ventana = null; });
 }
 
