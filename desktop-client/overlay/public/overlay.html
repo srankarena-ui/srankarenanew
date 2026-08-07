@@ -439,6 +439,13 @@
   /* Clasificación del torneo. Tres columnas y nada más: en un directo se lee de
      reojo, así que el puesto y los puntos van alineados en columna —cifras de
      ancho fijo— y el nombre se queda con lo que sobra. */
+  /* Posicion, ancho y escala como el resto de elementos. Sin esto era un bloque
+     normal: ocupaba todo el ancho y no respondia ni al arrastre ni al tamano,
+     porque --wx/--wy/--ws no se aplicaban a nada. */
+  #ladder{ position:absolute; left:calc(1570px + var(--wx,0px)); top:calc(120px + var(--wy,0px));
+    width:300px; transform:scale(var(--ws,1)); transform-origin:top left; display:none; }
+  #ladder .fill{ padding:12px 14px 14px; }
+
   .ladder-body{ display:flex; flex-direction:column; gap:1px; overflow:hidden; }
   .lrow{ display:flex; align-items:baseline; gap:10px; padding:2px 8px;
     font-size:16px; line-height:1.35; }
