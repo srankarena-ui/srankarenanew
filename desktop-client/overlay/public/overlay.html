@@ -435,6 +435,22 @@
   #editBg{ display:none; position:absolute; inset:0; z-index:0;
     background-size:cover; background-position:center; background-repeat:no-repeat; }
   body[data-preview="1"] #editBg{ display:block; }
+
+  /* Clasificación del torneo. Filas compactas: en un directo se lee de reojo,
+     así que manda el puesto, el nombre y los puntos; lo demás acompaña. */
+  .ladder-body{ display:flex; flex-direction:column; gap:3px; overflow:hidden; }
+  .lrow{ display:flex; align-items:center; gap:8px; padding:3px 6px; border-radius:6px;
+    background:rgba(255,255,255,.03); font-size:15px; }
+  .lrow.yo{ background:rgba(124,92,255,.18); box-shadow:inset 0 0 0 1px rgba(124,92,255,.45); }
+  .lrow .pos{ width:22px; text-align:right; opacity:.55; font-variant-numeric:tabular-nums; }
+  .lrow .nom{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:700; }
+  .lrow .emb{ width:18px; height:18px; flex:none; }
+  .lrow .vd{ opacity:.65; font-size:13px; font-variant-numeric:tabular-nums; }
+  .lrow .pts{ font-weight:800; font-variant-numeric:tabular-nums; }
+  .lrow .sel{ display:flex; gap:2px; flex:none; }
+  .lrow .sel i{ width:6px; height:6px; border-radius:50%; background:#7c5cff; }
+  .lrow .cast{ font-size:12px; color:#ff8080; max-width:120px; overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap; }
 </style>
 </head>
 <body>
@@ -593,6 +609,17 @@
     <div class="fill">
       <div class="cr-head"><span class="dot"></span><span>Rango</span><span class="hline"></span></div>
       <div id="rkBody"></div>
+    </div>
+    <div class="resize-handle"></div>
+  </div>
+
+  <!-- ============ CLASIFICACIÓN DEL TORNEO — en vivo desde S-Rank Arena ============ -->
+  <div id="ladder" class="panel bevel" data-widget="ladder">
+    <div class="fill">
+      <div class="cr-head" data-part="ladderTitulo">
+        <span class="dot"></span><span id="ladderNombre">Torneo</span><span class="hline"></span>
+      </div>
+      <div id="ladderBody" class="ladder-body"></div>
     </div>
     <div class="resize-handle"></div>
   </div>
@@ -1164,6 +1191,47 @@
 
   refresh();
   setInterval(refresh, 400);
+
+  /* ---------- Clasificación del torneo, en vivo desde S-Rank Arena ----------
+     Va por el cliente (SRANK_LOCAL), que es quien sabe en qué torneo está el
+     jugador y tiene su sesión. El overlay solo dibuja.
+
+     Cada 20 s y no cada 400 ms como el resto: esto no cambia hasta que alguien
+     sincroniza, y son 25 veces menos peticiones por cada streamer conectado. */
+  const SRANK = 'http://127.0.0.1:8788';
+  const EMBLEMA = (t) =>
+    `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${t.toLowerCase()}.svg`;
+
+  async function pintarLadder() {
+    const caja = document.getElementById('ladderBody');
+    if (!caja) return;
+
+    let d;
+    try { d = await (await fetch(`${SRANK}/local/leaderboard`)).json(); } catch { return; }
+    if (!d?.jugadores?.length) { caja.innerHTML = ''; return; }
+
+    const nombreTorneo = document.getElementById('ladderNombre');
+    if (nombreTorneo && d.torneo) nombreTorneo.textContent = d.torneo;
+
+    // Solo lo que cabe: en un directo, veinte filas no las lee nadie.
+    caja.innerHTML = d.jugadores.slice(0, 10).map((j) => `
+      <div class="lrow${j.esYo ? ' yo' : ''}">
+        <span class="pos">${j.puesto}</span>
+        ${j.tier ? `<img class="emb" data-part="ladderRango" src="${EMBLEMA(j.tier)}" alt="">` : ''}
+        <span class="nom">${j.nombre}</span>
+        ${j.castigo ? `<span class="cast" data-part="ladderCastigo">${j.castigo}</span>` : ''}
+        ${j.sellos ? `<span class="sel" data-part="ladderSellos">${'<i></i>'.repeat(Math.min(j.sellos, 3))}</span>` : ''}
+        <span class="vd" data-part="ladderVD">${j.victorias}-${j.derrotas}</span>
+        <span class="pts">${j.puntos}</span>
+      </div>`).join('');
+
+    // No hace falta aplicar aquí lo que el panel tenga apagado: `refresh()`
+    // recorre todo el escenario cada 400 ms, así que las filas nuevas quedan
+    // ajustadas antes de que se note.
+  }
+
+  pintarLadder();
+  setInterval(pintarLadder, 20000);
 })();
 </script>
 </body>

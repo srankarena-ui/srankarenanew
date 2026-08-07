@@ -421,6 +421,18 @@ const server = createServer(async (req, res) => {
     return json(200, { api: API, overlay: OVERLAY_URL });
   }
 
+  // Clasificación del torneo del jugador, para el overlay. El overlay no sabe
+  // en cuál está inscrito ni tiene sesión: se resuelve aquí.
+  if (url.pathname === "/local/leaderboard") {
+    const inbox = await api("/api/me/inbox");
+    const torneo = (inbox.body?.torneos ?? [])[0];
+    if (!torneo) return json(200, { jugadores: [], torneo: null });
+
+    const res = await fetch(`${API}/api/tournaments/${torneo.id}/leaderboard`);
+    const cuerpo = await res.json().catch(() => ({ jugadores: [] }));
+    return json(200, { ...cuerpo, torneo: torneo.title });
+  }
+
   // Arranca el overlay de streamer. Se pide desde la interfaz al abrir esa
   // pestaña, no al iniciar el cliente: quien no es streamer nunca levanta un
   // servidor que no va a usar.

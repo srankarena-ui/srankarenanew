@@ -16,6 +16,7 @@ window.OVERLAY_WIDGETS = [
   { id: "cmdBuild", name: "Panel de build",        hint: "Lo pide el chat con !build" },
   { id: "cmdRank",  name: "Panel de rango",        hint: "Lo pide el chat con !rank o !hoy" },
   { id: "cmdMatchup", name: "Duelo de carril", hint: "Sale solo al empezar la partida" },
+  { id: "ladder", name: "Clasificación del torneo", hint: "En vivo desde S-Rank Arena" },
 ];
 
 // Comandos de chat -> widget que muestran. La clave es lo que se escribe después del "!".
@@ -29,6 +30,11 @@ window.OVERLAY_COMMANDS = {
 };
 
 window.OVERLAY_PARTS = [
+  { w: "ladder", id: "ladderTitulo", name: "Título del torneo" },
+  { w: "ladder", id: "ladderRango", name: "Rango de cada jugador" },
+  { w: "ladder", id: "ladderVD",     name: "Victorias / derrotas" },
+  { w: "ladder", id: "ladderSellos", name: "Sellos" },
+  { w: "ladder", id: "ladderCastigo", name: "Castigo activo" },
   { w: "dead",  id: "gameHeader", name: "Encabezado + reloj" },
   { w: "dead",  id: "crest",      name: "Ícono + marco" },
   { w: "dead",  id: "name",       name: "Nombre" },
