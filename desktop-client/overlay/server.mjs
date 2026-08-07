@@ -1162,10 +1162,12 @@ const server = http.createServer(async (req, res) => {
       const r = await fetch(`${SRANK_LOCAL}/local/inbox`);
       const j = await r.json();
       const reto = (j.retos ?? []).find((x) => x.key) ?? null;
-      res.writeHead(200, { "Content-Type": "application/json" });
+      // Con el juego de caracteres puesto: los nombres llevan acentos y sin
+      // esto quien lo lea sin suponer UTF-8 pinta «Campeón» hecho un cristo.
+      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
       return res.end(JSON.stringify({ reto, castigos: await catalogoCastigos() }));
     } catch {
-      res.writeHead(200, { "Content-Type": "application/json" });
+      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
       return res.end('{"reto":null,"castigos":[]}');
     }
   }
