@@ -2,6 +2,14 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-08-07 — Fuera el marcador de fútbol
+
+Era un encargo provisional para retransmitir partidos —con su propio panel de admin, su propio overlay y su propia tabla— viviendo dentro de una plataforma de torneos de videojuegos. Nada de lo demás lo tocaba.
+
+Se van las cuatro rutas, el panel, las siete acciones de servidor y el tipo de la tabla. La migración 038 la retira de la base: era de una sola fila y se rellenaba a mano antes de cada partido, así que no hay nada que conservar.
+
+, , , , , , .
+
 ## 2026-08-07 — La ruleta del castigo, en el overlay del streamer
 
 Cuando alguien te lanza un castigo, el overlay lo sortea en pantalla: los nombres pasan a toda velocidad y frenan sobre el que te ha tocado. Ocurre en el mismo hueco del reto activo, no en un bloque aparte, así que la ruleta acaba justo donde se va a quedar el resultado.
