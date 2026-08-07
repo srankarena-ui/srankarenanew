@@ -837,8 +837,8 @@ $("probarRuleta").addEventListener("click", async () => {
   await fetch("/reto/repetir").catch(() => {});
   boton.disabled = true;
   estado.textContent = `Sorteando «${reto.title}»…`;
-  // Aviso (2,6 s) + giro (9 s) + resultado (7 s), con margen.
-  setTimeout(() => { boton.disabled = false; estado.textContent = texto; }, 20000);
+  // Aviso (2,6 s) + giro (18 s) + resultado (7 s), con margen.
+  setTimeout(() => { boton.disabled = false; estado.textContent = texto; }, 29000);
 });
 
 loadConfig();
