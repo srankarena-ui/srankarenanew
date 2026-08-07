@@ -27,29 +27,6 @@ const SESSION_PATH = path.join(DATA_DIR, "session.json");
 const PUBLIC_DIR = path.join(__dirname, "public");
 fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
-/**
- * Calibración del marco y el icono. Fija e igual para todos.
- *
- * Antes se ajustaba desde el panel, pero ya está decidida: se quitó esa sección
- * para que todos los streamers se vean igual. El servidor ignora lo que llegue
- * en `/config` y lo que quede guardado en disco de antes, o una configuración
- * vieja resucitaría valores distintos en la máquina de alguien.
- *
- * Los cuatro estilos comparten valores a propósito.
- */
-const CALIBRACION = { size: 46, x: 72, y: 45, zoom: 100, borderX: 74, borderY: 45 };
-
-const FIT_FIJO = Object.freeze({
-  ranked: { ...CALIBRACION },
-  prestige: { ...CALIBRACION },
-  miniRanked: { ...CALIBRACION },
-  miniPrestige: { ...CALIBRACION },
-  linkMini: true,
-  // Tamaño del conjunto completo marco+icono, en píxeles.
-  frameBig: 130,
-  frameMini: 219,
-});
-
 const DEFAULT_CONFIG = {
   riotApiKey: "", riotGameName: "", riotTagLine: "", riotPlatform: "na1",
   animStyle: "A", // A = Hextech (ensamble) | B = Impacto (golpe) | C = Energía (barrido)
@@ -85,7 +62,21 @@ const DEFAULT_CONFIG = {
   uggMinGames: 50,        // por debajo de esto el dato no dice nada y no se muestra
   cmdDurationMs: 10000, // cuánto se queda un panel de comando en pantalla
   cmdCooldownMs: 60000, // cuánto hay que esperar para volver a pedir el mismo comando
-  iconFit: FIT_FIJO,
+  // calibración manual del ícono dentro del marco, por separado para cada estilo
+  // (son imágenes distintas con proporciones distintas) — se ajusta en vivo desde el panel.
+  // linkMini=true: la tarjeta mini reusa la misma calibración que la grande (comportamiento
+  // de siempre). linkMini=false: la mini tiene su propia calibración independiente
+  // (miniRanked/miniPrestige), útil porque el marco se ve mucho más chico ahí.
+  iconFit: {
+    ranked: { size: 46, x: 50, y: 50, zoom: 100, borderX: 50, borderY: 50 },
+    prestige: { size: 46, x: 50, y: 50, zoom: 100, borderX: 50, borderY: 50 },
+    miniRanked: { size: 46, x: 50, y: 50, zoom: 100, borderX: 50, borderY: 50 },
+    miniPrestige: { size: 46, x: 50, y: 50, zoom: 100, borderX: 50, borderY: 50 },
+    linkMini: true,
+    // tamaño del conjunto completo marco+ícono, en px — independiente del estilo de borde.
+    frameBig: 130,
+    frameMini: 64,
+  },
 };
 const DEFAULT_SESSION = { wins: 0, losses: 0, deadTimeTodaySec: 0 };
 
@@ -108,9 +99,15 @@ function mergeDeep2(base, patch) {
 let config = loadJSON(CONFIG_PATH, DEFAULT_CONFIG);
 // loadJSON solo combina claves de primer nivel; iconFit.ranked/prestige necesitan
 // su propio merge para que un config.json viejo no pierda campos nuevos (ej. borderX/Y).
-// Se impone la calibración fija: un config.json antiguo no debe devolver
-// valores distintos en la máquina de un streamer.
-config.iconFit = FIT_FIJO;
+config.iconFit = {
+  ranked: { ...DEFAULT_CONFIG.iconFit.ranked, ...(config.iconFit?.ranked || {}) },
+  prestige: { ...DEFAULT_CONFIG.iconFit.prestige, ...(config.iconFit?.prestige || {}) },
+  miniRanked: { ...DEFAULT_CONFIG.iconFit.miniRanked, ...(config.iconFit?.miniRanked || {}) },
+  miniPrestige: { ...DEFAULT_CONFIG.iconFit.miniPrestige, ...(config.iconFit?.miniPrestige || {}) },
+  linkMini: config.iconFit?.linkMini ?? DEFAULT_CONFIG.iconFit.linkMini,
+  frameBig: config.iconFit?.frameBig ?? DEFAULT_CONFIG.iconFit.frameBig,
+  frameMini: config.iconFit?.frameMini ?? DEFAULT_CONFIG.iconFit.frameMini,
+};
 // migración: la calibración vieja vivía en cardPos {dead,alive}; ahora es un widget más del registro.
 if (config.cardPos && !config.widgets?.dead) {
   config.widgets = mergeDeep2({ dead: config.cardPos.dead, alive: config.cardPos.alive }, config.widgets);
@@ -1211,9 +1208,15 @@ const server = http.createServer(async (req, res) => {
       ...config, ...body,
       widgets: mergeDeep2(config.widgets, body.widgets),
       parts: { ...config.parts, ...(body.parts || {}) },
-      // El panel ya no manda iconFit; si llegara de una versión vieja, se
-      // ignora.
-      iconFit: FIT_FIJO,
+      iconFit: {
+        ranked: { ...config.iconFit.ranked, ...(body.iconFit?.ranked || {}) },
+        prestige: { ...config.iconFit.prestige, ...(body.iconFit?.prestige || {}) },
+        miniRanked: { ...config.iconFit.miniRanked, ...(body.iconFit?.miniRanked || {}) },
+        miniPrestige: { ...config.iconFit.miniPrestige, ...(body.iconFit?.miniPrestige || {}) },
+        linkMini: body.iconFit?.linkMini ?? config.iconFit.linkMini,
+        frameBig: body.iconFit?.frameBig ?? config.iconFit.frameBig,
+        frameMini: body.iconFit?.frameMini ?? config.iconFit.frameMini,
+      },
     };
     saveJSON(CONFIG_PATH, config);
     if (body.riotApiKey || body.riotGameName || body.riotTagLine || body.riotPlatform) {
