@@ -67,15 +67,22 @@ const DEFAULT_CONFIG = {
   // linkMini=true: la tarjeta mini reusa la misma calibración que la grande (comportamiento
   // de siempre). linkMini=false: la mini tiene su propia calibración independiente
   // (miniRanked/miniPrestige), útil porque el marco se ve mucho más chico ahí.
+  // Calibración de salida: la que quedó ajustada a mano y con la que se ve
+  // bien. Un streamer que instale el cliente arranca ya cuadrado, sin tener que
+  // tocar nada; los controles siguen ahí para el que quiera moverlos.
+  //
+  // Rango y nivel llevan números distintos a propósito: son imágenes de marco
+  // con proporciones distintas, así que los mismos valores no dan el mismo
+  // resultado — copiarlos de uno a otro descuadra el segundo.
   iconFit: {
-    ranked: { size: 46, x: 50, y: 50, zoom: 100, borderX: 50, borderY: 50 },
-    prestige: { size: 46, x: 50, y: 50, zoom: 100, borderX: 50, borderY: 50 },
-    miniRanked: { size: 46, x: 50, y: 50, zoom: 100, borderX: 50, borderY: 50 },
-    miniPrestige: { size: 46, x: 50, y: 50, zoom: 100, borderX: 50, borderY: 50 },
+    ranked: { size: 46, x: 48, y: 56, zoom: 169, borderX: 49, borderY: 40 },
+    prestige: { size: 46, x: 67, y: 46, zoom: 100, borderX: 69, borderY: 46 },
+    miniRanked: { size: 46, x: 72, y: 45, zoom: 100, borderX: 74, borderY: 45 },
+    miniPrestige: { size: 46, x: 72, y: 45, zoom: 100, borderX: 74, borderY: 45 },
     linkMini: true,
     // tamaño del conjunto completo marco+ícono, en px — independiente del estilo de borde.
-    frameBig: 130,
-    frameMini: 64,
+    frameBig: 300,
+    frameMini: 208,
   },
 };
 const DEFAULT_SESSION = { wins: 0, losses: 0, deadTimeTodaySec: 0 };
