@@ -56,14 +56,24 @@ export async function GET(request: NextRequest) {
   const retos: Array<{
     id: string; challengeId: string; title: string; description: string | null;
     key: string | null; params: Record<string, unknown>; status: string; assignedAt: string;
-    tournamentId: string | null;
+    tournamentId: string | null; from: string | null;
   }> = [];
   const assignments = challenges.data ?? [];
   if (assignments.length) {
     const { data: defs } = await admin
       .from("challenges")
-      .select("id, title, description, is_active, starts_at, ends_at, conditions, tournament_id")
+      .select("id, title, description, is_active, starts_at, ends_at, conditions, tournament_id, created_by")
       .in("id", assignments.map((a) => a.challenge_id));
+
+    // Quién lo lanzó, por nombre. El castigo lo impone otro participante y en
+    // pantalla eso es la mitad de la gracia: sin el nombre parece que lo
+    // reparte la casa.
+    const autores = new Map<string, string>();
+    const ids = [...new Set((defs ?? []).map((d) => d.created_by).filter(Boolean))] as string[];
+    if (ids.length) {
+      const { data: perfiles } = await admin.from("profiles").select("id, username").in("id", ids);
+      for (const p of perfiles ?? []) autores.set(p.id, p.username ?? "");
+    }
 
     const byId = new Map((defs ?? []).map((d) => [d.id, d]));
     for (const a of assignments) {
@@ -87,6 +97,7 @@ export async function GET(request: NextRequest) {
         // Para que el cliente de escritorio sepa a qué ficha llevarte al pulsar
         // el aviso: sin esto solo puede abrir la lista de torneos.
         tournamentId: def.tournament_id,
+        from: def.created_by ? autores.get(def.created_by) ?? null : null,
       });
     }
   }

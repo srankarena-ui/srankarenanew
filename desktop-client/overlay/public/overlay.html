@@ -457,18 +457,71 @@
     opacity:.55; margin-top:5px; }
   .reto-body .vacio{ font-size:16px; opacity:.45; }
 
-  /* Ruleta: al recibir un castigo nuevo, los nombres pasan a toda velocidad y
-     frenan sobre el que te ha tocado. Es el mismo hueco del reto activo, no un
-     bloque aparte: acaba justo donde se va a quedar. */
-  .reto-body .ruleta{ height:26px; overflow:hidden; position:relative; }
-  .reto-body .ruleta .tira{ position:absolute; left:0; right:0; }
-  .reto-body .ruleta .op{ height:26px; line-height:26px; font-size:18px; font-weight:800;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  /* El ganador se enciende al parar. Antes de eso todos van igual de apagados,
-     o se vería de lejos cuál va a salir. */
-  .reto-body .ruleta.parada .op.gana{ color:#ff6b81; }
-  .reto-body .sorteando{ font-size:11px; letter-spacing:.1em; text-transform:uppercase;
-    opacity:.55; margin-top:5px; }
+  /* ── Ruleta ───────────────────────────────────────────────────────────────
+     Selector horizontal, como las cajas de CS:GO: las cartas desfilan de
+     derecha a izquierda y frenan con la que toca bajo la aguja del centro.
+     Horizontal y no vertical porque es lo que la gente ya sabe leer — se
+     entiende que hay un sorteo sin que nadie lo explique.
+
+     Es su propio elemento y no va dentro de la ficha del reto: aparece, hace
+     lo suyo y se va, mientras la ficha se queda. */
+  #ruleta{ position:absolute; left:calc(460px + var(--wx,0px)); top:calc(60px + var(--wy,0px));
+    width:1000px; transform:scale(var(--ws,1)); transform-origin:top left; display:none; }
+
+  .ru-head{ display:flex; align-items:center; gap:9px; padding:7px 14px;
+    background:rgba(0,0,0,.55); border-bottom:1px solid rgba(255,255,255,.07);
+    font-size:13px; letter-spacing:.08em; text-transform:uppercase; }
+  .ru-marca{ font-weight:800; color:#e8ecf4; }
+  .ru-sep{ opacity:.3; }
+  .ru-titulo{ color:#ffb020; font-weight:800; }
+  .ru-de, .ru-para{ font-weight:800; color:#ffb020; }
+  .ru-flecha{ opacity:.55; }
+
+  .ru-pista{ position:relative; height:132px; overflow:hidden;
+    background:linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.55)); }
+  .ru-tira{ position:absolute; top:0; left:0; display:flex; gap:6px; padding:9px 0; }
+
+  .ru-carta{ position:relative; width:154px; flex:none; height:114px;
+    background:linear-gradient(180deg, #2a2f3d, #171b25);
+    border:1px solid rgba(255,255,255,.09); border-radius:4px;
+    display:flex; flex-direction:column; justify-content:flex-end; padding:8px 9px; }
+  /* Franja de arriba por dureza: es lo que en una caja marca la rareza, y aquí
+     dice de un vistazo si te ha caído algo suave o algo que duele. */
+  .ru-carta::before{ content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background:var(--tono,#6b7a99); }
+  .ru-carta .pct{ position:absolute; top:6px; left:8px; font-size:12px; font-weight:800;
+    color:var(--tono,#6b7a99); }
+  .ru-carta .nom{ font-size:13px; font-weight:700; line-height:1.25; text-align:center;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+
+  /* La aguja del centro. Sin ella no hay sorteo: es lo que dice dónde mirar. */
+  .ru-aguja{ position:absolute; top:0; bottom:0; left:50%; width:3px; margin-left:-1.5px;
+    background:#ffb020; box-shadow:0 0 14px 2px rgba(255,176,32,.75); }
+  .ru-aguja::before, .ru-aguja::after{ content:''; position:absolute; left:-5px;
+    border:6px solid transparent; }
+  .ru-aguja::before{ top:-1px; border-top-color:#ffb020; }
+  .ru-aguja::after{ bottom:-1px; border-bottom-color:#ffb020; }
+
+  /* Resultado: ocupa el hueco de la pista cuando para. */
+  .ru-resultado{ display:none; align-items:center; gap:16px; padding:14px 18px;
+    background:linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.55)); }
+  .ru-icono{ position:relative; width:76px; height:76px; flex:none; border-radius:4px;
+    background:linear-gradient(180deg, #2a2f3d, #171b25);
+    border:1px solid rgba(255,255,255,.12); }
+  .ru-etiqueta{ position:absolute; top:5px; left:-3px; padding:2px 7px; border-radius:3px;
+    background:#ffb020; color:#141821; font-size:10px; font-weight:800;
+    letter-spacing:.06em; text-transform:uppercase; }
+  .ru-datos{ flex:1; min-width:0; }
+  .ru-asignado{ font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color:#ffb020; font-weight:800; }
+  .ru-nombre{ font-size:30px; font-weight:800; line-height:1.15; margin:2px 0 5px;
+    text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ru-dif{ font-size:12px; letter-spacing:.06em; text-transform:uppercase; opacity:.65; }
+  .ru-puntos{ letter-spacing:2px; }
+  .ru-puntos b{ color:#ffb020; }
+  .ru-autor{ text-align:right; flex:none; }
+  .ru-autor-et{ font-size:10px; letter-spacing:.12em; text-transform:uppercase; opacity:.5; }
+  .ru-autor-nom{ font-size:15px; font-weight:800; color:#ffb020; }
 
   #ladder{ position:absolute; left:calc(1570px + var(--wx,0px)); top:calc(120px + var(--wy,0px));
     width:300px; transform:scale(var(--ws,1)); transform-origin:top left; display:none; }
@@ -660,6 +713,40 @@
     <div class="fill">
       <div class="cr-head"><span class="dot"></span><span>Reto activo</span><span class="hline"></span></div>
       <div id="retoBody" class="reto-body"></div>
+    </div>
+    <div class="resize-handle"></div>
+  </div>
+
+  <!-- ============ RULETA — el sorteo del castigo, en directo ============ -->
+  <div id="ruleta" class="panel bevel" data-widget="ruleta">
+    <div class="ru-head">
+      <span class="ru-marca">SOLOQCHALLENGE.GG</span>
+      <span class="ru-sep">·</span>
+      <span class="ru-titulo">RULETA</span>
+      <span class="ru-sep">·</span>
+      <span class="ru-de" id="ruDe"></span>
+      <span class="ru-flecha">➜</span>
+      <span class="ru-para" id="ruPara"></span>
+    </div>
+
+    <!-- Girando -->
+    <div class="ru-pista" id="ruPista">
+      <div class="ru-tira" id="ruTira"></div>
+      <div class="ru-aguja"></div>
+    </div>
+
+    <!-- Resultado -->
+    <div class="ru-resultado" id="ruResultado">
+      <div class="ru-icono"><span class="ru-etiqueta">Castigo</span></div>
+      <div class="ru-datos">
+        <div class="ru-asignado">Castigo asignado</div>
+        <div class="ru-nombre" id="ruNombre"></div>
+        <div class="ru-dif">Dificultad <span class="ru-puntos" id="ruDureza"></span></div>
+      </div>
+      <div class="ru-autor">
+        <div class="ru-autor-et">De parte de</div>
+        <div class="ru-autor-nom" id="ruAutor"></div>
+      </div>
     </div>
     <div class="resize-handle"></div>
   </div>
@@ -1208,6 +1295,15 @@
       el.style.display = (wCache[id]?.on !== false && enVistaPrevia(id, s)) ? 'block' : 'none';
     }
 
+    // La ruleta se enseña sola mientras dura el sorteo, así que aquí solo se
+    // fuerza en el editor —para poder colocarla sin esperar a que caiga un
+    // castigo— y se apaga si el streamer la ha desactivado.
+    const ruleta = WEL['ruleta'];
+    if (ruleta && !sorteando) {
+      const enEditor = showAll && enVistaPrevia('ruleta', s);
+      ruleta.style.display = (wCache['ruleta']?.on !== false && enEditor) ? 'block' : 'none';
+    }
+
     // "mostrar todo" (editor): los dos widgets conviven en pantalla para poder colocarlos juntos
     // contra la captura de fondo. Fuera de eso manda el estado real: muerto -> grande, vivo -> mini,
     // y forceView (del panel) pisa a los dos para poder calibrar una tarjeta sin que se alterne sola.
@@ -1301,6 +1397,10 @@
      a sortear el mismo: el espectador lo vería girar dos veces por lo mismo. */
   const VISTO = 'srank.reto.sorteado';
 
+  /* Mientras gira, el pintado de siempre no toca la ruleta: si no, la apagaría
+     a media vuelta en el primer repintado. */
+  let sorteando = false;
+
   async function pintarReto() {
     const caja = document.getElementById('retoBody');
     if (!caja) return;
@@ -1318,9 +1418,11 @@
     // aunque sea la primera vez que lo vemos — el momento ya pasó. `sortear` es
     // la repetición a mano, para poder verlo sin esperar a que te lancen uno.
     const nuevo = reto.status === 'pending' && localStorage.getItem(VISTO) !== reto.id;
-    if (nuevo || datos.sortear) {
+    if ((nuevo || datos.sortear) && !sorteando) {
       localStorage.setItem(VISTO, reto.id);
-      await sortearEnPantalla(caja, reto, datos.castigos ?? []);
+      sorteando = true;
+      try { await sortearEnPantalla(reto, datos.castigos ?? [], datos.para); }
+      finally { sorteando = false; }
     }
 
     pintarRetoFijo(caja, reto);
@@ -1335,41 +1437,94 @@
 
   /* La ruleta.
      El resultado ya está decidido por el servidor: esto es la puesta en escena,
-     no el sorteo. Se monta una tira de nombres al azar con el que toca al final
-     y se desplaza hasta él frenando, que es lo que hace que parezca una ruleta
-     y no una lista pasando. */
-  function sortearEnPantalla(caja, reto, castigos) {
-    const ALTO = 26, VUELTAS = 22, DURACION = 2600;
+     no el sorteo. Se monta una tira de cartas al azar con la que toca en el
+     sitio exacto donde va a quedar la aguja, y se desplaza hasta allí frenando.
 
-    // Sin catálogo se gira con lo único que hay, su propio nombre: no es gran
-    // espectáculo, pero es mejor que quedarse en blanco.
-    const nombres = castigos.length ? castigos.map((c) => c.name) : [reto.title];
-    const tira = [];
-    for (let i = 0; i < VUELTAS; i++) tira.push(nombres[Math.floor(Math.random() * nombres.length)]);
-    tira.push(reto.title);   // el último es el que se queda a la vista
+     El peso de cada castigo sale de su dureza: peso 3 los suaves, 2 los medios,
+     1 los duros, que es lo mismo que usa el servidor para sortear. El
+     porcentaje que se ve en cada carta es ese peso sobre el total, así que lo
+     que se enseña es lo que de verdad pasa. */
+  const pesoCastigo = (c) => 4 - (c.dureza ?? 2);
+  const TONOS = { 1: '#5ad18b', 2: '#4aa8ff', 3: '#ff6b81' };   // suave, medio, duro
 
-    caja.innerHTML = `
-      <div class="ruleta" id="ruleta">
-        <div class="tira" id="tira">
-          ${tira.map((n, i) => `<div class="op${i === tira.length - 1 ? ' gana' : ''}">${n}</div>`).join('')}
-        </div>
-      </div>
-      <div class="sorteando">Sorteando castigo…</div>`;
+  function cartaHTML(c, pcts) {
+    return `<div class="ru-carta" style="--tono:${TONOS[c.dureza] ?? '#6b7a99'}">
+      <span class="pct">${pcts.get(c.key) ?? ''}%</span>
+      <div class="nom">${c.name}</div>
+    </div>`;
+  }
 
-    const t = document.getElementById('tira');
-    const destino = -(tira.length - 1) * ALTO;
+  function sortearEnPantalla(reto, castigos, para) {
+    const CARTA = 154, HUECO = 6, PASO = CARTA + HUECO;
+    const ANTES = 34, DURACION = 5200;
+
+    const caja = document.getElementById('ruleta');
+    const pista = document.getElementById('ruPista');
+    const resultado = document.getElementById('ruResultado');
+    if (!caja) return Promise.resolve();
+
+    // El que ha tocado, sacado del catálogo para tener su dureza. Si no está
+    // —castigo viejo, catálogo caído— se pinta con lo que trae la asignación.
+    const gana = castigos.find((c) => c.key === reto.key)
+      ?? { key: reto.key, name: reto.title, dureza: 2 };
+
+    const total = castigos.reduce((s, c) => s + pesoCastigo(c), 0) || 1;
+    const pcts = new Map(castigos.map((c) => [c.key, Math.round((pesoCastigo(c) / total) * 100)]));
+
+    // Relleno al azar, pero respetando los pesos: si los duros salieran tanto
+    // como los suaves, los porcentajes escritos en las cartas serían mentira.
+    const bombo = castigos.length ? castigos : [gana];
+    const acumulado = [];
+    let suma = 0;
+    for (const c of bombo) { suma += pesoCastigo(c); acumulado.push([suma, c]); }
+    const alAzar = () => {
+      const r = Math.random() * suma;
+      return (acumulado.find(([tope]) => r < tope) ?? acumulado[acumulado.length - 1])[1];
+    };
+
+    const tira = Array.from({ length: ANTES }, alAzar);
+    tira.push(gana);                                    // la que para bajo la aguja
+    for (let i = 0; i < 6; i++) tira.push(alAzar());    // cola, o la aguja quedaría al borde
+
+    document.getElementById('ruDe').textContent = reto.from ?? '';
+    document.getElementById('ruPara').textContent = para ?? '';
+    document.getElementById('ruTira').innerHTML = tira.map((c) => cartaHTML(c, pcts)).join('');
+
+    // La ganadora tiene que acabar centrada bajo la aguja, no en el borde.
+    const centro = caja.getBoundingClientRect().width / 2;
+    const destinoBase = ANTES * PASO + CARTA / 2 - centro;
+    // Un empujón corto al azar para que no pare siempre clavada en el centro:
+    // clavado se ve calculado, y calculado se ve amañado.
+    const destino = -(destinoBase + (Math.random() - 0.5) * (CARTA * 0.5));
+
+    const tiraEl = document.getElementById('ruTira');
+    tiraEl.style.transition = 'none';
+    tiraEl.style.transform = 'translateX(0)';
+
+    pista.style.display = '';
+    resultado.style.display = 'none';
+    caja.style.display = 'block';
 
     return new Promise((listo) => {
-      requestAnimationFrame(() => {
-        // cubic-bezier con la salida muy larga: arranca disparado y llega
-        // arrastrándose, que es de donde sale la tensión.
-        t.style.transition = `transform ${DURACION}ms cubic-bezier(.12,.72,.16,1)`;
-        t.style.transform = `translateY(${destino}px)`;
-      });
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        // Salida muy larga: arranca disparado y llega arrastrándose, que es de
+        // donde sale la tensión. Una frenada corta no engancha a nadie.
+        tiraEl.style.transition = `transform ${DURACION}ms cubic-bezier(.08,.72,.12,1)`;
+        tiraEl.style.transform = `translateX(${destino}px)`;
+      }));
+
       setTimeout(() => {
-        document.getElementById('ruleta')?.classList.add('parada');
-        setTimeout(listo, 1400);   // un momento en el ganador antes de dejar la ficha
-      }, DURACION);
+        document.getElementById('ruNombre').textContent = gana.name;
+        document.getElementById('ruDureza').innerHTML =
+          [1, 2, 3].map((n) => (n <= (gana.dureza ?? 2) ? '<b>●</b>' : '●')).join('');
+        document.getElementById('ruAutor').textContent = reto.from ?? '—';
+        pista.style.display = 'none';
+        resultado.style.display = 'flex';
+
+        // Se queda un rato en el resultado y se va: es un momento, no un panel
+        // permanente. Para eso ya está la ficha del reto activo.
+        setTimeout(() => { caja.style.display = 'none'; listo(); }, 7000);
+      }, DURACION + 250);
     });
   }
 

@@ -314,6 +314,17 @@ const SRANK_LOCAL = process.env.SRANK_LOCAL ?? "http://127.0.0.1:8788";
  */
 let repetirSorteo = false;
 
+/** A quién le cae: el dueño de esta sesión. Va en la cabecera de la ruleta. */
+let nombreCache = null;
+async function nombreDelStreamer() {
+  if (nombreCache) return nombreCache;
+  try {
+    const j = await (await fetch(`${SRANK_LOCAL}/local/estado`)).json();
+    nombreCache = j.perfil?.username ?? null;
+  } catch { /* sin nombre la ruleta se pinta igual, solo sin la flecha */ }
+  return nombreCache;
+}
+
 let catalogoCastigosCache = null;
 async function catalogoCastigos() {
   if (catalogoCastigosCache) return catalogoCastigosCache;
@@ -1181,7 +1192,12 @@ const server = http.createServer(async (req, res) => {
       const sortear = repetirSorteo;
       repetirSorteo = false;
       res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
-      return res.end(JSON.stringify({ reto, castigos: await catalogoCastigos(), sortear }));
+      return res.end(JSON.stringify({
+        reto,
+        castigos: await catalogoCastigos(),
+        sortear,
+        para: await nombreDelStreamer(),
+      }));
     } catch {
       res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
       return res.end('{"reto":null,"castigos":[]}');
