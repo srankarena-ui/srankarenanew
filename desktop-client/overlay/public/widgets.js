@@ -17,6 +17,7 @@ window.OVERLAY_WIDGETS = [
   { id: "cmdRank",  name: "Panel de rango",        hint: "Lo pide el chat con !rank o !hoy" },
   { id: "cmdMatchup", name: "Duelo de carril", hint: "Sale solo al empezar la partida" },
   { id: "ladder", name: "Clasificación del torneo", hint: "En vivo desde S-Rank Arena" },
+  { id: "reto",   name: "Reto activo",              hint: "El castigo que llevas encima" },
 ];
 
 // Comandos de chat -> widget que muestran. La clave es lo que se escribe después del "!".

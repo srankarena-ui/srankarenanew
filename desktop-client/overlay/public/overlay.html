@@ -442,6 +442,21 @@
   /* Posicion, ancho y escala como el resto de elementos. Sin esto era un bloque
      normal: ocupaba todo el ancho y no respondia ni al arrastre ni al tamano,
      porque --wx/--wy/--ws no se aplicaban a nada. */
+  /* Reto activo. Mismo mecanismo de posición y escala que el resto. */
+  #reto{ position:absolute; left:calc(1570px + var(--wx,0px)); top:calc(420px + var(--wy,0px));
+    width:300px; transform:scale(var(--ws,1)); transform-origin:top left; display:none; }
+  #reto .fill{ padding:12px 14px 14px; }
+
+  .reto-body .nom{ font-size:18px; font-weight:800; line-height:1.25; }
+  /* Rojo solo cuando hay algo que cumplir: si el color estuviera siempre,
+     dejaria de significar nada. */
+  .reto-body .nom.hay{ color:#ff6b81; }
+  .reto-body .desc{ font-size:13px; opacity:.7; line-height:1.35; margin-top:3px;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .reto-body .estado{ font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    opacity:.55; margin-top:5px; }
+  .reto-body .vacio{ font-size:16px; opacity:.45; }
+
   #ladder{ position:absolute; left:calc(1570px + var(--wx,0px)); top:calc(120px + var(--wy,0px));
     width:300px; transform:scale(var(--ws,1)); transform-origin:top left; display:none; }
   #ladder .fill{ padding:12px 14px 14px; }
@@ -626,6 +641,15 @@
     </div>
     <div class="resize-handle"></div>
   </div>
+
+  <!-- ============ RETO ACTIVO — el castigo que lleva encima el streamer ============ -->
+  <div id="reto" class="panel bevel" data-widget="reto">
+    <div class="fill">
+      <div class="cr-head"><span class="dot"></span><span>Reto activo</span><span class="hline"></span></div>
+      <div id="retoBody" class="reto-body"></div>
+    </div>
+    <div class="resize-handle"></div>
+  </div>
 </div>
 
 <script src="/widgets.js"></script>
@@ -707,7 +731,7 @@
   // Siempre en pantalla: ni dependen de estar vivo o muerto, ni los pide el
   // chat. Sin esta tercera lista nadie les daba orden de mostrarse y no salían
   // nunca, tampoco en "mostrar todo".
-  const FIJOS = ['ladder'];
+  const FIJOS = ['ladder', 'reto'];
 
   /**
    * Filtro de la vista previa mientras se colocan los elementos.
@@ -1256,6 +1280,30 @@
     // recorre todo el escenario cada 400 ms, así que las filas nuevas quedan
     // ajustadas antes de que se note.
   }
+
+  /* Reto activo. Mismo puente que la clasificación: al servidor del overlay, que
+     habla con el cliente. Pedirlo al 8788 desde aquí lo bloquea el navegador. */
+  async function pintarReto() {
+    const caja = document.getElementById('retoBody');
+    if (!caja) return;
+
+    let reto = null;
+    try { reto = (await (await fetch('/reto')).json()).reto; } catch { return; }
+
+    if (!reto) {
+      caja.innerHTML = '<div class="vacio">Sin retos activos</div>';
+      return;
+    }
+
+    const pendiente = reto.status === 'pending';
+    caja.innerHTML = `
+      <div class="nom hay">${reto.title}</div>
+      ${reto.description ? `<div class="desc">${reto.description}</div>` : ''}
+      <div class="estado">${pendiente ? 'Sin decidir' : 'Aceptado'}</div>`;
+  }
+
+  pintarReto();
+  setInterval(pintarReto, 20000);
 
   pintarLadder();
   setInterval(pintarLadder, 20000);

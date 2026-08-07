@@ -1136,6 +1136,21 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // El castigo que lleva encima el streamer. Mismo puente que /ladder: lo pide
+  // el overlay a su servidor y este al cliente, que es quien tiene la sesión.
+  if (req.method === "GET" && url.pathname === "/reto") {
+    try {
+      const r = await fetch(`${SRANK_LOCAL}/local/inbox`);
+      const j = await r.json();
+      const reto = (j.retos ?? []).find((x) => x.key) ?? null;
+      res.writeHead(200, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ reto }));
+    } catch {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      return res.end('{"reto":null}');
+    }
+  }
+
   if (req.method === "GET" && url.pathname === "/status") {
     // el overlay cuelga su estado de chat del propio sondeo (?chat=1/0); el panel sondea sin el
     // parámetro, así que nunca pisa el dato del overlay con un "no conectado" falso.
