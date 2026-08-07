@@ -2,6 +2,18 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-08-07 — Se acabó el doble inicio de sesión
+
+La web iba dentro de un `<iframe>`, y ahí es contenido de terceros: la página que lo contiene es localhost y la de dentro es srankarena.com, así que las cookies de sesión —`SameSite=Lax`, como debe ser— no se enviaban al servidor. Salía una sesión a medias: la barra de la web te reconocía, porque el navegador sí las lee desde su propio JavaScript, pero todo lo que se pinta en el servidor te veía desconectado. De ahí el «inicia sesión para unirte» con tu nombre arriba a la derecha, y el castigo sin botones para aceptarlo.
+
+Ahora la web es una `WebContentsView` de Electron: una página normal en su propio sitio, sin dos sesiones distintas. La barra la muestra y la oculta pasando por el servidor local, que es el camino que ya usaban los avisos.
+
+Y la sesión se le entrega al montarla, por `/client-session`: el login ocurre en el navegador del sistema y sus cookies se quedan allí, así que sin esto habría que iniciar sesión otra vez dentro. Los tokens van en el fragmento de la URL, que no se envía al servidor ni queda en registros; el destino se valida como ruta de este sitio, o sería un redirector abierto.
+
+El aviso pulsable lleva X para cerrarlo. Solo el pulsable: el que no lo es ignora el ratón, y una X ahí sería un botón imposible de pulsar.
+
+`desktop-client/main.js`, `desktop-client/src/main.js`, `desktop-client/src/index.html`, `desktop-client/src/aviso.html`, `desktop-client/server.mjs`, `src/app/[locale]/client-session/page.tsx`.
+
 ## 2026-08-07 — El aviso de castigo se pulsa y lleva a decidirlo
 
 Enterarse de que tienes un castigo sin decidir no servía de nada si luego había que buscar dónde aceptarlo. Ahora el aviso lleva a la ficha del torneo, en la pestaña de clasificación, que es donde están los botones.

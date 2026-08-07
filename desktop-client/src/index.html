@@ -54,9 +54,9 @@
         <button id="logout" class="secondary pequeno">Salir</button>
       </header>
 
-      <!-- La web, tal cual. No se replica: cambia cada semana y mantener dos
-           versiones las separa solas. -->
-      <iframe id="web" title="S-Rank Arena"></iframe>
+      <!-- La web no va aquí: la pinta Electron como vista propia, por encima de
+           esta página y debajo de la barra. En un iframe sería contenido de
+           terceros y sus cookies de sesión no llegarían al servidor. -->
 
       <!-- El panel del overlay, servido por su propio proceso. Se arranca al
            abrir la pestaña, no al iniciar el cliente. -->

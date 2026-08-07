@@ -64,6 +64,23 @@
   }
   .aviso.pulsable .accion { display: block; }
 
+  /* Cerrar. Solo aparece en el pulsable: el que no lo es ignora el ratón, así
+     que una X ahí sería un botón que no se puede pulsar. */
+  .cerrar {
+    position: absolute;
+    top: 6px; right: 8px;
+    display: none;
+    padding: 3px 7px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: #6b748a;
+    font: 15px/1 system-ui, sans-serif;
+    cursor: pointer;
+  }
+  .cerrar:hover { background: #232937; color: #e8ecf4; }
+  .aviso.pulsable .cerrar { display: block; }
+
   .icono { font-size: 22px; line-height: 1; flex: none; margin-top: 2px; }
 
   .texto { min-width: 0; flex: 1; }
@@ -123,6 +140,7 @@
       <p id="cuerpo"></p>
       <div class="accion">Pulsa para aceptar o rechazar →</div>
     </div>
+    <button class="cerrar" id="cerrar" title="Cerrar" aria-label="Cerrar">✕</button>
     <div class="marca-agua">S-RANK</div>
     <div class="tiempo"><i></i></div>
   </div>
@@ -176,6 +194,15 @@
     if (!e.currentTarget.classList.contains("pulsable")) return;
     clearTimeout(cerrando);
     location.hash = "abrir";
+  });
+
+  // La X cierra sin ir a ningún sitio. Para el clic aquí, o cerraría y abriría
+  // a la vez: está dentro de la tarjeta, que también escucha.
+  document.getElementById("cerrar").addEventListener("click", (e) => {
+    e.stopPropagation();
+    clearTimeout(cerrando);
+    document.getElementById("aviso").classList.add("saliendo");
+    setTimeout(() => { location.hash = "fin"; }, 300);
   });
 
   /* Sonido generado, sin fichero: dos notas cortas. Meter un .wav obligaría a

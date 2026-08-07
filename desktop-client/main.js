@@ -4,7 +4,7 @@
 // Electron y no Tauri porque Tauri necesita el SDK de Windows para enlazar y
 // nunca llegó a compilar; y porque empaquetar con Electron mete Node dentro,
 // así que el streamer no tiene que instalar nada aparte.
-const { app, BrowserWindow, Menu, shell } = require("electron");
+const { app, BrowserWindow, Menu, shell, WebContentsView } = require("electron");
 const path = require("node:path");
 
 const PUERTO = Number(process.env.SRANK_PORT ?? 8788);
@@ -13,6 +13,50 @@ const URL_LOCAL = `http://localhost:${PUERTO}`;
 let ventana = null;
 let aviso = null;
 let destinoAviso = null;
+let vistaWeb = null;
+
+/** Alto de la barra propia, el mismo que dice `.barra` en style.css. */
+const ALTO_BARRA = 52;
+
+/**
+ * La web va en una vista de Electron, no en un `<iframe>`.
+ *
+ * Dentro de un iframe la web es contenido de terceros: la página que lo
+ * contiene es localhost y la de dentro es srankarena.com, así que las cookies
+ * de sesión —que son `SameSite=Lax`, como debe ser— no se envían al servidor.
+ * El resultado era una sesión a medias: la barra de navegación de la web te
+ * reconocía, porque el navegador sí las lee desde su propio JavaScript, pero
+ * todo lo que se pinta en el servidor te veía desconectado. De ahí el "inicia
+ * sesión para unirte" con tu nombre arriba a la derecha.
+ *
+ * Como vista, la web es una página normal en su propio sitio y deja de haber
+ * dos sesiones distintas.
+ */
+function montarVistaWeb(url) {
+  if (vistaWeb) return;
+
+  vistaWeb = new WebContentsView({
+    webPreferences: { nodeIntegration: false, contextIsolation: true },
+  });
+  ventana.contentView.addChildView(vistaWeb);
+  vistaWeb.webContents.loadURL(url);
+  ajustarVistaWeb();
+
+  // Los enlaces externos, al navegador de verdad. Mismo criterio que la
+  // ventana: nada de ventanas sin barra de direcciones.
+  vistaWeb.webContents.setWindowOpenHandler(({ url: destino }) => {
+    if (!destino.startsWith(url.split("/").slice(0, 3).join("/"))) shell.openExternal(destino);
+    return { action: "deny" };
+  });
+
+  ventana.on("resize", ajustarVistaWeb);
+}
+
+function ajustarVistaWeb() {
+  if (!vistaWeb || !ventana || ventana.isDestroyed()) return;
+  const [ancho, alto] = ventana.getContentSize();
+  vistaWeb.setBounds({ x: 0, y: ALTO_BARRA, width: ancho, height: Math.max(0, alto - ALTO_BARRA) });
+}
 
 const ANCHO_AVISO = 380;
 const ALTO_AVISO = 104;
@@ -32,6 +76,15 @@ function mostrarAviso(titulo, cuerpo, urgente, destino = null) {
   // que traga clics encima del juego es peor que no tener aviso. Solo se
   // vuelve pulsable cuando lleva un destino al que ir.
   destinoAviso = destino;
+  const pulsable = !!destino;
+
+  // `focusable` solo se puede fijar al crear la ventana, y una ventana no
+  // enfocable no recibe clics en Windows. Así que cuando cambia el modo se
+  // rehace: son dos ventanas distintas disfrazadas de una.
+  if (aviso && !aviso.isDestroyed() && aviso.__pulsable !== pulsable) {
+    aviso.destroy();
+    aviso = null;
+  }
 
   if (!aviso || aviso.isDestroyed()) {
     aviso = new BrowserWindow({
@@ -41,15 +94,19 @@ function mostrarAviso(titulo, cuerpo, urgente, destino = null) {
       transparent: true,
       resizable: false,
       movable: false,
-      skipTaskbar: true,      // no aparece en la barra de tareas
-      focusable: false,       // no roba el foco: robarlo en partida es fatal
+      skipTaskbar: true,        // no aparece en la barra de tareas
+      // Robar el foco en partida es fatal; pero sin foco no hay clic, así que
+      // el que lleva a algún sitio sí lo acepta. Aun así se muestra con
+      // showInactive, que lo enseña sin activarlo hasta que lo pulsan.
+      focusable: pulsable,
       alwaysOnTop: true,
       show: false,
     });
+    aviso.__pulsable = pulsable;
     // Por encima incluso de ventanas a pantalla completa sin bordes.
     aviso.setAlwaysOnTop(true, "screen-saver");
   }
-  aviso.setIgnoreMouseEvents(!destino);
+  aviso.setIgnoreMouseEvents(!pulsable);
 
   aviso.setBounds({
     x: pantalla.x + pantalla.width - ANCHO_AVISO - 18,
@@ -75,6 +132,7 @@ function mostrarAviso(titulo, cuerpo, urgente, destino = null) {
     if (!aviso || aviso.isDestroyed()) return;
     if (url.endsWith("#fin")) aviso.hide();
     if (url.endsWith("#abrir")) {
+      console.log(`  [aviso] pulsado -> ${destinoAviso}`);
       aviso.hide();
       abrirEn(destinoAviso);
     }
@@ -93,9 +151,12 @@ function abrirEn(destino) {
   if (ventana.isMinimized()) ventana.restore();
   ventana.show();
   ventana.focus();
-  ventana.webContents
-    .executeJavaScript(`window.__irA && window.__irA(${JSON.stringify(destino)})`)
-    .catch(() => {});
+  // La barra vuelve a la pestaña de torneo; la vista, al destino.
+  ventana.webContents.executeJavaScript("window.__aTorneo && window.__aTorneo()").catch(() => {});
+  if (vistaWeb) {
+    vistaWeb.setVisible(true);
+    vistaWeb.webContents.loadURL(destino);
+  }
 }
 
 function crearVentana() {
@@ -164,6 +225,14 @@ if (!app.requestSingleInstanceLock()) {
     // node para desarrollo, y ahí `require("electron")` no existe. Se le deja
     // esta función y él la usa si está.
     globalThis.__srankAvisar = mostrarAviso;
+
+    // La interfaz no puede hablar con Electron por su cuenta —no hay puente
+    // entre procesos montado—, así que pasa por el servidor local, que sí. Es
+    // el mismo camino que ya usan los avisos, en vez de un canal nuevo.
+    globalThis.__srankVista = {
+      montar: (url) => montarVistaWeb(url),
+      ver: (visible) => vistaWeb?.setVisible(visible),
+    };
 
     const { default: servidor } = await import("./server.mjs");
     await new Promise((listo) =>

@@ -67,13 +67,36 @@ async function mostrarSesion({ email, perfil }) {
   // es comodidad, no seguridad.
   $("pestana-streamer").hidden = !(perfil?.is_streamer || perfil?.role === "admin");
 
-  // Se carga una sola vez: recargarla en cada sondeo perdería lo que el usuario
+  // Se monta una sola vez: rehacerla en cada sondeo perdería lo que el usuario
   // esté haciendo dentro.
-  const marco = $("web");
-  if (!marco.src) {
+  if (!webMontada) {
+    webMontada = true;
     const { body } = await local("/local/config");
-    marco.src = `${body.api}/es/tournaments`;
+    await local(`/local/vista?montar=${encodeURIComponent(await destinoInicial(body.api))}`, { method: "POST" });
   }
+}
+
+let webMontada = false;
+
+/**
+ * La primera dirección de la web: la que además le entrega la sesión.
+ *
+ * Sin esto pedía iniciar sesión otra vez dentro de la aplicación, porque el
+ * login ocurre en el navegador del sistema y sus cookies se quedan allí.
+ * Los tokens van en el fragmento —detrás de la almohadilla—, que no se envía
+ * al servidor ni queda en registros.
+ */
+async function destinoInicial(api) {
+  const torneos = `${api}/es/tournaments`;
+  const { ok, body } = await local("/local/sesion-web");
+  if (!ok || !body.access_token) return torneos;
+
+  const frag = new URLSearchParams({
+    access_token: body.access_token,
+    refresh_token: body.refresh_token,
+    next: "/es/tournaments",
+  });
+  return `${api}/es/client-session#${frag}`;
 }
 
 // ── Pestañas ────────────────────────────────────────────────────────────────
@@ -86,7 +109,10 @@ async function cambiarVista(vista) {
     b.classList.toggle("activa", b.dataset.vista === vista);
   });
 
-  $("web").hidden = vista !== "torneo";
+  // La vista de la web se pinta por encima de esta página, así que taparía el
+  // panel del overlay: hay que apartarla, no basta con poner el otro delante.
+  local(`/local/vista?ver=${vista === "torneo" ? 1 : 0}`, { method: "POST" });
+
   $("streamer").hidden = vista !== "streamer";
   $("streamer-cargando").hidden = true;
 
@@ -112,18 +138,7 @@ async function cambiarVista(vista) {
  * principal — es la única forma que tiene de decirle algo a esta ventana sin
  * recargarla, que perdería lo que el usuario estuviera haciendo dentro.
  */
-window.__irA = (destino) => {
-  if (!destino) return;
-  cambiarVista("torneo");
-  // El iframe recuerda por dónde iba, así que un destino repetido no se
-  // recarga solo con asignar src. Se fuerza con un contentWindow.location.
-  const marco = $("web");
-  try {
-    marco.contentWindow.location.replace(destino);
-  } catch {
-    marco.src = destino;  // otro origen: no se puede tocar desde aquí
-  }
-};
+window.__aTorneo = () => cambiarVista("torneo");
 
 async function refrescarCastigo() {
   const { ok, body } = await local("/local/inbox");

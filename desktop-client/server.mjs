@@ -480,6 +480,28 @@ const server = createServer(async (req, res) => {
     return json(200, { ok: true, destino });
   }
 
+  // La sesión para la web incrustada. Sin esto pediría iniciar sesión otra vez
+  // dentro de la aplicación: la sesión del cliente es un token nuestro, y la
+  // web se maneja por cookies suyas — dos sitios distintos.
+  //
+  // Solo escucha en 127.0.0.1 y no manda cabeceras CORS, así que ninguna
+  // página de fuera puede leer esta respuesta.
+  if (url.pathname === "/local/sesion-web") {
+    const t = await token();   // renueva si le queda poco
+    if (!t || !sesion) return json(401, { error: "Sin sesión" });
+    return json(200, { access_token: t, refresh_token: sesion.refresh });
+  }
+
+  // La barra pide montar u ocultar la vista de la web. Fuera de Electron no
+  // hay vista que mover y no pasa nada: el servidor también corre suelto.
+  if (url.pathname === "/local/vista" && req.method === "POST") {
+    const v = globalThis.__srankVista;
+    if (!v) return json(200, { ok: false, motivo: "sin ventana" });
+    if (url.searchParams.get("montar")) v.montar(url.searchParams.get("montar"));
+    if (url.searchParams.has("ver")) v.ver(url.searchParams.get("ver") === "1");
+    return json(200, { ok: true });
+  }
+
   if (url.pathname === "/local/juego") {
     return json(200, await estadoJuego());
   }
