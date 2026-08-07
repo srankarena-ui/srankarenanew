@@ -1581,7 +1581,10 @@
 
   function sortearEnPantalla(reto, castigos, para) {
     const CARTA = 154, HUECO = 6, PASO = CARTA + HUECO;
-    const ANTES = 34, DURACION = 5200;
+    // Las dos van juntas: alargar el tiempo sin poner más cartas no hace que
+    // gire más, hace que gire lento. Son ~11.500 px en 9 s, así que arranca
+    // igual de rápido que antes y lo que se estira es la agonía del final.
+    const ANTES = 72, DURACION = 9000;
 
     const caja = document.getElementById('ruleta');
     const pista = document.getElementById('ruPista');
