@@ -75,6 +75,9 @@
     text-transform:uppercase; color:var(--dim); margin-bottom:2px; }
 
   .hint{ font-family:var(--mono); font-size:11px; color:var(--dim); margin-top:8px; line-height:1.5; }
+  .ruleta-prueba{ display:flex; align-items:center; gap:12px; margin-top:14px;
+    padding-top:14px; border-top:1px solid rgba(255,255,255,.07); }
+  .ruleta-prueba .hint{ margin-top:0; flex:1; }
 
   .rankStatus{ font-size:12px; margin-top:12px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
   .rankStatus.error{ color:#F0938B; }
@@ -259,6 +262,16 @@
       <h2>Elementos del overlay</h2>
       <p class="hint" style="margin-top:0">Todo lo que puede aparecer en pantalla. Destilda lo que no quieras mostrar; los cambios se aplican al instante, también en OBS.</p>
       <div id="elements"></div>
+
+      <!-- Probar la ruleta. En condiciones normales solo gira cuando alguien te
+           lanza un castigo, y esperar a que pase para comprobar cómo se ve —o
+           para enseñárselo a alguien— no hay por dónde cogerlo. -->
+      <div class="ruleta-prueba">
+        <button type="button" id="probarRuleta">Probar la ruleta</button>
+        <span class="hint" id="probarRuletaEstado">
+          Lanza el sorteo del castigo que tengas ahora, aquí y en OBS a la vez.
+        </span>
+      </div>
     </div></div>
 
     <!-- Riot / Rango -->
@@ -807,6 +820,25 @@ async function refreshStatus() {
   showKick(s.kick);
   if (cfgCache) updatePreviewAssets(s);
 }
+
+/* Probar la ruleta. El botón se bloquea mientras dura la secuencia completa
+   —aviso, giro y resultado—: pulsarlo dos veces la cortaría por la mitad. */
+$("probarRuleta").addEventListener("click", async () => {
+  const boton = $("probarRuleta"), estado = $("probarRuletaEstado");
+  const texto = estado.textContent;
+
+  const { reto } = await fetch("/reto").then((r) => r.json()).catch(() => ({}));
+  if (!reto) {
+    estado.textContent = "No tienes ningún castigo ahora mismo: no hay nada que sortear.";
+    setTimeout(() => { estado.textContent = texto; }, 6000);
+    return;
+  }
+
+  await fetch("/reto/repetir").catch(() => {});
+  boton.disabled = true;
+  estado.textContent = `Sorteando «${reto.title}»…`;
+  setTimeout(() => { boton.disabled = false; estado.textContent = texto; }, 16000);
+});
 
 loadConfig();
 wireIconFitSliders();

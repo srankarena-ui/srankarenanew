@@ -477,6 +477,42 @@
   .ru-de, .ru-para{ font-weight:800; color:#ffb020; }
   .ru-flecha{ opacity:.55; }
 
+  /* Aviso previo. Va antes de la ruleta y en su mismo sitio: el espectador
+     mira ahí un segundo antes de que empiece a girar, en vez de encontrarse
+     la tira ya en marcha. La tensión se construye antes, no durante. */
+  .ru-entrante{ display:none; position:relative; align-items:center; gap:16px;
+    height:132px; padding:0 22px; overflow:hidden;
+    background:linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.55)); }
+  /* Destello que barre de lado a lado mientras dura. */
+  .ru-entrante::after{ content:''; position:absolute; top:0; bottom:0; width:220px;
+    background:linear-gradient(90deg, transparent, rgba(255,176,32,.16), transparent);
+    animation:ru-barrido 1.1s linear infinite; }
+  @keyframes ru-barrido{ from{ transform:translateX(-260px); } to{ transform:translateX(1060px); } }
+
+  .ru-sello{ width:74px; height:74px; flex:none; border-radius:50%;
+    display:grid; place-items:center; font-size:34px; color:#141821;
+    background:radial-gradient(circle at 35% 30%, #ffd47a, #ffb020 55%, #c47b00);
+    box-shadow:0 0 0 0 rgba(255,176,32,.55);
+    animation:ru-latido 900ms ease-out infinite; }
+  @keyframes ru-latido{
+    0%   { transform:scale(1);    box-shadow:0 0 0 0 rgba(255,176,32,.55); }
+    70%  { transform:scale(1.06); box-shadow:0 0 0 26px rgba(255,176,32,0); }
+    100% { transform:scale(1);    box-shadow:0 0 0 0 rgba(255,176,32,0); }
+  }
+
+  .ru-entrante-txt{ flex:1; min-width:0; }
+  .ru-entrante-t{ font-size:30px; font-weight:800; letter-spacing:.04em;
+    text-transform:uppercase; color:#ffb020; line-height:1.1; }
+  .ru-entrante-s{ font-size:15px; opacity:.75; margin-top:3px; }
+  .ru-entrante-s span{ font-weight:800; color:#e8ecf4; }
+
+  /* Cuenta atrás hasta que arranca la ruleta: dice que viene algo, no solo que
+     pasa algo. */
+  .ru-barra{ position:absolute; left:0; right:0; bottom:0; height:3px; background:rgba(255,255,255,.08); }
+  .ru-barra i{ display:block; height:100%; width:100%; background:#ffb020;
+    transform-origin:left; animation:ru-menguar var(--ru-espera,2600ms) linear forwards; }
+  @keyframes ru-menguar{ from{ transform:scaleX(1); } to{ transform:scaleX(0); } }
+
   .ru-pista{ position:relative; height:132px; overflow:hidden;
     background:linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.55)); }
   .ru-tira{ position:absolute; top:0; left:0; display:flex; gap:6px; padding:9px 0; }
@@ -727,6 +763,16 @@
       <span class="ru-de" id="ruDe"></span>
       <span class="ru-flecha">➜</span>
       <span class="ru-para" id="ruPara"></span>
+    </div>
+
+    <!-- Aviso previo: alguien ha gastado un sello contra ti -->
+    <div class="ru-entrante" id="ruEntrante">
+      <div class="ru-sello">◆</div>
+      <div class="ru-entrante-txt">
+        <div class="ru-entrante-t">Sello entrante</div>
+        <div class="ru-entrante-s"><span id="ruEntranteDe"></span> te ha lanzado un castigo</div>
+      </div>
+      <div class="ru-barra"><i></i></div>
     </div>
 
     <!-- Girando -->
@@ -1401,6 +1447,16 @@
      a media vuelta en el primer repintado. */
   let sorteando = false;
 
+  /* Los errores de esta página no los ve nadie: no hay consola abierta ni en el
+     editor ni en OBS. Se mandan al servidor, que sí escribe donde se lee. */
+  const avisarFallo = (m) => { try { fetch('/log?m=' + encodeURIComponent(m)); } catch {} };
+  window.addEventListener('error', (e) => avisarFallo(`${e.message} (${e.filename}:${e.lineno})`));
+  window.addEventListener('unhandledrejection', (e) => avisarFallo(`promesa: ${e.reason}`));
+
+  /* Lo que dura el aviso antes de que arranque la ruleta. Suficiente para
+     mirar a la pantalla, corto para no cansar. */
+  const ESPERA_ENTRANTE = 2600;
+
   async function pintarReto() {
     const caja = document.getElementById('retoBody');
     if (!caja) return;
@@ -1421,8 +1477,12 @@
     if ((nuevo || datos.sortear) && !sorteando) {
       localStorage.setItem(VISTO, reto.id);
       sorteando = true;
-      try { await sortearEnPantalla(reto, datos.castigos ?? [], datos.para); }
-      finally { sorteando = false; }
+      try {
+        // Primero el aviso, luego la ruleta. Encadenados y sin corte: si se
+        // apagara entre uno y otro, se verían dos cosas en vez de una.
+        await avisoEntrante(reto, ESPERA_ENTRANTE);
+        await sortearEnPantalla(reto, datos.castigos ?? [], datos.para);
+      } finally { sorteando = false; }
     }
 
     pintarRetoFijo(caja, reto);
@@ -1444,6 +1504,71 @@
      1 los duros, que es lo mismo que usa el servidor para sortear. El
      porcentaje que se ve en cada carta es ese peso sobre el total, así que lo
      que se enseña es lo que de verdad pasa. */
+  /* Sonido generado, sin ficheros: no hay que empaquetar nada ni elegir un wav,
+     y el overlay ya sabe hacerlo. Se reutiliza un solo contexto porque abrir
+     uno por aviso los agota — el navegador limita cuántos puede haber. */
+  let audio = null;
+  function ctxAudio() {
+    if (!audio) { try { audio = new AudioContext(); } catch { return null; } }
+    if (audio.state === 'suspended') audio.resume().catch(() => {});
+    return audio;
+  }
+
+  function tono(ctx, { de, a, desde, dura, vol = 0.18, tipo = 'sine' }) {
+    const osc = ctx.createOscillator();
+    const gan = ctx.createGain();
+    osc.type = tipo;
+    const t = ctx.currentTime + desde;
+    osc.frequency.setValueAtTime(de, t);
+    if (a !== de) osc.frequency.exponentialRampToValueAtTime(a, t + dura);
+    gan.gain.setValueAtTime(0.0001, t);
+    gan.gain.exponentialRampToValueAtTime(vol, t + Math.min(0.03, dura / 3));
+    gan.gain.exponentialRampToValueAtTime(0.0001, t + dura);
+    osc.connect(gan).connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + dura + 0.05);
+  }
+
+  /* Subida larga que acaba en golpe: es el sonido de que viene algo, no de que
+     algo ha pasado. Los tres pitidos marcan la cuenta atrás sin decir números. */
+  function sonarEntrante(espera) {
+    const ctx = ctxAudio(); if (!ctx) return;
+    const s = espera / 1000;
+    tono(ctx, { de: 220, a: 880, desde: 0, dura: s * 0.85, vol: 0.1, tipo: 'sawtooth' });
+    [0, 0.75, 1.5].forEach((d, i) => tono(ctx, { de: 660 + i * 110, a: 660 + i * 110, desde: d, dura: 0.09, vol: 0.16 }));
+    tono(ctx, { de: 1200, a: 300, desde: s - 0.06, dura: 0.35, vol: 0.22, tipo: 'triangle' });
+  }
+
+  /* Golpe seco al parar la ruleta: cierra el momento. */
+  function sonarResultado() {
+    const ctx = ctxAudio(); if (!ctx) return;
+    tono(ctx, { de: 520, a: 130, desde: 0, dura: 0.5, vol: 0.24, tipo: 'triangle' });
+    tono(ctx, { de: 990, a: 990, desde: 0.02, dura: 0.16, vol: 0.14 });
+  }
+
+  /* El aviso previo. Devuelve cuando toca empezar a girar. */
+  function avisoEntrante(reto, espera) {
+    const caja = document.getElementById('ruleta');
+    const bloque = document.getElementById('ruEntrante');
+    document.getElementById('ruEntranteDe').textContent = reto.from ?? 'Alguien';
+
+    document.getElementById('ruPista').style.display = 'none';
+    document.getElementById('ruResultado').style.display = 'none';
+    bloque.style.setProperty('--ru-espera', espera + 'ms');
+    bloque.style.display = 'flex';
+    caja.style.display = 'block';
+
+    // Se reinician las animaciones a mano: si el elemento ya las traía puestas
+    // de un aviso anterior, no vuelven a arrancar solas.
+    bloque.querySelectorAll('.ru-barra i, .ru-sello').forEach((el) => {
+      const a = el.style.animation;
+      el.style.animation = 'none'; void el.offsetWidth; el.style.animation = a;
+    });
+
+    sonarEntrante(espera);
+    return new Promise((listo) => setTimeout(() => { bloque.style.display = 'none'; listo(); }, espera));
+  }
+
   const pesoCastigo = (c) => 4 - (c.dureza ?? 2);
   const TONOS = { 1: '#5ad18b', 2: '#4aa8ff', 3: '#ff6b81' };   // suave, medio, duro
 
@@ -1504,6 +1629,7 @@
     pista.style.display = '';
     resultado.style.display = 'none';
     caja.style.display = 'block';
+    avisarFallo(`ruleta: ${tira.length} cartas, gana ${gana.name}, destino ${Math.round(destino)}px, ancho ${Math.round(centro * 2)}`);
 
     return new Promise((listo) => {
       requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -1520,6 +1646,7 @@
         document.getElementById('ruAutor').textContent = reto.from ?? '—';
         pista.style.display = 'none';
         resultado.style.display = 'flex';
+        sonarResultado();
 
         // Se queda un rato en el resultado y se va: es un momento, no un panel
         // permanente. Para eso ya está la ficha del reto activo.

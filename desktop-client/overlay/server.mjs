@@ -310,9 +310,15 @@ const SRANK_LOCAL = process.env.SRANK_LOCAL ?? "http://127.0.0.1:8788";
  * Repetir el sorteo a mano. Existe para poder verlo y afinarlo: en condiciones
  * normales solo gira al recibir un castigo nuevo, y esperar a que alguien te
  * lance uno para mirar si la animación quedó bien no es forma de trabajar.
- * Se consume al leerlo, así que gira una vez por petición.
+ *
+ * Es una ventana de tiempo y no un interruptor de un solo uso porque hay más de
+ * una página mirando —la vista previa del editor y el overlay de OBS—, y con un
+ * solo uso se lo llevaba la primera que preguntaba: la previa giraba y el
+ * overlay se quedaba sin enterarse. La ventana da para que todas lo cojan, y es
+ * corta para que ninguna gire dos veces.
  */
-let repetirSorteo = false;
+let repetirHasta = 0;
+const VENTANA_REPETIR = 8000;
 
 /** A quién le cae: el dueño de esta sesión. Va en la cabecera de la ruleta. */
 let nombreCache = null;
@@ -1174,8 +1180,16 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // La página no tiene consola a la vista —vive en un iframe o en OBS—, así que
+  // un error suyo desaparece sin dejar rastro. Aquí lo escribe donde se lee.
+  if (url.pathname === "/log") {
+    console.log(`  [overlay] ${url.searchParams.get("m")}`);
+    res.writeHead(204).end();
+    return;
+  }
+
   if (url.pathname === "/reto/repetir") {
-    repetirSorteo = true;
+    repetirHasta = Date.now() + VENTANA_REPETIR;
     res.writeHead(200, { "Content-Type": "application/json" });
     return res.end('{"ok":true}');
   }
@@ -1189,8 +1203,7 @@ const server = http.createServer(async (req, res) => {
       const reto = (j.retos ?? []).find((x) => x.key) ?? null;
       // Con el juego de caracteres puesto: los nombres llevan acentos y sin
       // esto quien lo lea sin suponer UTF-8 pinta «Campeón» hecho un cristo.
-      const sortear = repetirSorteo;
-      repetirSorteo = false;
+      const sortear = Date.now() < repetirHasta;
       res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
       return res.end(JSON.stringify({
         reto,
@@ -1198,7 +1211,10 @@ const server = http.createServer(async (req, res) => {
         sortear,
         para: await nombreDelStreamer(),
       }));
-    } catch {
+    } catch (e) {
+      // Sin esto, un fallo aquí se veía igual que "no tienes ningún castigo", y
+      // el overlay se quedaba en blanco sin que nadie supiera por qué.
+      console.log(`  [overlay] /reto falló: ${e.message}`);
       res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
       return res.end('{"reto":null,"castigos":[]}');
     }
