@@ -40,7 +40,7 @@ const INFRACCIONES = {
   sin_botas: { comproBotas: true },
   sin_guardianes_control: { visionWardsBought: 1 },
   sin_consumibles: { consumablesPurchased: 1 },
-  presupuesto: { objetoMasCaro: 1601 },
+  presupuesto: { objetoMasCaro: 3001 },
   ulti_tres_veces: { usosUlti: 6 },
   sin_pings: { pings: 1 },
   secundario_seis: { usosHechizos: [8, 3] },
@@ -59,9 +59,9 @@ for (const c of CASTIGOS_VERIFICABLES) {
 // esos dos castigos lo dice, y el check lo fija para que no se separen.
 assert.equal(verificarCastigo("sin_botas", con({ comproBotas: false })), true, "terminar sin botas cumple");
 
-// Los umbrales, justo en el borde: un "1600 de oro como máximo" que rechace
-// 1600 exactos es un castigo distinto del anunciado.
-assert.equal(verificarCastigo("presupuesto", con({ objetoMasCaro: 1600 })), true, "1600 exactos entran en el presupuesto");
+// Los umbrales, justo en el borde: un "3000 de oro como máximo" que rechace
+// 3000 exactos es un castigo distinto del anunciado.
+assert.equal(verificarCastigo("presupuesto", con({ objetoMasCaro: 3000 })), true, "3000 exactos entran en el presupuesto");
 assert.equal(verificarCastigo("ulti_tres_veces", con({ usosUlti: 5 })), true, "cinco usos exactos cumplen");
 assert.equal(verificarCastigo("secundario_seis", con({ usosHechizos: [4, 4] })), true, "cuatro exactos cumplen");
 

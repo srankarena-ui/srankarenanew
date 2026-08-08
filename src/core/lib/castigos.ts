@@ -101,6 +101,16 @@ export const DIAS_RECIENTES = 30;
 export const REJECTION_PENALTY = 100;
 
 /**
+ * Lo más caro que puede quedarte en el inventario con «Presupuesto ajustado».
+ *
+ * El tope se compara contra el precio total del objeto en Data Dragon, así que
+ * no hay lista que mantener: un objeto nuevo o un reajuste de precios entran
+ * solos. Se compara con el objeto final, no con lo comprado — venderlo antes de
+ * acabar también vale.
+ */
+export const TOPE_PRESUPUESTO = 3000;
+
+/**
  * Los castigos que dependen del cliente de escritorio no entran en la ruleta
  * hasta que el cliente exista y se pueda saber quién lo tiene abierto. Poner
  * esto en true sin eso repartiría castigos imposibles de comprobar.
@@ -155,9 +165,9 @@ export const CASTIGOS: Castigo[] = [
   },
   {
     key: "presupuesto",
-    verify: (f) => f.objetoMasCaro <= 1600,
+    verify: (f) => f.objetoMasCaro <= TOPE_PRESUPUESTO,
     name: "Presupuesto ajustado",
-    how: "Terminar la partida sin ningún objeto de más de 1600 de oro. Se miran los objetos finales, no las compras.",
+    how: "Terminar la partida sin ningún objeto de más de 3000 de oro. Se miran los objetos finales, no las compras: vender el objeto caro antes de acabar también vale.",
     dureza: 3,
   },
   {

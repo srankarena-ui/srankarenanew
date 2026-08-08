@@ -229,6 +229,70 @@ export function problemaAutofill(primera) {
   return primera.toUpperCase() === "FILL" ? null : `Tienes ${primera} elegido, no Autofill`;
 }
 
+/**
+ * Deja en el cliente de League un conjunto con lo que «Presupuesto ajustado»
+ * prohíbe, y lo retira cuando el castigo se acaba.
+ *
+ * No impide comprar nada: un conjunto de objetos es una lista de sugerencias en
+ * la tienda. Sirve para que el jugador vea de un vistazo lo que no puede tocar
+ * en vez de calcular precios de memoria en plena partida. Quien decide sigue
+ * siendo la comprobación de la partida.
+ *
+ * Los ids salen del servidor, del mismo catálogo que usa esa comprobación: una
+ * lista escrita a mano se quedaría vieja al primer parche y estaría dando por
+ * bueno lo que no lo es.
+ */
+const CONJUNTO = "⛔ PROHIBIDOS · Presupuesto ajustado";
+let prohibidos = null;
+let conjuntoPuesto = null;   // lo último que se dejó escrito, para no repetir
+
+async function sincronizarConjunto(reto) {
+  const toca = reto?.key === "presupuesto" && reto.status === "accepted";
+  if (toca === conjuntoPuesto) return;   // ya está como debe
+
+  const yo = await lcu("/lol-summoner/v1/current-summoner");
+  if (!yo?.summonerId) return;           // cliente cerrado: se reintenta luego
+
+  const actual = await lcu(`/lol-item-sets/v1/item-sets/${yo.summonerId}/sets`);
+  if (!actual?.itemSets) return;
+
+  // Se leen los suyos y se devuelven todos: escribir reemplaza el lote entero,
+  // así que mandar solo el nuestro le borraría los conjuntos al streamer. Y eso
+  // no se recupera.
+  const suyos = actual.itemSets.filter((s) => s.title !== CONJUNTO);
+
+  if (toca) {
+    if (!prohibidos) {
+      const r = await api("/api/castigos/objetos-prohibidos");
+      if (r.status !== 200) return;      // sin lista no se inventa una
+      prohibidos = r.body.ids ?? [];
+    }
+    suyos.unshift({
+      title: CONJUNTO,
+      type: "custom",
+      map: "any",
+      mode: "any",
+      priority: false,
+      sortrank: 0,
+      associatedMaps: [11, 12],
+      associatedChampions: [],
+      blocks: [{
+        type: "Más de 3000 de oro — no los termines",
+        items: prohibidos.map((id) => ({ id: String(id), count: 1 })),
+      }],
+    });
+  }
+
+  const ok = await lcu(`/lol-item-sets/v1/item-sets/${yo.summonerId}/sets`, {
+    accountId: actual.accountId,
+    itemSets: suyos,
+  });
+  if (!ok) return;                        // falló: que lo reintente en el siguiente sondeo
+
+  conjuntoPuesto = toca;
+  console.log(`  [conjunto] ${toca ? "puesto" : "retirado"}`);
+}
+
 async function vigilar() {
   const fase = await lcu("/lol-gameflow/v1/gameflow-phase");
   const anterior = faseAnterior;
@@ -328,12 +392,13 @@ const LOCKFILES = [
   "D:/Riot Games/League of Legends/lockfile",
 ];
 
-function lcu(ruta) {
+function lcu(ruta, cuerpo) {
   // El puerto y la contraseña cambian en cada arranque del cliente: se relee
   // siempre, nunca se cachea.
   const lock = LOCKFILES.find(existsSync);
   if (!lock) return Promise.resolve(null);
   const [, , port, pass] = readFileSync(lock, "utf8").trim().split(":");
+  const datos = cuerpo === undefined ? null : JSON.stringify(cuerpo);
 
   return new Promise((resolve) => {
     const req = httpsRequest(
@@ -341,7 +406,11 @@ function lcu(ruta) {
         host: "127.0.0.1",
         port,
         path: ruta,
-        headers: { Authorization: "Basic " + Buffer.from(`riot:${pass}`).toString("base64") },
+        method: datos ? "PUT" : "GET",
+        headers: {
+          Authorization: "Basic " + Buffer.from(`riot:${pass}`).toString("base64"),
+          ...(datos ? { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(datos) } : {}),
+        },
         // Certificado autofirmado contra tu propia máquina. La excepción es
         // solo para esta petición, no global.
         rejectUnauthorized: false,
@@ -350,12 +419,16 @@ function lcu(ruta) {
         let d = "";
         res.on("data", (x) => (d += x));
         res.on("end", () => {
-          if (res.statusCode !== 200) return resolve(null);
-          try { resolve(JSON.parse(d)); } catch { resolve(null); }
+          // Al escribir vale cualquier 2xx, y algunas rutas contestan sin
+          // cuerpo: se devuelve `true` para poder distinguirlo de un fallo.
+          const bien = res.statusCode >= 200 && res.statusCode < 300;
+          if (!bien) return resolve(null);
+          try { resolve(JSON.parse(d)); } catch { resolve(datos ? true : null); }
         });
       }
     );
     req.on("error", () => resolve(null));
+    if (datos) req.write(datos);
     req.end();
   });
 }
@@ -590,6 +663,22 @@ server.listen(PUERTO, "127.0.0.1", () => {
 // Cada 2 s, igual que la barra: los cambios de fase del juego duran segundos y
 // perderse la entrada en cola es perderse el único momento útil del aviso.
 setInterval(() => { vigilar().catch(() => {}); }, 2000);
+
+/**
+ * El conjunto de objetos va por su cuenta y no dentro de `vigilar()`, que solo
+ * mira en cola y en selección. Aquí hace falta lo contrario: ponerlo mientras
+ * el jugador está en el menú, que es cuando aún puede mirárselo, y no cuando ya
+ * está eligiendo campeón.
+ *
+ * Cada 30 s: esto no cambia hasta que alguien acepta o resuelve un castigo.
+ */
+async function repasarConjunto() {
+  const inbox = await api("/api/me/inbox");
+  if (inbox.status !== 200) return;
+  await sincronizarConjunto((inbox.body?.retos ?? []).find((r) => r.key));
+}
+repasarConjunto().catch(() => {});
+setInterval(() => { repasarConjunto().catch(() => {}); }, 30000);
 
 // Lo importa main.js (la ventana de Electron) para esperar a que escuche antes
 // de cargar la interfaz: sin eso la ventana abre contra un puerto muerto.

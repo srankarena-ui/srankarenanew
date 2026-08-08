@@ -11,6 +11,15 @@ interface Catalogo {
   botas: Set<number>;
   /** Coste total en oro por id. */
   precio: Map<number, number>;
+  /**
+   * Lo que de verdad se puede comprar en la Grieta.
+   *
+   * `item.json` trae mucho más que la tienda: objetos de otros modos, piezas
+   * retiradas que siguen en el archivo, y las mejoras de Ornn, que valen una
+   * fortuna y no las compra nadie. Sin este filtro, una lista de "objetos de
+   * más de 3000" saldría llena de cosas que el jugador no puede ni ver.
+   */
+  enTienda: Set<number>;
 }
 
 // ponytail: caché en memoria por proceso, sin expiración. El catálogo solo
@@ -52,17 +61,32 @@ async function cargar(): Promise<Catalogo> {
   const v = await version();
 
   const data = await fetch(`https://ddragon.leagueoflegends.com/cdn/${v}/data/en_US/item.json`)
-    .then((r) => r.json() as Promise<{ data: Record<string, { tags?: string[]; gold: { total: number } }> }>)
+    .then((r) => r.json() as Promise<{
+      data: Record<string, {
+        tags?: string[];
+        gold: { total: number; purchasable?: boolean };
+        maps?: Record<string, boolean>;
+        inStore?: boolean;
+        requiredAlly?: string;
+      }>;
+    }>)
     .then((j) => j.data);
 
   const botas = new Set<number>();
   const precio = new Map<number, number>();
+  const enTienda = new Set<number>();
 
   for (const [id, item] of Object.entries(data)) {
     const n = Number(id);
     precio.set(n, item.gold?.total ?? 0);
     if (item.tags?.includes("Boots")) botas.add(n);
+
+    // Mapa 11 es la Grieta del Invocador. `requiredAlly` marca las mejoras de
+    // Ornn, que aparecen como comprables y no lo son.
+    if (item.gold?.purchasable && item.maps?.["11"] && item.inStore !== false && !item.requiredAlly) {
+      enTienda.add(n);
+    }
   }
 
-  return { botas, precio };
+  return { botas, precio, enTienda };
 }
