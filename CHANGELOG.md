@@ -2,6 +2,16 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-08-08 — Autofill entra en la ruleta: 13 de 13
+
+Estuvo apagado mientras el cliente de escritorio no existía. Ya existe, se instala, y Autofill se verificó contra una partida real. Se enciende .
+
+Contrapartida asumida: a quien no tenga el cliente abierto no se le resuelve solo. Si estorba, la salida es que la ruleta mire si esa persona ha dado señales hace poco y le saque Autofill del bombo.
+
+ lo cazó al primer intento — «entra en la ruleta pero el check no lo cubre»— porque solo entendía la vía de match-v5. Ahora acepta las dos y exige que cada castigo tenga una: sin  y sin vía de cliente, sería un castigo que le cae a alguien y no se resuelve nunca, con las partidas congeladas para siempre. Y no deja declararse «de cliente» trayendo , que sería colarse por la puerta de atrás.
+
+, .
+
 ## 2026-08-07 — Fuera el marcador de fútbol
 
 Era un encargo provisional para retransmitir partidos —con su propio panel de admin, su propio overlay y su propia tabla— viviendo dentro de una plataforma de torneos de videojuegos. Nada de lo demás lo tocaba.

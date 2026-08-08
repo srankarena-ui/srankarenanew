@@ -111,11 +111,19 @@ export const REJECTION_PENALTY = 100;
 export const TOPE_PRESUPUESTO = 3000;
 
 /**
- * Los castigos que dependen del cliente de escritorio no entran en la ruleta
- * hasta que el cliente exista y se pueda saber quién lo tiene abierto. Poner
- * esto en true sin eso repartiría castigos imposibles de comprobar.
+ * Los castigos que se comprueban desde el cliente de escritorio.
+ *
+ * Estuvo apagado mientras el cliente no existía. Ya existe, se instala y
+ * Autofill se verificó contra una partida real: lee la posición en el lobby y
+ * manda el veredicto al entrar en selección, que es cuando la elección deja de
+ * poder cambiarse. match-v5 no sirve para esto —guarda el rol que jugaste,
+ * nunca el que pediste—, así que este camino es el único que hay.
+ *
+ * Contrapartida asumida: a quien no tenga el cliente abierto no se le resuelve
+ * solo. Si eso se vuelve un problema, la salida es que la ruleta mire si esa
+ * persona ha dado señales hace poco y, si no, le saque Autofill del bombo.
  */
-export const CLIENTE_DISPONIBLE = false;
+export const CLIENTE_DISPONIBLE = true;
 
 export const CASTIGOS: Castigo[] = [
   {

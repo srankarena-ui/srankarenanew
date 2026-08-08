@@ -47,6 +47,15 @@ const INFRACCIONES = {
 };
 
 for (const c of CASTIGOS_VERIFICABLES) {
+  // Los que van por el cliente de escritorio no se comprueban con los datos de
+  // la partida y no tienen `verify`: su vía es otra y su comprobación también
+  // —check-autofill.mjs—. Se exigen las dos cosas para que nadie pueda meter un
+  // castigo en la ruleta declarándolo "de cliente" y quedarse sin comprobar.
+  if (c.via === "cliente") {
+    assert(!c.verify, `"${c.key}" dice ser de cliente pero trae verify: elige una vía`);
+    continue;
+  }
+
   const infraccion = INFRACCIONES[c.key];
   assert(infraccion, `"${c.key}" entra en la ruleta pero el check no lo cubre`);
 
@@ -79,17 +88,26 @@ assert.equal(verificarCastigo("sin_prender", con({ hechizos: [12, 14] })), false
 assert.equal(verificarCastigo("campeon_aleatorio", LIMPIA, {}), false, "sin campeón congelado no se da por cumplido");
 assert.equal(verificarCastigo("inventado", LIMPIA), null, "una clave desconocida devuelve null");
 
+// Comprobable = o trae `verify` y se resuelve con los datos de la partida, o va
+// por el cliente de escritorio. Lo que no se puede es ninguna de las dos: eso
+// sería un castigo que le cae a alguien y no se resuelve nunca, dejándole las
+// partidas congeladas para siempre.
+const comprobable = (c) => !!c.verify || c.via === "cliente";
+
 for (const role of ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY", null]) {
   for (const c of castigosParaRol(role)) {
-    assert(c.verify, `"${c.key}" se le puede imponer a ${role} sin saber comprobarlo`);
+    assert(comprobable(c), `"${c.key}" se le puede imponer a ${role} sin saber comprobarlo`);
   }
   for (let i = 0; i < 2000; i++) {
-    assert(rollCastigo(role).verify, `la ruleta saco un castigo sin verificación para ${role}`);
+    assert(comprobable(rollCastigo(role)), `la ruleta saco un castigo sin verificación para ${role}`);
   }
 }
 
-const fuera = CASTIGOS.filter((c) => !c.verify);
-console.log(`${CASTIGOS_VERIFICABLES.length} de ${CASTIGOS.length} castigos se comprueban solos`);
-console.log(`fuera de la ruleta hasta poder comprobarlos: ${fuera.map((c) => c.name).join(", ")}`);
+const porCliente = CASTIGOS.filter((c) => c.via === "cliente");
+const fuera = CASTIGOS.filter((c) => !CASTIGOS_VERIFICABLES.includes(c));
+console.log(`${CASTIGOS_VERIFICABLES.length} de ${CASTIGOS.length} castigos entran en la ruleta`);
+console.log(`  con los datos de la partida: ${CASTIGOS_VERIFICABLES.length - porCliente.length}`);
+console.log(`  con el cliente de escritorio: ${porCliente.map((c) => c.name).join(", ") || "ninguno"}`);
+if (fuera.length) console.log(`  fuera hasta poder comprobarlos: ${fuera.map((c) => c.name).join(", ")}`);
 console.log("\nOK: cada castigo detecta su infracción, los umbrales caen donde se anuncia,");
 console.log("    y la ruleta nunca reparte algo que no sepamos verificar.");
