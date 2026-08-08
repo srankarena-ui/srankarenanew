@@ -12,7 +12,6 @@ import {
 const LIMPIA = {
   campeon: "Yorick",
   hechizos: [6, 12],          // Fantasma + Teleporte
-  usosHechizos: [8, 8],
   usosUlti: 2,
   visionWardsBought: 0,
   consumablesPurchased: 0,
@@ -43,7 +42,6 @@ const INFRACCIONES = {
   presupuesto: { objetoMasCaro: 3001 },
   ulti_tres_veces: { usosUlti: 6 },
   sin_pings: { pings: 1 },
-  secundario_seis: { usosHechizos: [8, 3] },
 };
 
 for (const c of CASTIGOS_VERIFICABLES) {
@@ -72,7 +70,6 @@ assert.equal(verificarCastigo("sin_botas", con({ comproBotas: false })), true, "
 // 3000 exactos es un castigo distinto del anunciado.
 assert.equal(verificarCastigo("presupuesto", con({ objetoMasCaro: 3000 })), true, "3000 exactos entran en el presupuesto");
 assert.equal(verificarCastigo("ulti_tres_veces", con({ usosUlti: 5 })), true, "cinco usos exactos cumplen");
-assert.equal(verificarCastigo("secundario_seis", con({ usosHechizos: [4, 4] })), true, "cuatro exactos cumplen");
 
 // Pies veloces cuenta igual que llevar botas: el castigo son las dos cosas.
 assert.equal(verificarCastigo("sin_botas", con({ piedraAngular: 8021 })), false, "Pies veloces incumple aunque no lleve botas");

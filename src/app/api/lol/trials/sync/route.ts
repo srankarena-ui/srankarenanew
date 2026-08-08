@@ -369,7 +369,6 @@ async function verificarCastigos(
 
   const cumplio = verificarCastigo(key, {
     hechizos: [(player.summoner1Id as number) ?? 0, (player.summoner2Id as number) ?? 0],
-    usosHechizos: [(player.summoner1Casts as number) ?? 0, (player.summoner2Casts as number) ?? 0],
     usosUlti: (player.spell4Casts as number) ?? 0,
     visionWardsBought: (player.visionWardsBoughtInGame as number) ?? 0,
     consumablesPurchased: (player.consumablesPurchased as number) ?? 0,

@@ -16,8 +16,6 @@ import type { Role } from "./challenge-conditions";
 export interface CastigoFacts {
   /** IDs de los dos hechizos de invocador. Destello es 4, Prender 14. */
   hechizos: [number, number];
-  /** Veces que usó cada hechizo de invocador. */
-  usosHechizos: [number, number];
   /** Lanzamientos de la definitiva (`spell4Casts`). */
   usosUlti: number;
   visionWardsBought: number;
@@ -197,13 +195,6 @@ export const CASTIGOS: Castigo[] = [
     verify: (f) => f.pings === 0,
     name: "Silencio",
     how: "No usar ni un solo ping en toda la partida. Riot cuenta los catorce tipos por separado, así que se comprueba sumándolos.",
-    dureza: 1,
-  },
-  {
-    key: "secundario_seis",
-    verify: (f) => Math.min(...f.usosHechizos) >= 4,
-    name: "Usa el otro",
-    how: "Usar tus dos hechizos de invocador al menos cuatro veces cada uno. Se piden los dos y no «el secundario» porque el orden de las teclas lo elige cada jugador: Riot no distingue uno de otro. Cuatro y no seis porque con seis Teleporte es imposible —0% en las partidas medidas— y con cuatro Destello sale en el 82%.",
     dureza: 1,
   },
   {
