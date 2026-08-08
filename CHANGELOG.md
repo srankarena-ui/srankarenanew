@@ -14,7 +14,7 @@ Resumen breve de cada implementación (feature, fix, refactor pedido). Una entra
 
 De paso, el botón de torneos del héroe estaba escrito en inglés a pelo, sin traducir.
 
-, , , .
+`src/app/[locale]/page.tsx`, `landing/components/HeroSection.tsx`, `landing/components/CTASection.tsx`, `core/i18n/dictionaries/`.
 
 ## 2026-08-08 — Autofill entra en la ruleta: 13 de 13
 
