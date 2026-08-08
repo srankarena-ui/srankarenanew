@@ -45,16 +45,16 @@
     "loginWithDiscord": "Continuar con Discord"
   },
   "landing": {
-    "heroTitle": "Sube de rango, en equipo",
+    "heroTitle": "Sube de rango. Solo o en equipo.",
     "heroSubtitle": "Todo lo que necesitas para competir",
     "heroCta": "Únete ahora",
     "servicesTitle": "¿Por qué S-Rank Arena?",
     "service1Title": "Brackets automáticos",
     "service1Desc": "Eliminación directa con seeding automático, BYEs y seguimiento de puntuación",
     "service2Title": "Escaneo en vivo",
-    "service2Desc": "Detección automática de resultados desde las APIs de Riot y Supercell",
+    "service2Desc": "Resultados verificados desde la propia partida: sin capturas ni reportes a mano",
     "service3Title": "Sistema de logros",
-    "service3Desc": "Gana insignias desde Bronce hasta S-Rank en múltiples categorías",
+    "service3Desc": "Gana insignias y sube tu cuenta de Rango F a Rango S",
     "service4Title": "Soporte multi-juego",
     "service4Desc": "Torneos de League of Legends, con más juegos próximamente",
     "featuredEventsTitle": "Eventos destacados",
@@ -67,8 +67,12 @@
     "goToImageSlide": "Ir a la imagen {index}",
     "unranked": "Sin rango",
     "ctaTitle": "¿Listo para competir?",
-    "ctaSubtitle": "Únete a miles de jugadores en la arena",
-    "ctaButton": "Crear cuenta"
+    "ctaSubtitle": "Los resultados se verifican desde la propia partida. Tú solo juegas.",
+    "ctaButton": "Crear cuenta",
+    "heroTournaments": "Ver torneos",
+    "ctaTitleIn": "Tu próximo torneo te espera",
+    "ctaSubtitleIn": "Mira los torneos abiertos y apúntate",
+    "ctaButtonIn": "Ver torneos"
   },
   "tournaments": {
     "title": "Torneos",
@@ -422,17 +426,17 @@
     "servicesSection": "Servicios ({language})",
     "addService": "Agregar servicio",
     "serviceNumber": "Servicio #{index}",
-    "icon": "Icono"
-    ,"verificationSettingsTitle": "Configuración de verificación"
-    ,"verificationSettingsSubtitle": "Controla si Riot y Clash Royale exigen verificación real o permiten enlace directo para pruebas."
-    ,"verificationSettingsSaved": "Configuración de verificación guardada"
-    ,"riotVerificationToggleTitle": "Verificación obligatoria de Riot"
-    ,"riotVerificationToggleDescription": "Cuando está activa, Riot solo se puede vincular cambiando el icono y completando el reto."
-    ,"crVerificationToggleTitle": "Verificación obligatoria de Clash Royale"
-    ,"crVerificationToggleDescription": "Cuando está activa, Clash Royale exige el token oficial del jugador antes de vincular la cuenta."
-    ,"verificationRequired": "Obligatoria"
-    ,"verificationBypassed": "Bypass pruebas"
-    ,"verificationSettingsHint": "Desactiva estos toggles solo para pruebas internas. La lógica de verificación sigue existiendo y vuelve a aplicarse apenas reactives cada opción."
-    ,"saveVerificationSettings": "Guardar configuración de verificación"
+    "icon": "Icono",
+    "verificationSettingsTitle": "Configuración de verificación",
+    "verificationSettingsSubtitle": "Controla si Riot y Clash Royale exigen verificación real o permiten enlace directo para pruebas.",
+    "verificationSettingsSaved": "Configuración de verificación guardada",
+    "riotVerificationToggleTitle": "Verificación obligatoria de Riot",
+    "riotVerificationToggleDescription": "Cuando está activa, Riot solo se puede vincular cambiando el icono y completando el reto.",
+    "crVerificationToggleTitle": "Verificación obligatoria de Clash Royale",
+    "crVerificationToggleDescription": "Cuando está activa, Clash Royale exige el token oficial del jugador antes de vincular la cuenta.",
+    "verificationRequired": "Obligatoria",
+    "verificationBypassed": "Bypass pruebas",
+    "verificationSettingsHint": "Desactiva estos toggles solo para pruebas internas. La lógica de verificación sigue existiendo y vuelve a aplicarse apenas reactives cada opción.",
+    "saveVerificationSettings": "Guardar configuración de verificación"
   }
 }

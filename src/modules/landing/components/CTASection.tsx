@@ -3,9 +3,15 @@
 import { Button } from "@/core/ui/Button";
 import { useTranslations, useLocale } from "next-intl";
 
-export function CTASection() {
+/**
+ * El bloque de cierre. Con sesión cambia entero: ofrecerle crear una cuenta a
+ * quien ya la tiene no es un empujón, es un callejón sin salida.
+ */
+export function CTASection({ sesion = false }: { sesion?: boolean }) {
   const t = useTranslations("landing");
   const locale = useLocale();
+
+  const destino = sesion ? "tournaments" : "register";
 
   return (
     <section className="relative mx-auto max-w-4xl px-4 py-24">
@@ -13,12 +19,12 @@ export function CTASection() {
         <div className="absolute left-1/2 top-0 h-40 w-80 -translate-x-1/2 bg-[var(--color-accent)]/10 blur-[80px]" />
         <div className="relative z-10">
           <h2 className="text-4xl uppercase italic tracking-tighter text-white">
-            {t("ctaTitle")}
+            {t(sesion ? "ctaTitleIn" : "ctaTitle")}
           </h2>
-          <p className="mt-3 text-gray-400">{t("ctaSubtitle")}</p>
-          <a href={`/${locale}/register`} className="mt-8 inline-block">
+          <p className="mt-3 text-gray-400">{t(sesion ? "ctaSubtitleIn" : "ctaSubtitle")}</p>
+          <a href={`/${locale}/${destino}`} className="mt-8 inline-block">
             <Button size="lg" className="rounded-[2rem] px-12 shadow-[0_0_30px_rgba(168,85,247,0.3)]">
-              {t("ctaButton")}
+              {t(sesion ? "ctaButtonIn" : "ctaButton")}
             </Button>
           </a>
         </div>

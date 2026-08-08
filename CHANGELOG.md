@@ -2,6 +2,20 @@
 
 Resumen breve de cada implementación (feature, fix, refactor pedido). Una entrada nueva arriba de todo, formato: fecha, qué se hizo y por qué, archivos principales. El objetivo es que una sesión nueva pueda entender el estado del proyecto leyendo esto en vez de re-derivar todo del historial de git.
 
+## 2026-08-08 — Portada: lo que decia no era cierto
+
+**«Únete a miles de jugadores»** se cambia por lo que de verdad distingue esto de una hoja de cálculo: que los resultados se verifican desde la partida. Una promesa que se desmiente sola en cuanto el visitante mira un torneo con cuatro inscritos hace el efecto contrario al que busca.
+
+**La portada ya sabe si has entrado.** Ofrecía crear cuenta dos veces a quien acababa de entrar con la suya. Con sesión desaparece ese botón del héroe y el bloque de cierre cambia entero: pasa a llevar a los torneos abiertos. Lo decide la página, que corre en servidor, y no los bloques: pedirlo desde el navegador haría parpadear los botones al cargar.
+
+**Fuera Supercell y fuera «Bronce».** Nombrar a Riot y a Supercell en la misma frase de la portada roza el insinuar relación que sus normas prohíben, y Supercell no pinta nada en lo que vamos a presentarles. «Bronce» es un rango de League: el mismo solapamiento que quitamos de la descripción para Riot, entrando por la puerta de atrás.
+
+**El titular excluía el formato principal.** «Sube de rango, en equipo» deja fuera Summoner Trials, que se juega solo.
+
+De paso, el botón de torneos del héroe estaba escrito en inglés a pelo, sin traducir.
+
+, , , .
+
 ## 2026-08-08 — Autofill entra en la ruleta: 13 de 13
 
 Estuvo apagado mientras el cliente de escritorio no existía. Ya existe, se instala, y Autofill se verificó contra una partida real. Se enciende `CLIENTE_DISPONIBLE`.

@@ -32,6 +32,11 @@ export async function generateMetadata({
 export default async function LandingPage() {
   const supabase = await createClient();
 
+  // Quién eres lo sabe la página, no los bloques: son de navegador y pedirlo
+  // desde allí haría parpadear los botones al cargar.
+  const { data: { user } } = await supabase.auth.getUser();
+  const sesion = !!user;
+
   const featuredConfig = await getFeaturedEventsConfig();
 
   let featuredTournaments: Awaited<ReturnType<typeof supabase.from>>["data"] = [];
@@ -74,10 +79,10 @@ export default async function LandingPage() {
           __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
         }}
       />
-      <HeroSection />
+      <HeroSection sesion={sesion} />
       <FeaturedEventsCarousel tournaments={featuredTournaments as never} />
       <ServicesGrid />
-      <CTASection />
+      <CTASection sesion={sesion} />
     </>
   );
 }

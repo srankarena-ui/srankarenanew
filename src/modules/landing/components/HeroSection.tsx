@@ -3,7 +3,12 @@
 import { Button } from "@/core/ui/Button";
 import { useTranslations, useLocale } from "next-intl";
 
-export function HeroSection() {
+/**
+ * `sesion` lo decide la página, que corre en el servidor y ya sabe quién eres.
+ * Sin esto la portada le ofrecía crear una cuenta a quien acaba de entrar con
+ * la suya.
+ */
+export function HeroSection({ sesion = false }: { sesion?: boolean }) {
   const t = useTranslations("landing");
   const locale = useLocale();
 
@@ -30,14 +35,17 @@ export function HeroSection() {
         </p>
 
         <div className="mt-6 flex justify-center gap-4">
-          <a href={`/${locale}/register`}>
-            <Button size="lg" className="rounded-[2rem] px-10 shadow-[0_0_30px_rgba(168,85,247,0.3)]">
-              {t("heroCta")}
-            </Button>
-          </a>
+          {!sesion && (
+            <a href={`/${locale}/register`}>
+              <Button size="lg" className="rounded-[2rem] px-10 shadow-[0_0_30px_rgba(168,85,247,0.3)]">
+                {t("heroCta")}
+              </Button>
+            </a>
+          )}
           <a href={`/${locale}/tournaments`}>
-            <Button variant="secondary" size="lg" className="rounded-[2rem] px-10">
-              Tournaments
+            {/* Con sesión se queda solo, así que pasa a ser el botón principal. */}
+            <Button variant={sesion ? "primary" : "secondary"} size="lg" className="rounded-[2rem] px-10">
+              {t("heroTournaments")}
             </Button>
           </a>
         </div>

@@ -45,16 +45,16 @@
     "loginWithDiscord": "Continue with Discord"
   },
   "landing": {
-    "heroTitle": "Climb the ranks, together",
+    "heroTitle": "Climb. Solo or with your team.",
     "heroSubtitle": "Everything you need to compete",
     "heroCta": "Join now",
     "servicesTitle": "Why S-Rank Arena?",
     "service1Title": "Automated brackets",
     "service1Desc": "Single elimination with automatic seeding, BYEs, and score tracking",
     "service2Title": "Live scanning",
-    "service2Desc": "Auto-detect match results from Riot and Supercell APIs",
+    "service2Desc": "Results verified from the game itself: no screenshots, no manual reporting",
     "service3Title": "Achievement system",
-    "service3Desc": "Earn badges from Bronze to S-Rank across multiple categories",
+    "service3Desc": "Earn badges and climb your account from Rank F to Rank S",
     "service4Title": "Multi-game support",
     "service4Desc": "League of Legends tournaments, with more games coming soon",
     "featuredEventsTitle": "Featured events",
@@ -67,8 +67,12 @@
     "goToImageSlide": "Go to image {index}",
     "unranked": "Unranked",
     "ctaTitle": "Ready to compete?",
-    "ctaSubtitle": "Join thousands of players in the arena",
-    "ctaButton": "Create account"
+    "ctaSubtitle": "Results are verified from the game itself. You just play.",
+    "ctaButton": "Create account",
+    "heroTournaments": "View tournaments",
+    "ctaTitleIn": "Your next tournament is waiting",
+    "ctaSubtitleIn": "Check the open tournaments and sign up",
+    "ctaButtonIn": "View tournaments"
   },
   "tournaments": {
     "title": "Tournaments",
