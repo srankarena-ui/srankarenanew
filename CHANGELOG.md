@@ -4,13 +4,13 @@ Resumen breve de cada implementación (feature, fix, refactor pedido). Una entra
 
 ## 2026-08-08 — Autofill entra en la ruleta: 13 de 13
 
-Estuvo apagado mientras el cliente de escritorio no existía. Ya existe, se instala, y Autofill se verificó contra una partida real. Se enciende .
+Estuvo apagado mientras el cliente de escritorio no existía. Ya existe, se instala, y Autofill se verificó contra una partida real. Se enciende `CLIENTE_DISPONIBLE`.
 
 Contrapartida asumida: a quien no tenga el cliente abierto no se le resuelve solo. Si estorba, la salida es que la ruleta mire si esa persona ha dado señales hace poco y le saque Autofill del bombo.
 
- lo cazó al primer intento — «entra en la ruleta pero el check no lo cubre»— porque solo entendía la vía de match-v5. Ahora acepta las dos y exige que cada castigo tenga una: sin  y sin vía de cliente, sería un castigo que le cae a alguien y no se resuelve nunca, con las partidas congeladas para siempre. Y no deja declararse «de cliente» trayendo , que sería colarse por la puerta de atrás.
+`check-verificacion.mjs` lo cazó al primer intento — «entra en la ruleta pero el check no lo cubre»— porque solo entendía la vía de match-v5. Ahora acepta las dos y exige que cada castigo tenga una: sin `verify` y sin vía de cliente, sería un castigo que le cae a alguien y no se resuelve nunca, con las partidas congeladas para siempre. Y no deja declararse «de cliente» trayendo `verify`, que sería colarse por la puerta de atrás.
 
-, .
+`src/core/lib/castigos.ts`, `scripts/check-verificacion.mjs`.
 
 ## 2026-08-07 — Fuera el marcador de fútbol
 
